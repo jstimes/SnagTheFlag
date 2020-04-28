@@ -1,1 +1,2 @@
-- auto resize canvas?
+- Abstract mouse controls
+- Start screen w/ ui Manager.

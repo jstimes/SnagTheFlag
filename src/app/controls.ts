@@ -119,18 +119,54 @@ class Controls {
                 return 'A';
             case Key.B:
                 return 'B';
+            case Key.C:
+                return 'C';
             case Key.D:
                 return 'D';
-            case Key.W:
-                return 'W';
-            case Key.S:
-                return 'S';
+            case Key.E:
+                return 'E';
+            case Key.F:
+                return 'F';
+            case Key.G:
+                return 'G';
+            case Key.H:
+                return 'H';
+            case Key.I:
+                return 'I';
             case Key.J:
                 return 'J';
+            case Key.K:
+                return 'K';
             case Key.L:
                 return 'L';
+            case Key.M:
+                return 'M';
             case Key.N:
                 return 'N';
+            case Key.O:
+                return 'O';
+            case Key.P:
+                return 'P';
+            case Key.Q:
+                return 'Q';
+            case Key.R:
+                return 'R';
+            case Key.S:
+                return 'S';
+            case Key.T:
+                return 'T';
+            case Key.U:
+                return 'U';
+            case Key.V:
+                return 'V';
+            case Key.W:
+                return 'W';
+            case Key.X:
+                return 'X';
+            case Key.Y:
+                return 'Y';
+            case Key.Z:
+                return 'Z';
             case Key.ONE:
                 return '1';
             case Key.TWO:
