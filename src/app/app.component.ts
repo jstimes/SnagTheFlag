@@ -3,6 +3,7 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
 import { GameObject } from 'src/app/game_object';
+import { CONTROLS } from 'src/app/controls';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -18,26 +19,13 @@ export class AppComponent {
 
   canvas: HTMLCanvasElement;
   lastRenderTime = 0;
-  mouseCanvasPos: Point = new Point(0, 0);
-  mousedUp: boolean = false;
   gameObjects: GameObject[];
 
   ngOnInit() {
     this.canvas = document.getElementById('canvas') as HTMLCanvasElement;
     this.canvas.setAttribute('height', `${RENDER_SETTINGS.canvasHeight}px`);
     this.canvas.setAttribute('width', `${RENDER_SETTINGS.canvasWidth}px`);
-    this.canvas.onmousemove = (event: MouseEvent) => {
-      const canvasRect = this.canvas.getBoundingClientRect();
-      const canvasPos = new Point(
-        event.clientX - canvasRect.left,
-        event.clientY - canvasRect.top);
-      if (this.isPointInCanvas(canvasPos)) {
-        this.mouseCanvasPos = canvasPos;
-      }
-    };
-    this.canvas.onmouseup = (event: MouseEvent) => {
-      this.mousedUp = true;
-    };
+    CONTROLS.initMouseControls(this.canvas);
     this.resetGame();
   }
 
@@ -54,11 +42,11 @@ export class AppComponent {
   }
 
   update(elapsedMs: number): void {
-    if (this.mousedUp) {
-      const mouseTileCoords = Grid.getTileFromCanvasCoords(this.mouseCanvasPos);
+    if (CONTROLS.hasClick()) {
+      const clickCoords = CONTROLS.handleClick();
+      const mouseTileCoords = Grid.getTileFromCanvasCoords(clickCoords);
       const gameObject = new GameObject(mouseTileCoords);
       this.gameObjects.push(gameObject);
-      this.mousedUp = false;
     }
     for (const gameObject of this.gameObjects) {
       gameObject.update(elapsedMs);
@@ -98,7 +86,7 @@ export class AppComponent {
     }
 
     // Indicate hovered tile.
-    const mouseTileCoords = Grid.getTileFromCanvasCoords(this.mouseCanvasPos);
+    const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
     const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
     context.fillStyle = HOVERED_TILE_COLOR;
     context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
@@ -114,10 +102,5 @@ export class AppComponent {
       this.lastRenderTime = timestamp;
       this.gameLoop(timestamp);
     });
-  }
-
-  private isPointInCanvas(pt: Point): boolean {
-    return pt.x >= 0 && pt.x <= RENDER_SETTINGS.canvasWidth
-      && pt.y >= 0 && pt.y <= RENDER_SETTINGS.canvasHeight;
   }
 }

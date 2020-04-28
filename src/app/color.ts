@@ -5,14 +5,11 @@ export interface Color {
     /** Red value from 0 to 255, inclusive. */
     r: number;
 
-
     /** Green value from 0 to 255, inclusive. */
     g: number;
 
-
     /** Blue value from 0 to 255, inclusive. */
     b: number;
-
 
     /** Alpha value from 0 to 1, inclusive. */
     a: number;

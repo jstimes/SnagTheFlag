@@ -1,3 +1,6 @@
+import { Point } from 'src/app/math/point';
+import { RENDER_SETTINGS } from 'src/app/render_settings';
+
 export enum EventType {
     KeyDown,
     KeyUp,
@@ -82,6 +85,10 @@ class Controls {
     /** Key to action it's bound to. */
     private readonly assignedControlMap: Map<Key, string> = new Map();
 
+    private mouseCanvasCoords: Point = new Point(0, 0);
+    private isMouseDownInternal: boolean = false;
+    private hasClickInternal: boolean = false;
+
     constructor() {
         document.onkeydown = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, true);
@@ -89,6 +96,51 @@ class Controls {
         document.onkeyup = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, false);
         };
+    }
+
+    initMouseControls(canvas: HTMLCanvasElement): void {
+        const isPointInCanvas = (pt: Point): boolean => {
+            return pt.x >= 0 && pt.x <= RENDER_SETTINGS.canvasWidth
+                && pt.y >= 0 && pt.y <= RENDER_SETTINGS.canvasHeight;
+        };
+        canvas.onmousemove = (event: MouseEvent) => {
+            const canvasRect = canvas.getBoundingClientRect();
+            const canvasCoords = new Point(
+                event.clientX - canvasRect.left,
+                event.clientY - canvasRect.top);
+            if (isPointInCanvas(canvasCoords)) {
+                this.mouseCanvasCoords = canvasCoords;
+            }
+        };
+        canvas.onmousedown = (event: MouseEvent) => {
+            this.isMouseDownInternal = true;
+        };
+        canvas.onmouseup = (event: MouseEvent) => {
+            this.isMouseDownInternal = false;
+        };
+        canvas.onclick = (event: MouseEvent) => {
+            this.hasClickInternal = true;
+        };
+    }
+
+    hasClick(): boolean {
+        return this.hasClickInternal;
+    }
+
+    handleClick(): Point {
+        if (!this.hasClick()) {
+            throw new Error(`Must check hasClick before handleClick, or click already handled.`);
+        }
+        this.hasClickInternal = false;
+        return this.mouseCanvasCoords;
+    }
+
+    getMouseCanvasCoords(): Point {
+        return this.mouseCanvasCoords;
+    }
+
+    isMouseDown(): boolean {
+        return this.isMouseDownInternal;
     }
 
     isKeyDown(key: Key): boolean {
