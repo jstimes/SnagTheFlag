@@ -1,5 +1,6 @@
 import { Point } from 'src/app/math/point';
 import { Element } from 'src/app/ui/element';
+import { RENDER_SETTINGS } from 'src/app/render_settings';
 
 /*
  * All coordinates should be in the space [[0, 1] x [0, 1]]
@@ -13,13 +14,11 @@ import { Element } from 'src/app/ui/element';
  */
 export class UiManager {
 
-    private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly elements: Element[];
 
-    constructor(canvas: HTMLCanvasElement) {
-        this.canvas = canvas;
-        this.context = this.canvas.getContext('2d');
+    constructor(context: CanvasRenderingContext2D) {
+        this.context = context;
         this.elements = [];
     }
 
@@ -27,15 +26,15 @@ export class UiManager {
         this.elements.push(element);
     }
 
-    onMouseMove(event: MouseEvent): void {
-        const uiCoords = this.getUiCoords(event);
+    onMouseMove(canvasCoords: Point): void {
+        const uiCoords = this.getUiCoords(canvasCoords);
         for (const element of this.elements) {
             element.onMouseMove(uiCoords);
         }
     }
 
-    onClick(event: MouseEvent): void {
-        const uiCoords = this.getUiCoords(event);
+    onClick(canvasCoords: Point): void {
+        const uiCoords = this.getUiCoords(canvasCoords);
         for (const element of this.elements) {
             element.onClick(uiCoords);
         }
@@ -47,10 +46,9 @@ export class UiManager {
         }
     }
 
-    private getUiCoords(event: MouseEvent): Point {
-        const canvasRect = this.canvas.getBoundingClientRect();
+    private getUiCoords(canvasCoords: Point): Point {
         return new Point(
-            (event.clientX - canvasRect.left) / canvasRect.width,
-            (event.clientY - canvasRect.top) / canvasRect.height);
+            canvasCoords.x / RENDER_SETTINGS.canvasWidth,
+            canvasCoords.y / RENDER_SETTINGS.canvasHeight);
     }
 }
