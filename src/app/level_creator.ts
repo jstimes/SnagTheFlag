@@ -1,8 +1,9 @@
-import { RENDER_SETTINGS } from 'src/app/render_settings';
+import { LevelData } from 'src/app/level';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
 import { Flag } from 'src/app/flag';
+import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
 import { hexStringToColor, colorToString } from 'src/app/color';
@@ -177,13 +178,26 @@ export class LevelCreator {
     }
 
     private readonly saveLevel = (): void => {
-        // TODO
+        // TODO - ensure there's a path from flag to flag.
+        if (this.blueFlag == null || this.redFlag == null) {
+            // TODO - toast failure?
+            throw new Error('Need to add both flags!');
+        }
+        const level: LevelData = {
+            redFlag: this.redFlag.tileCoords,
+            blueFlag: this.blueFlag.tileCoords,
+            obstacles: this.obstacles.map((obstacle) => obstacle.tileCoords),
+        };
+        console.log(JSON.stringify(level));
+        // TODO - toast success?
     };
 
     private resetGame = (): void => {
         this.destroy();
         this.placementMode = PlacementMode.OBSTACLE;
         this.obstacles = [];
+        this.redFlag = null;
+        this.blueFlag = null;
         this.controlMap = new ControlMap();
         this.controlMap.add({
             key: Key.Q,
