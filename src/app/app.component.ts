@@ -80,9 +80,13 @@ export class AppComponent {
     this.gameStateManager = new GameManager(
       this.canvas,
       this.context,
-      () => {
-        this.tearDownCurrentGameState();
-        this.initStartMenu();
+      {
+        // TODO - level selector
+        levelIndex: 0,
+        onExitGameCallback: () => {
+          this.tearDownCurrentGameState();
+          this.initStartMenu();
+        },
       });
   }
 

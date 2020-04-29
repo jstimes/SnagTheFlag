@@ -62,3 +62,7 @@ export function containsPoint(x: Point, points: Point[]): boolean {
     }
     return false;
 }
+
+export function pointFromSerialized(pt: { x: number; y: number }): Point {
+    return new Point(pt.x, pt.y);
+}
