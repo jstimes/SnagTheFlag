@@ -75,7 +75,7 @@ export class StartMenu {
         this.context.fillStyle = this.TEXT_COLOR;
         const fontSize = 72;
         this.context.font = `${fontSize}px fantasy`;
-        const text = 'CanvasGameTemplate'
+        const text = 'SnagTheFlag'
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(
             RENDER_SETTINGS.canvasWidth / 2,
