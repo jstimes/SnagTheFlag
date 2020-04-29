@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
-import { GameObject } from 'src/app/game_object';
 import { CONTROLS } from 'src/app/controls';
 import { GameManager } from 'src/app/game_manager';
 import { StartMenu } from 'src/app/start_menu';

@@ -1,7 +1,7 @@
 import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 
-export class GameObject {
+export class Obstacle {
     readonly startColor = '#e34055';
     tileCoords: Point;
 

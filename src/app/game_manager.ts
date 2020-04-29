@@ -1,7 +1,7 @@
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
-import { GameObject } from 'src/app/game_object';
+import { Obstacle } from 'src/app/obstacle';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
 
 
@@ -14,7 +14,7 @@ export class GameManager {
     canvas: HTMLCanvasElement;
     context: CanvasRenderingContext2D;
     onExitGameCallback: () => void;
-    gameObjects: GameObject[];
+    gameObjects: Obstacle[];
     controlMap: ControlMap;
 
     constructor(
@@ -33,7 +33,7 @@ export class GameManager {
         if (CONTROLS.hasClick()) {
             const clickCoords = CONTROLS.handleClick();
             const mouseTileCoords = Grid.getTileFromCanvasCoords(clickCoords);
-            const gameObject = new GameObject(mouseTileCoords);
+            const gameObject = new Obstacle(mouseTileCoords);
             this.gameObjects.push(gameObject);
         }
         for (const gameObject of this.gameObjects) {

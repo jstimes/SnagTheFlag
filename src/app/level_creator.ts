@@ -1,7 +1,7 @@
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
-import { GameObject } from 'src/app/game_object';
+import { Obstacle } from 'src/app/obstacle';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
 
 
@@ -14,7 +14,7 @@ export class LevelCreator {
     canvas: HTMLCanvasElement;
     context: CanvasRenderingContext2D;
     onExitGameCallback: () => void;
-    gameObjects: GameObject[];
+    obstacles: Obstacle[];
     controlMap: ControlMap;
 
     constructor(
@@ -33,11 +33,11 @@ export class LevelCreator {
         if (CONTROLS.hasClick()) {
             const clickCoords = CONTROLS.handleClick();
             const mouseTileCoords = Grid.getTileFromCanvasCoords(clickCoords);
-            const gameObject = new GameObject(mouseTileCoords);
-            this.gameObjects.push(gameObject);
+            const obstacle = new Obstacle(mouseTileCoords);
+            this.obstacles.push(obstacle);
         }
-        for (const gameObject of this.gameObjects) {
-            gameObject.update(elapsedMs);
+        for (const obstacle of this.obstacles) {
+            obstacle.update(elapsedMs);
         }
     }
 
@@ -79,8 +79,8 @@ export class LevelCreator {
         context.fillStyle = HOVERED_TILE_COLOR;
         context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
 
-        for (const gameObject of this.gameObjects) {
-            gameObject.render(context);
+        for (const obstacle of this.obstacles) {
+            obstacle.render(context);
         }
     }
 
@@ -91,12 +91,12 @@ export class LevelCreator {
     }
 
     private readonly saveLevel = (): void => {
-
+        // TODO
     };
 
     private resetGame = (): void => {
         this.destroy();
-        this.gameObjects = [];
+        this.obstacles = [];
         this.controlMap = new ControlMap();
         this.controlMap.add({
             key: Key.Q,
