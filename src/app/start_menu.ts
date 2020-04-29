@@ -4,6 +4,7 @@ import { Point } from 'src/app/math/point';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { CONTROLS } from 'src/app/controls';
 import { GameStateManager } from 'src/app/game_state_manager';
+import { THEME } from 'src/app/theme';
 
 interface ButtonMetadata {
     text: string;
@@ -11,8 +12,6 @@ interface ButtonMetadata {
 }
 
 export class StartMenu implements GameStateManager {
-    private readonly BACKGROUND_COLOR = '#959aa3';
-    private readonly TEXT_COLOR = '#1560e8';
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onPlayGame: () => void;
@@ -45,7 +44,7 @@ export class StartMenu implements GameStateManager {
     }
 
     render(): void {
-        this.context.fillStyle = this.BACKGROUND_COLOR;
+        this.context.fillStyle = THEME.uiBackgroundColor;
         this.context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.renderTitleText();
@@ -78,7 +77,7 @@ export class StartMenu implements GameStateManager {
                 fontSize,
                 color: buttonColor,
                 hoverColor: buttonHoverColor,
-                textColor: this.TEXT_COLOR,
+                textColor: THEME.buttonTextColor,
                 onClickCallback: buttonMetadata.callback,
             });
             this.uiManager.addElement(button);
@@ -86,10 +85,10 @@ export class StartMenu implements GameStateManager {
     }
 
     private renderTitleText(): void {
-        this.context.fillStyle = this.TEXT_COLOR;
+        this.context.fillStyle = THEME.buttonTextColor;
         const fontSize = 72;
         this.context.font = `${fontSize}px fantasy`;
-        const text = 'CanvasGameTemplate'
+        const text = 'Snag the Flag'
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(
             RENDER_SETTINGS.canvasWidth / 2,

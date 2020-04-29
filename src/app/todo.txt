@@ -1,2 +1,4 @@
 Hud for bound controls? (maybe by pressing ?)
 
+Things to copy to template:
+- Theme

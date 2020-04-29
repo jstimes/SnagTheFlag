@@ -3,19 +3,16 @@ import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
-
-
-const BACKGROUND_COLOR = '#959aa3';
-const GRID_COLOR = '#1560e8';
-const HOVERED_TILE_COLOR = '#f7c25e';
+import { THEME } from 'src/app/theme';
 
 export class GameManager {
 
-    canvas: HTMLCanvasElement;
-    context: CanvasRenderingContext2D;
-    onExitGameCallback: () => void;
-    gameObjects: Obstacle[];
-    controlMap: ControlMap;
+    private readonly canvas: HTMLCanvasElement;
+    private readonly context: CanvasRenderingContext2D;
+    private readonly onExitGameCallback: () => void;
+
+    private gameObjects: Obstacle[];
+    private controlMap: ControlMap;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -43,7 +40,7 @@ export class GameManager {
 
     render(): void {
         const context = this.context;
-        context.fillStyle = BACKGROUND_COLOR;
+        context.fillStyle = THEME.gridBackgroundColor;
         context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
 
@@ -55,7 +52,7 @@ export class GameManager {
             const endY = RENDER_SETTINGS.canvasHeight;
 
             context.beginPath();
-            context.strokeStyle = GRID_COLOR;
+            context.strokeStyle = THEME.gridLineColor;
             context.moveTo(startX, startY);
             context.lineTo(endX, endY);
             context.stroke();
@@ -67,7 +64,7 @@ export class GameManager {
             const endY = startY;
 
             context.beginPath();
-            context.strokeStyle = GRID_COLOR;
+            context.strokeStyle = THEME.gridLineColor;
             context.moveTo(startX, startY);
             context.lineTo(endX, endY);
             context.stroke();
@@ -76,7 +73,7 @@ export class GameManager {
         // Indicate hovered tile.
         const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
         const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
-        context.fillStyle = HOVERED_TILE_COLOR;
+        context.fillStyle = THEME.hoveredTileColor;
         context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
 
         for (const gameObject of this.gameObjects) {
