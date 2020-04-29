@@ -8,6 +8,7 @@ type OnLevelSelected = (levelIndex: number) => void;
 
 export class StartMenu {
     private readonly BACKGROUND_COLOR = '#959aa3';
+    private readonly TEXT_COLOR = '#1560e8';
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onPlayGame: () => void;
@@ -35,11 +36,10 @@ export class StartMenu {
     }
 
     render(): void {
-        this.context.save();
         this.context.fillStyle = this.BACKGROUND_COLOR;
         this.context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
-        this.context.restore();
+        this.renderTitleText();
         this.uiManager.render();
     }
 
@@ -49,12 +49,11 @@ export class StartMenu {
 
     private initLevelMenu(): void {
         const leftMargin = .4;
-        const topMargin = .1;
+        const topMargin = .3;
         const buttonSize = new Point(.2, .1);
         const buttonColor = '#f7c25e';
         const buttonHoverColor = '#fcd281';
         const fontSize = 24;
-        const textColor = '#1560e8';
         const buttonTexts = ['Play'];
         for (let buttonIndex = 0; buttonIndex < buttonTexts.length; buttonIndex++) {
             const topLeftY = (buttonIndex + 1) * topMargin + buttonIndex * buttonSize.y;
@@ -65,10 +64,25 @@ export class StartMenu {
                 fontSize,
                 color: buttonColor,
                 hoverColor: buttonHoverColor,
-                textColor,
+                textColor: this.TEXT_COLOR,
                 onClickCallback: this.onPlayGame,
             });
             this.uiManager.addElement(button);
         }
+    }
+
+    private renderTitleText(): void {
+        this.context.fillStyle = this.TEXT_COLOR;
+        const fontSize = 72;
+        this.context.font = `${fontSize}px fantasy`;
+        const text = 'CanvasGameTemplate'
+        const textWidth = this.context.measureText(text).width;
+        const textCanvasPosition = new Point(
+            RENDER_SETTINGS.canvasWidth / 2,
+            RENDER_SETTINGS.canvasHeight / 4);
+        this.context.fillText(
+            text,
+            textCanvasPosition.x - textWidth / 2,
+            textCanvasPosition.y - fontSize / 2);
     }
 }

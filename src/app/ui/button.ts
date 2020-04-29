@@ -55,8 +55,6 @@ export class Button implements Element {
     }
 
     readonly render = (context: CanvasRenderingContext2D) => {
-        context.save();
-
         const topLeftCanvas = this.getCanvasCoords(this.topLeft);
         const sizeCanvas = this.getCanvasCoords(this.size);
         context.fillStyle = this.isHovered ? this.hoverColor : this.color;
@@ -71,8 +69,6 @@ export class Button implements Element {
             this.text,
             buttonCenterCanvas.x - textWidth / 2,
             buttonCenterCanvas.y + fontSize / 4);
-
-        context.restore();
     };
 
     readonly onClick = (uiCoords: Point) => {
