@@ -73,7 +73,7 @@ export class GameManager {
         // Indicate hovered tile.
         const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
         const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
-        context.fillStyle = THEME.hoveredTileColor;
+        context.fillStyle = THEME.obstacleColor;
         context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
 
         for (const gameObject of this.gameObjects) {

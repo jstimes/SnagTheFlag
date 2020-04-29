@@ -2,15 +2,27 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
+import { Flag } from 'src/app/flag';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
+import { hexStringToColor, colorToString } from 'src/app/color';
+
+enum PlacementMode {
+    BLUE_FLAG,
+    RED_FLAG,
+    OBSTACLE,
+    ERASE,
+}
 
 export class LevelCreator {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onExitGameCallback: () => void;
 
+    private placementMode: PlacementMode;
     private obstacles: Obstacle[];
+    private blueFlag?: Flag;
+    private redFlag?: Flag;
     private controlMap: ControlMap;
 
     constructor(
@@ -26,15 +38,48 @@ export class LevelCreator {
 
     update(elapsedMs: number): void {
         this.controlMap.check();
-        if (CONTROLS.hasClick()) {
-            const clickCoords = CONTROLS.handleClick();
-            const mouseTileCoords = Grid.getTileFromCanvasCoords(clickCoords);
-            const obstacle = new Obstacle(mouseTileCoords);
-            this.obstacles.push(obstacle);
+        if (!CONTROLS.hasClick()) {
+            return;
         }
-        for (const obstacle of this.obstacles) {
-            obstacle.update(elapsedMs);
+        const clickCoords = CONTROLS.handleClick();
+        const mouseTileCoords = Grid.getTileFromCanvasCoords(clickCoords);
+        if (!this.isTileOccupied(mouseTileCoords)) {
+            switch (this.placementMode) {
+                case PlacementMode.BLUE_FLAG:
+                    this.blueFlag = new Flag({ tileCoords: mouseTileCoords, isBlue: true });
+                    break;
+                case PlacementMode.RED_FLAG:
+                    this.redFlag = new Flag({ tileCoords: mouseTileCoords, isBlue: false });
+                    break;
+                case PlacementMode.OBSTACLE:
+                    const obstacle = new Obstacle(mouseTileCoords);
+                    this.obstacles.push(obstacle);
+                    break;
+            }
+        } else if (this.placementMode === PlacementMode.ERASE) {
+            this.removeObjectInTile(mouseTileCoords);
         }
+    }
+
+    private isTileOccupied(tileCoords: Point): boolean {
+        if (this.redFlag != null && this.redFlag.tileCoords.equals(tileCoords)) {
+            return true;
+        }
+        if (this.blueFlag != null && this.blueFlag.tileCoords.equals(tileCoords)) {
+            return true;
+        }
+        const obstacle = this.obstacles.find((obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
+        return obstacle != null;
+    }
+
+    private removeObjectInTile(tileCoords: Point): void {
+        if (this.redFlag != null && this.redFlag.tileCoords.equals(tileCoords)) {
+            this.redFlag = null;
+        }
+        if (this.blueFlag != null && this.blueFlag.tileCoords.equals(tileCoords)) {
+            this.blueFlag = null;
+        }
+        this.obstacles = this.obstacles.filter((obstacle: Obstacle) => !obstacle.tileCoords.equals(tileCoords));
     }
 
     render(): void {
@@ -69,14 +114,37 @@ export class LevelCreator {
             context.stroke();
         }
 
-        // Indicate hovered tile.
         const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
         const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
-        context.fillStyle = THEME.hoveredTileColor;
-        context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+        if (this.placementMode !== PlacementMode.ERASE && !this.isTileOccupied(mouseTileCoords)) {
+            // Indicate hovered tile.
+            const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
+            let hoverColor = THEME.obstacleColor;
+            if (this.placementMode === PlacementMode.RED_FLAG) {
+                hoverColor = THEME.redFlagColor;
+            } else if (this.placementMode === PlacementMode.BLUE_FLAG) {
+                hoverColor = THEME.blueFlagColor;
+            }
+            const hoverAlpha = .7;
+            const fillColor = hexStringToColor(hoverColor);
+            fillColor.a = hoverAlpha;
+            context.fillStyle = colorToString(fillColor);
+            context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+        }
 
         for (const obstacle of this.obstacles) {
             obstacle.render(context);
+        }
+        if (this.redFlag != null) {
+            this.redFlag.render(this.context);
+        }
+        if (this.blueFlag != null) {
+            this.blueFlag.render(this.context);
+        }
+
+        if (this.placementMode === PlacementMode.ERASE && this.isTileOccupied(mouseTileCoords)) {
+            context.fillStyle = '#000000';
+            context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
 
         this.renderControls();
@@ -114,6 +182,7 @@ export class LevelCreator {
 
     private resetGame = (): void => {
         this.destroy();
+        this.placementMode = PlacementMode.OBSTACLE;
         this.obstacles = [];
         this.controlMap = new ControlMap();
         this.controlMap.add({
@@ -134,5 +203,33 @@ export class LevelCreator {
             func: this.saveLevel,
             eventType: EventType.KeyPress,
         });
+        this.controlMap.add({
+            key: Key.O,
+            name: 'Place Obstacles',
+            func: () => { this.setPlacementMode(PlacementMode.OBSTACLE) },
+            eventType: EventType.KeyPress,
+        });
+        this.controlMap.add({
+            key: Key.B,
+            name: 'Place Blue Flag',
+            func: () => { this.setPlacementMode(PlacementMode.BLUE_FLAG) },
+            eventType: EventType.KeyPress,
+        });
+        this.controlMap.add({
+            key: Key.V,
+            name: 'Place Red Flag',
+            func: () => { this.setPlacementMode(PlacementMode.RED_FLAG) },
+            eventType: EventType.KeyPress,
+        });
+        this.controlMap.add({
+            key: Key.E,
+            name: 'Erase',
+            func: () => { this.setPlacementMode(PlacementMode.ERASE) },
+            eventType: EventType.KeyPress,
+        });
+    }
+
+    private setPlacementMode(mode: PlacementMode): void {
+        this.placementMode = mode;
     }
 }

@@ -31,7 +31,7 @@ export class AppComponent {
   lastRenderTime = 0;
 
   gameState: GameState = GameState.START_MENU;
-  gameStateManager?: GameStateManager
+  gameStateManager?: GameStateManager;
 
   ngOnInit() {
     this.canvas = document.getElementById('canvas') as HTMLCanvasElement;
