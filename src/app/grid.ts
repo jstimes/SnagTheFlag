@@ -45,3 +45,43 @@ export class Grid {
         return result;
     }
 }
+
+interface QueuedTile {
+    depth: number;
+    coords: Point;
+}
+
+export function bfs(params: {
+    startTile: Point;
+    maxDepth: number;
+    isAvailable: (tile: Point) => boolean;
+    canGoThrough: (tile: Point) => boolean;
+}): Point[] {
+
+    const { startTile, maxDepth, isAvailable, canGoThrough } = params;
+    const availableTiles: Point[] = [];
+    const queue: QueuedTile[] = Grid.getAdjacentTiles(startTile).map((tile) => {
+        return {
+            depth: 1,
+            coords: tile,
+        }
+    });
+    while (queue.length) {
+        const queuedTile = queue.shift();
+        if (queuedTile.depth > maxDepth || !canGoThrough(queuedTile.coords)) {
+            continue;
+        }
+        if (isAvailable(queuedTile.coords)) {
+            availableTiles.push(queuedTile.coords);
+        }
+        for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
+            if (availableTiles.find((tile) => tile.equals(adjacentTile))) continue;
+            queue.push({
+                depth: queuedTile.depth + 1,
+                coords: adjacentTile,
+            });
+        }
+    }
+
+    return availableTiles;
+}

@@ -1,5 +1,5 @@
 import { RENDER_SETTINGS } from 'src/app/render_settings';
-import { Grid } from 'src/app/grid';
+import { Grid, bfs } from 'src/app/grid';
 import { Point, pointFromSerialized } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
 import { MatchType } from 'src/app/match_type';
@@ -383,7 +383,7 @@ export class GameManager {
             }) != null;
             return isAvailable(tile) || isSquadMemberAtTile;
         };
-        const availableTiles = this.bfs({
+        const availableTiles = bfs({
             startTile: currentCoords,
             maxDepth: maxMoves,
             isAvailable,
@@ -473,42 +473,6 @@ export class GameManager {
         });
     }
 
-    // TODO - can be moved to grid.
-    private bfs(params: {
-        startTile: Point;
-        maxDepth: number;
-        isAvailable: (tile: Point) => boolean;
-        canGoThrough: (tile: Point) => boolean
-    }): Point[] {
-
-        const { startTile, maxDepth, isAvailable, canGoThrough } = params;
-        const availableTiles: Point[] = [];
-        const queue: QueuedTile[] = Grid.getAdjacentTiles(startTile).map((tile) => {
-            return {
-                depth: 1,
-                coords: tile,
-            }
-        });
-        while (queue.length) {
-            const queuedTile = queue.shift();
-            if (queuedTile.depth > maxDepth || !canGoThrough(queuedTile.coords)) {
-                continue;
-            }
-            if (isAvailable(queuedTile.coords)) {
-                availableTiles.push(queuedTile.coords);
-            }
-            for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
-                if (availableTiles.find((tile) => tile.equals(adjacentTile))) continue;
-                queue.push({
-                    depth: queuedTile.depth + 1,
-                    coords: adjacentTile,
-                });
-            }
-        }
-
-        return availableTiles;
-    }
-
     private addDefaultControls(): void {
         this.controlMap.add({
             key: Key.Q,
@@ -529,9 +493,4 @@ export class GameManager {
             eventType: EventType.KeyPress,
         });
     }
-}
-
-interface QueuedTile {
-    depth: number;
-    coords: Point;
 }
