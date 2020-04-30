@@ -360,7 +360,6 @@ export class GameManager {
         return availableTiles;
     }
 
-    // TODO - need way to stay in place.
     private getAvailableTilesForCharacterMovement(): Point[] {
         if (this.selectedCharacter == null) {
             throw new Error(`No character selected in getAvailableTilesForCharacterMovement`);
@@ -370,7 +369,7 @@ export class GameManager {
         const currentCoords = this.selectedCharacter.tileCoords;
         const maxMoves = this.selectedCharacter.maxMoves;
         const isAvailable = (tile: Point): boolean => {
-            return !this.isTileOccupied(tile)
+            return (!this.isTileOccupied(tile) || tile.equals(currentCoords))
                 && (!tile.equals(ownFlagCoords) || this.selectedCharacter.hasFlag);
         };
         const canGoThrough = (tile: Point): boolean => {
