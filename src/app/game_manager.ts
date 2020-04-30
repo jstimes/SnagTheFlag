@@ -343,21 +343,20 @@ export class GameManager {
     }
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
-        // TODO - use bfs now.
         const flagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const maxDistFromFlag = this.gameSettings.maxSpawnDistanceFromFlag;
-        const availableTiles = [];
-        for (let x = -maxDistFromFlag; x <= maxDistFromFlag; x++) {
-            for (let y = -maxDistFromFlag; y <= maxDistFromFlag; y++) {
-                const tile = flagCoords.add(new Point(x, y));
-                if (tile.manhattanDistanceTo(flagCoords) < maxDistFromFlag
-                    && !this.isTileOccupied(tile)
-                    && !tile.equals(flagCoords)) {
-
-                    availableTiles.push(tile);
-                }
-            }
-        }
+        const availableTiles = bfs({
+            startTile: flagCoords,
+            maxDepth: maxDistFromFlag,
+            isAvailable: (tile: Point): boolean => {
+                return !this.isTileOccupied(tile) && !tile.equals(flagCoords);
+            },
+            canGoThrough: (tile: Point): boolean => {
+                // Can go through other players, just not obstacles.
+                return this.obstacles.find(
+                    (obstacle: Obstacle) => obstacle.tileCoords.equals(tile)) == null;
+            },
+        });
         return availableTiles;
     }
 
