@@ -6,12 +6,23 @@ const TWO_PI = Math.PI * 2;
 
 /** Represents one squad member on a team. */
 export class Character {
-    tileCoords: Point;
     readonly isBlueTeam: boolean;
+    readonly maxMoves: number;
+    readonly index: number;
 
-    constructor(params: { startCoords: Point; isBlueTeam: boolean }) {
+    hasFlag: boolean;
+    hasMoved: boolean;
+    tileCoords: Point;
+
+    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number }) {
         this.tileCoords = params.startCoords;
         this.isBlueTeam = params.isBlueTeam;
+        this.index = params.index;
+
+        // TODO - use character classes.
+        this.maxMoves = 4;
+        this.hasFlag = false;
+        this.hasMoved = false;
     }
 
     render(context: CanvasRenderingContext2D): void {
@@ -23,5 +34,11 @@ export class Character {
         context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
         context.closePath();
         context.fill();
+    }
+
+    moveTo(tileCoords: Point): void {
+        // TODO - animate with movement speed and update.
+        this.tileCoords = tileCoords;
+        this.hasMoved = true;
     }
 }
