@@ -10,6 +10,7 @@ export interface Theme {
     readonly redFlagColor: string;
     readonly blueFlagColor: string;
 
+    readonly availableForMovementColor: string;
     readonly emptyCellHoverColor: string;
 
     /* UI colors. */
@@ -28,6 +29,7 @@ export const THEME: Theme = {
     redFlagColor: '#e34055',
     blueFlagColor: '#3d7cd4',
 
+    availableForMovementColor: '#b8b6a5',
     emptyCellHoverColor: '#d9d7bf',
 
     uiBackgroundColor: '#959aa3',

@@ -7,6 +7,7 @@ import { GameManager } from 'src/app/game_manager';
 import { StartMenu } from 'src/app/start_menu';
 import { GameStateManager } from 'src/app/game_state_manager';
 import { LevelCreator } from 'src/app/level_creator';
+import { MatchType } from 'src/app/match_type';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -81,7 +82,8 @@ export class AppComponent {
       this.canvas,
       this.context,
       {
-        // TODO - level selector
+        // TODO - level selector, match type selector
+        matchType: MatchType.PLAYER_VS_PLAYER_LOCAL,
         levelIndex: 0,
         onExitGameCallback: () => {
           this.tearDownCurrentGameState();

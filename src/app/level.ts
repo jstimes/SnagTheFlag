@@ -11,6 +11,7 @@ export interface LevelData {
     obstacles: SerializedPoint[];
 }
 
+// TODO - custom game settings with level
 export interface Level {
     name: string;
     data: LevelData;

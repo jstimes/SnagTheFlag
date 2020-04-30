@@ -49,7 +49,7 @@ export class Point {
         return this.x === other.x && this.y === other.y;
     }
 
-    toString(p: Point): string {
+    toString(): string {
         return `(${this.x}, ${this.y})`;
     }
 }

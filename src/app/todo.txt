@@ -1,4 +1,31 @@
-Hud for bound controls? (maybe by pressing ?)
+MVP
+ - Toasts!
+ - Add health, max moves to Character
+    - render health bar
+    - render character number (name?)
+ - Add HUD for indicating controls, turn, game phase
+
+
+
+Things to experiment with:
+- Fog of war
+- Character classes
+    - sprinters: more movement, weaker
+    - defenders: slow, strong, set down cover?
+    - demolitions: rockets, grenades
+    - snipers, shotguns
+- pickups
+    - grenades...
+- To respawn, or not to respawn.
+- Ricochet and non-ricochet weapons
+- Teleport pads
+- classic explosive barrels
+
+Level creation:
+- Symmetry option (horizontally, vertically, diagonally)
+- Set name
+- Grid dimensions
 
 Things to copy to template:
 - Theme
+- closePath on grid lines
