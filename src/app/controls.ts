@@ -241,6 +241,8 @@ class Controls {
                 return '0';
             case Key.SPACE:
                 return 'Space';
+            case Key.QUESTION_MARK:
+                return '?'
             default:
                 throw new Error("Need to add string for Key");
         }
@@ -289,6 +291,9 @@ export enum Key {
     X = 88,
     Y = 89,
     Z = 90,
+
+    // TODO - this is actually backwards slash...
+    QUESTION_MARK = 191,
 }
 
 export const CONTROLS = new Controls();

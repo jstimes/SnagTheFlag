@@ -9,6 +9,7 @@ import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
 import { Character } from 'src/app/character';
+import { Hud, TextType, Duration } from 'src/app/hud';
 
 enum GamePhase {
     // Setup:
@@ -60,6 +61,7 @@ export class GameManager {
     private obstacles: Obstacle[];
     private redFlag: Flag;
     private blueFlag: Flag;
+    private hud: Hud;
 
     private blueSquad: Character[];
     private redSquad: Character[];
@@ -91,6 +93,7 @@ export class GameManager {
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
             this.tryPlacingCharacter(mouseTileCoords);
         }
+        this.hud.update(elapsedMs);
     }
 
     render(): void {
@@ -151,6 +154,8 @@ export class GameManager {
         for (const character of this.blueSquad.concat(this.redSquad)) {
             character.render(this.context);
         }
+
+        this.hud.render();
     }
 
     destroy(): void {
@@ -200,6 +205,11 @@ export class GameManager {
                 // TODO check match type when others are supported 
                 this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
                 this.availableCharacterPlacementTiles = this.getAvailableCharacterPlacementTiles();
+                this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
+                this.hud.setText(
+                    `Place squad members (${this.gameSettings.squadSize} remaining)`,
+                    TextType.SUBTITLE,
+                    Duration.LONG);
             } else {
                 this.gamePhase = GamePhase.COMBAT;
                 this.isBlueTurn = true;
@@ -210,7 +220,7 @@ export class GameManager {
 
     private tryPlacingCharacter(tileCoords: Point): void {
         if (!this.availableCharacterPlacementTiles.find((tile) => tile.equals(tileCoords))) {
-            // TODO - toast can't place here...
+            this.hud.setText(`Can't place character here`, TextType.TOAST, Duration.SHORT);
             return;
         }
 
@@ -287,6 +297,19 @@ export class GameManager {
             func: this.resetGame,
             eventType: EventType.KeyPress,
         });
+        this.controlMap.add({
+            key: Key.QUESTION_MARK,
+            name: 'Show/Hide controls',
+            func: () => { this.hud.toggleShowControlMap(); },
+            eventType: EventType.KeyPress,
+        });
+        this.hud = new Hud(this.context);
+        this.hud.setControlMap(this.controlMap);
+        this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
+        this.hud.setText(
+            `Place squad members (${this.gameSettings.squadSize} remaining)`,
+            TextType.SUBTITLE,
+            Duration.LONG);
     }
 
     private loadLevel(): void {
