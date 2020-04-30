@@ -2,6 +2,7 @@ import { ControlMap, CONTROLS } from 'src/app/controls';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { THEME } from 'src/app/theme';
 import { Point } from 'src/app/math/point';
+import { lerpColors, hexStringToColor, colorToString } from 'src/app/color';
 
 /** Determines how long to display titles, subtitles, and toasts. */
 export enum Duration {
@@ -21,8 +22,8 @@ interface TextRenderSettings {
 }
 
 const durationToMs = new Map<Duration, number>([
-    [Duration.SHORT, 3000],
-    [Duration.LONG, 5000],
+    [Duration.SHORT, 2000],
+    [Duration.LONG, 4000],
 ]);
 const textTypeToRenderSettings = new Map<TextType, TextRenderSettings>([
     [TextType.TITLE, {
@@ -47,12 +48,15 @@ export class Hud {
 
     private titleText?: string;
     private titleMsLeft: number;
+    private titleDuration: Duration;
 
     private subtitleText?: string;
     private subtitleMsLeft: number;
+    private subtitleDuration: Duration;
 
     private toastText?: string;
     private toastMsLeft: number;
+    private toastDuration: Duration;
 
     constructor(context: CanvasRenderingContext2D) {
         this.context = context;
@@ -81,15 +85,21 @@ export class Hud {
         }
         if (this.titleMsLeft > 0) {
             this.renderText(
-                this.titleText, textTypeToRenderSettings.get(TextType.TITLE));
+                this.titleText,
+                textTypeToRenderSettings.get(TextType.TITLE),
+                this.titleMsLeft / durationToMs.get(this.titleDuration));
         }
         if (this.subtitleMsLeft > 0) {
             this.renderText(
-                this.subtitleText, textTypeToRenderSettings.get(TextType.SUBTITLE));
+                this.subtitleText,
+                textTypeToRenderSettings.get(TextType.SUBTITLE),
+                this.subtitleMsLeft / durationToMs.get(this.subtitleDuration));
         }
         if (this.toastMsLeft > 0) {
             this.renderText(
-                this.toastText, textTypeToRenderSettings.get(TextType.TOAST));
+                this.toastText,
+                textTypeToRenderSettings.get(TextType.TOAST),
+                this.toastMsLeft / durationToMs.get(this.toastDuration));
         }
     }
 
@@ -108,14 +118,17 @@ export class Hud {
             case TextType.TITLE:
                 this.titleText = text;
                 this.titleMsLeft = ms;
+                this.titleDuration = duration;
                 break;
             case TextType.SUBTITLE:
                 this.subtitleText = text;
                 this.subtitleMsLeft = ms;
+                this.subtitleDuration = duration;
                 break;
             case TextType.TOAST:
                 this.toastText = text;
                 this.toastMsLeft = ms;
+                this.toastDuration = duration;
                 break;
         }
     }
@@ -140,8 +153,12 @@ export class Hud {
         }
     }
 
-    private renderText(text: string, textRenderSettings: TextRenderSettings): void {
-        this.context.fillStyle = THEME.buttonTextColor;
+    private renderText(
+        text: string, textRenderSettings: TextRenderSettings, percentTimeLeft: number): void {
+
+        const fadedColor = hexStringToColor(THEME.textColor);
+        fadedColor.a = percentTimeLeft;
+        this.context.fillStyle = colorToString(fadedColor);
         this.context.font = `${textRenderSettings.fontSize}px fantasy`;
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(

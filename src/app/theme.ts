@@ -22,7 +22,7 @@ export interface Theme {
 export const THEME: Theme = {
     gridBackgroundColor: '#959aa3',
     gridLineColor: '#1560e8',
-    textColor: '#117a01',
+    textColor: '#614447',
 
     obstacleColor: '#4c6e47',
     flagPoleColor: '#7a5f3e',
