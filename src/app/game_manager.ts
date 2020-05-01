@@ -22,6 +22,7 @@ enum GamePhase {
 enum ActionType {
     PLACE_CHARACTER,
     MOVE_CHARACTER,
+    SHOOT,
     END_CHARACTER_TURN,
 }
 
@@ -107,7 +108,15 @@ export class GameManager {
             this.tryPlacingCharacter(mouseTileCoords);
         } else if (this.gamePhase === GamePhase.COMBAT && CONTROLS.hasClick()) {
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
-            this.tryMovingSelectedCharacter(mouseTileCoords);
+            switch (this.selectedCharacterState) {
+                case SelectedCharacterState.AWAITING:
+                    this.trySelectingCharacter(mouseTileCoords);
+                    break;
+                case (SelectedCharacterState.MOVING):
+                    this.tryMovingSelectedCharacter(mouseTileCoords);
+                    break;
+            }
+
         }
         this.hud.update(elapsedMs);
     }
@@ -313,6 +322,14 @@ export class GameManager {
             tileCoords,
         };
         this.onAction(moveCharacterAction);
+    }
+
+    private trySelectingCharacter(tileCoords: Point): void {
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squadMemeberAtTile = squad.find((character) => character.tileCoords.equals(tileCoords));
+        if (squadMemeberAtTile) {
+            this.setSelectedCharacter(squadMemeberAtTile.index);
+        }
     }
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
