@@ -4,10 +4,42 @@ import { THEME } from 'src/app/theme';
 
 const TWO_PI = Math.PI * 2;
 
+/** Abilities characters can perform in addition to moving and shooting. */
+interface CharacterAction {
+    /**  Max times this ability can be used. */
+    readonly maxUses: number;
+    /** Number of turns after use before ability can be reused. */
+    readonly cooldownTurns: number;
+    /** 
+     * Whether the ability can be used in addition to shooting (true)
+     * or is used in place of shooting (false). 
+     */
+    readonly isFree: boolean;
+}
+
+/** Parameters describing basic character attributes. */
+interface CharacterSettings {
+    /** Starting health. */
+    readonly maxHealth: number;
+    /** Manhattan distance from curent position a character can move */
+    readonly maxMovesPerTurn: number;
+    /** Whether the character is allowed to shoot after moving. */
+    readonly canShootAfterMoving: boolean;
+    /** Special abilities a character can use. */
+    readonly extraActions: Set<CharacterAction>;
+}
+
+const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
+    maxHealth: 10,
+    maxMovesPerTurn: 4,
+    canShootAfterMoving: true,
+    extraActions: new Set<CharacterAction>(),
+};
+
 /** Represents one squad member on a team. */
 export class Character {
     readonly isBlueTeam: boolean;
-    readonly maxMoves: number;
+    readonly settings: CharacterSettings;
     readonly index: number;
 
     hasFlag: boolean;
@@ -21,8 +53,8 @@ export class Character {
         this.index = params.index;
 
         // TODO - use character classes.
-        this.maxMoves = 4;
-        this.health = 10;
+        this.settings = DEFAULT_CHARACTER_SETTINGS;
+        this.health = this.settings.maxHealth;
 
         this.hasFlag = false;
         this.hasMoved = false;
@@ -46,7 +78,6 @@ export class Character {
         const fontSize = 12;
         const margins = new Point(Grid.TILE_SIZE / 12, fontSize);
         context.font = `${fontSize}px fantasy`;
-        // const textWidth = context.measureText(text).width;
         context.fillText(
             text,
             tileTopLeftCanvas.x + margins.x,

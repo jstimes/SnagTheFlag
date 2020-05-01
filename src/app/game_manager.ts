@@ -217,7 +217,8 @@ export class GameManager {
                     throw new Error(
                         `Invalid character movement location: ${action.tileCoords.toString()}`);
                 }
-                if (action.character.tileCoords.manhattanDistanceTo(action.tileCoords) > action.character.maxMoves) {
+                const manhattandDistanceAway = action.character.tileCoords.manhattanDistanceTo(action.tileCoords);
+                if (manhattandDistanceAway > action.character.settings.maxMovesPerTurn) {
                     throw new Error(`Invalid character movement location (too far): ` +
                         `start: ${action.character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`)
                 }
@@ -322,7 +323,7 @@ export class GameManager {
         // TODO - turn on strict null checks?
         const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const currentCoords = this.selectedCharacter.tileCoords;
-        const maxMoves = this.selectedCharacter.maxMoves;
+        const maxMoves = this.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
             return (!this.isTileOccupied(tile) || tile.equals(currentCoords))
                 && (!tile.equals(ownFlagCoords) || this.selectedCharacter.hasFlag);
