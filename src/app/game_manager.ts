@@ -3,7 +3,7 @@ import { Grid, bfs } from 'src/app/grid';
 import { Point, pointFromSerialized } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
 import { MatchType } from 'src/app/match_type';
-import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
+import { CONTROLS, ControlMap, EventType, Key, numberToKey, numberToOrdinal } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
@@ -11,29 +11,6 @@ import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
 import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 
-// TODO - move to controls?
-const numberToKey = new Map<number, Key>([
-    [1, Key.ONE],
-    [2, Key.TWO],
-    [3, Key.THREE],
-    [4, Key.FOUR],
-    [5, Key.FIVE],
-    [6, Key.SIX],
-    [7, Key.SEVEN],
-    [8, Key.EIGHT],
-    [9, Key.NINE],
-]);
-const numberToOrdinal = new Map<number, string>([
-    [1, '1st'],
-    [2, '2nd'],
-    [3, '3rd'],
-    [4, '4th'],
-    [5, '5th'],
-    [6, '6th'],
-    [7, '7th'],
-    [8, '8th'],
-    [9, '9th'],
-]);
 
 enum GamePhase {
     // Setup:

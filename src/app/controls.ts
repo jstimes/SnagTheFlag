@@ -296,4 +296,28 @@ export enum Key {
     QUESTION_MARK = 191,
 }
 
+export const numberToKey = new Map<number, Key>([
+    [1, Key.ONE],
+    [2, Key.TWO],
+    [3, Key.THREE],
+    [4, Key.FOUR],
+    [5, Key.FIVE],
+    [6, Key.SIX],
+    [7, Key.SEVEN],
+    [8, Key.EIGHT],
+    [9, Key.NINE],
+]);
+
+export const numberToOrdinal = new Map<number, string>([
+    [1, '1st'],
+    [2, '2nd'],
+    [3, '3rd'],
+    [4, '4th'],
+    [5, '5th'],
+    [6, '6th'],
+    [7, '7th'],
+    [8, '8th'],
+    [9, '9th'],
+]);
+
 export const CONTROLS = new Controls();
