@@ -273,8 +273,7 @@ export class GameManager {
                 this.gamePhase = GamePhase.COMBAT;
                 this.isBlueTurn = true;
                 this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-                // TODO - will want to add a `getFirstCharacter` in case 0th dies.
-                this.setSelectedCharacter(0);
+                this.setSelectedCharacter(this.getFirstCharacterIndex());
                 this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
                 this.hud.setText(
                     `Move squad members`,
@@ -291,8 +290,7 @@ export class GameManager {
             }
             // TODO check match type when others are supported 
             this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-            // TODO - will want to add a `getFirstCharacter` in case 0th dies.
-            this.setSelectedCharacter(0);
+            this.setSelectedCharacter(this.getFirstCharacterIndex());
             this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
             this.hud.setText(
                 `Move squad members`,
@@ -305,8 +303,7 @@ export class GameManager {
             }
             // TODO check match type when others are supported 
             this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-            // TODO - will want to add a `getFirstCharacter` in case 0th dies.
-            this.setSelectedCharacter(0);
+            this.setSelectedCharacter(this.getFirstCharacterIndex());
             this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
             this.hud.setText(
                 `Move squad members`,
@@ -499,7 +496,7 @@ export class GameManager {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
         for (let index = 0; index < squad.length; index++) {
             if (squad[index].isAlive()) {
-                return squad[index];
+                return index;
             }
         }
         throw new Error(`No more characters alive - should be game over?`);
