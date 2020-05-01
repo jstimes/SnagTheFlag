@@ -19,17 +19,10 @@ enum GamePhase {
     COMBAT,
 }
 
-enum InputState {
-    AWAITING_LOCAL_PLAYER_INPUT,
-    // TODO - implement AI
-    AWAITING_AI_PLAYER_INPUT,
-    // TODO - add online multiplayer
-    AWAITING_NETWORK_INPUT,
-}
-
 enum ActionType {
     PLACE_CHARACTER,
     MOVE_CHARACTER,
+    END_CHARACTER_TURN,
 }
 
 interface PlaceCharacterAction {
@@ -43,12 +36,28 @@ interface MoveCharacterAction {
     tileCoords: Point;
 }
 
-type Action = PlaceCharacterAction | MoveCharacterAction;
+interface EndCharacterTurnAction {
+    type: ActionType.END_CHARACTER_TURN;
+    character: Character;
+}
+
+type Action = PlaceCharacterAction | MoveCharacterAction | EndCharacterTurnAction;
 
 /** Used for exhaustive Action checking. */
 function throwBadAction(action: never): never {
     throw new Error('Action not handled');
 }
+
+enum SelectedCharacterState {
+    AWAITING,
+    MOVING,
+    SHOOTING,
+    // TODO - add other character actions.
+}
+
+const MOVE_KEY = Key.M;
+const SHOOT_KEY = Key.S;
+const END_TURN_KEY = Key.E;
 
 export class GameManager {
 
@@ -69,10 +78,10 @@ export class GameManager {
     private gamePhase: GamePhase;
     private isBlueTurn: boolean;
 
-    private inputState: InputState;
     private controlMap: ControlMap;
     private selectableTiles?: Point[];
     private selectedCharacter?: Character;
+    private selectedCharacterState?: SelectedCharacterState;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -109,10 +118,7 @@ export class GameManager {
         context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
 
-        if (this.selectableTiles != null
-            && this.selectableTiles.length
-            && this.inputState === InputState.AWAITING_LOCAL_PLAYER_INPUT) {
-
+        if (this.selectableTiles != null && this.selectableTiles.length) {
             for (const availableTile of this.selectableTiles) {
                 const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(availableTile);
                 context.fillStyle = THEME.availableForMovementColor;
@@ -142,32 +148,32 @@ export class GameManager {
         }
 
         // Draw grid lines.
-        for (let i = 0; i < Grid.TILES_WIDE; i++) {
-            const startX = i * Grid.TILE_SIZE;
-            const endX = startX;
-            const startY = 0;
-            const endY = RENDER_SETTINGS.canvasHeight;
+        // for (let i = 0; i < Grid.TILES_WIDE; i++) {
+        //     const startX = i * Grid.TILE_SIZE;
+        //     const endX = startX;
+        //     const startY = 0;
+        //     const endY = RENDER_SETTINGS.canvasHeight;
 
-            context.beginPath();
-            context.strokeStyle = THEME.gridLineColor;
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.closePath();
-            context.stroke();
-        }
-        for (let i = 0; i < Grid.TILES_TALL; i++) {
-            const startX = 0;
-            const endX = RENDER_SETTINGS.canvasWidth;
-            const startY = i * Grid.TILE_SIZE;
-            const endY = startY;
+        //     context.beginPath();
+        //     context.strokeStyle = THEME.gridLineColor;
+        //     context.moveTo(startX, startY);
+        //     context.lineTo(endX, endY);
+        //     context.closePath();
+        //     context.stroke();
+        // }
+        // for (let i = 0; i < Grid.TILES_TALL; i++) {
+        //     const startX = 0;
+        //     const endX = RENDER_SETTINGS.canvasWidth;
+        //     const startY = i * Grid.TILE_SIZE;
+        //     const endY = startY;
 
-            context.beginPath();
-            context.strokeStyle = THEME.gridLineColor;
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.closePath();
-            context.stroke();
-        }
+        //     context.beginPath();
+        //     context.strokeStyle = THEME.gridLineColor;
+        //     context.moveTo(startX, startY);
+        //     context.lineTo(endX, endY);
+        //     context.closePath();
+        //     context.stroke();
+        // }
 
         this.hud.render();
     }
@@ -223,9 +229,22 @@ export class GameManager {
                         `start: ${action.character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`)
                 }
                 action.character.moveTo(action.tileCoords);
-                const unmovedSquadMember = squad.find((character: Character) => !character.hasMoved);
-                if (unmovedSquadMember) {
-                    this.setSelectedCharacter(unmovedSquadMember.index);
+                if (action.character.isTurnOver()) {
+                    const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
+                    if (activeSquadMember) {
+                        this.setSelectedCharacter(activeSquadMember.index);
+                    } else {
+                        this.nextTurn();
+                    }
+                } else {
+                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                }
+                break;
+            case ActionType.END_CHARACTER_TURN:
+                action.character.setTurnOver();
+                const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
+                if (activeSquadMember) {
+                    this.setSelectedCharacter(activeSquadMember.index);
                 } else {
                     this.nextTurn();
                 }
@@ -239,7 +258,6 @@ export class GameManager {
         if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             if (this.isBlueTurn) {
                 this.isBlueTurn = false;
-                this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
                 this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
                 this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
                 this.hud.setText(
@@ -259,10 +277,9 @@ export class GameManager {
         this.isBlueTurn = !this.isBlueTurn;
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
         for (const character of squad) {
-            character.hasMoved = false;
+            character.resetTurnState();
         }
         const teamName = this.isBlueTurn ? `Blue` : `Red`;
-        this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
         this.setSelectedCharacter(this.getFirstCharacterIndex());
         this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
         this.hud.setText(
@@ -346,40 +363,85 @@ export class GameManager {
         return availableTiles;
     }
 
-    private setInputState(inputState: InputState): void {
-        this.inputState = inputState;
-        this.controlMap.clear();
-        this.addDefaultControls();
-
-        if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            // No controls to bind for Character placement... yet.
-            return;
-        }
-
-        // Combat controls.
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-        for (const character of squad) {
-            // Use 1-based numbers for UI.
-            const characterNumber = character.index + 1;
-            this.controlMap.add({
-                key: numberToKey.get(characterNumber),
-                name: `Select ${numberToOrdinal.get(characterNumber)} character`,
-                func: () => { this.setSelectedCharacter(character.index); },
-                eventType: EventType.KeyPress,
-            });
-        }
-    }
-
     private setSelectedCharacter(index: number): void {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
         const character = squad[index];
-        if (character.hasMoved) {
+        if (character.isTurnOver()) {
             this.hud.setText(
-                `Unit ${index + 1} has already moved.`, TextType.TOAST, Duration.SHORT);
+                `Unit ${index + 1}'s turn is over.`, TextType.TOAST, Duration.SHORT);
             return;
         }
         this.selectedCharacter = character;
-        this.selectableTiles = this.getAvailableTilesForCharacterMovement();
+        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+    }
+
+    private setSelectedCharacterState(state: SelectedCharacterState) {
+        this.selectedCharacterState = state;
+        this.controlMap.clear();
+        this.addDefaultControls();
+        this.addSwitchSquadMemberControls();
+
+        this.controlMap.add({
+            key: END_TURN_KEY,
+            name: 'End character turn',
+            func: () => {
+                const action: EndCharacterTurnAction = {
+                    type: ActionType.END_CHARACTER_TURN,
+                    character: this.selectedCharacter,
+                };
+                this.onAction(action);
+            },
+            eventType: EventType.KeyPress,
+        });
+
+        switch (state) {
+            case SelectedCharacterState.AWAITING:
+                this.selectableTiles = [];
+                if (!this.selectedCharacter.hasMoved) {
+                    this.controlMap.add({
+                        key: MOVE_KEY,
+                        name: 'Move',
+                        func: () => {
+                            this.setSelectedCharacterState(SelectedCharacterState.MOVING);
+                        },
+                        eventType: EventType.KeyPress,
+                    });
+                }
+                if (!this.selectedCharacter.hasShot) {
+                    this.controlMap.add({
+                        key: SHOOT_KEY,
+                        name: 'Shoot',
+                        func: () => {
+                            this.setSelectedCharacterState(SelectedCharacterState.SHOOTING);
+                        },
+                        eventType: EventType.KeyPress,
+                    });
+                }
+                break;
+            case SelectedCharacterState.MOVING:
+                this.selectableTiles = this.getAvailableTilesForCharacterMovement();
+                this.controlMap.add({
+                    key: MOVE_KEY,
+                    name: 'Cancel Move',
+                    func: () => {
+                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                    },
+                    eventType: EventType.KeyPress,
+                });
+                break;
+            case SelectedCharacterState.SHOOTING:
+                this.controlMap.add({
+                    key: SHOOT_KEY,
+                    name: 'Cancel Shoot',
+                    func: () => {
+                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                    },
+                    eventType: EventType.KeyPress,
+                });
+                break;
+            default:
+                throw new Error(`Unknown selected character state`);
+        }
     }
 
     /** 
@@ -405,7 +467,7 @@ export class GameManager {
         this.isBlueTurn = true;
         this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
         this.controlMap = new ControlMap();
-        this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
+        this.addDefaultControls();
         this.hud = new Hud(this.context);
         this.hud.setControlMap(this.controlMap);
         this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
@@ -449,6 +511,20 @@ export class GameManager {
             func: () => { this.hud.toggleShowControlMap(); },
             eventType: EventType.KeyPress,
         });
+    }
+
+    private addSwitchSquadMemberControls(): void {
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        for (const character of squad) {
+            // Use 1-based numbers for UI.
+            const characterNumber = character.index + 1;
+            this.controlMap.add({
+                key: numberToKey.get(characterNumber),
+                name: `Select ${numberToOrdinal.get(characterNumber)} character`,
+                func: () => { this.setSelectedCharacter(character.index); },
+                eventType: EventType.KeyPress,
+            });
+        }
     }
 
     private getFirstCharacterIndex(): number {

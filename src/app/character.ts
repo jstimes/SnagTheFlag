@@ -43,7 +43,11 @@ interface CharacterSettings {
     readonly maxHealth: number;
     /** Manhattan distance from curent position a character can move */
     readonly maxMovesPerTurn: number;
-    /** Whether the character is allowed to shoot after moving. */
+    /** 
+     * Whether the character is allowed to shoot after moving. 
+     * If true, shooting ends character turn without option to move.
+     * TODO - add canMoveAfterShooting ?
+     */
     readonly canShootAfterMoving: boolean;
     /** Special abilities a character can use. */
     readonly extraActions: Set<CharacterAction>;
@@ -125,13 +129,34 @@ export class Character {
     }
 
     moveTo(tileCoords: Point): void {
+        if (this.isDone || this.hasMoved) {
+            throw new Error(`Already moved.`);
+        }
         // TODO - animate with movement speed and update.
         this.tileCoords = tileCoords;
         this.hasMoved = true;
+        this.checkAndSetTurnOver();
     }
 
     isAlive(): boolean {
         return this.health > 0;
+    }
+
+    shoot(): void {
+        if (this.isDone || this.hasShot
+            || (!this.settings.canShootAfterMoving && this.hasMoved)) {
+            throw new Error(`Already shot or used non-free action.`);
+        }
+        this.hasShot = true;
+        this.checkAndSetTurnOver();
+    }
+
+    isTurnOver(): boolean {
+        return this.isDone;
+    }
+
+    setTurnOver(): void {
+        this.isDone = true;
     }
 
     resetTurnState(): void {
@@ -145,5 +170,24 @@ export class Character {
             }
         }
         this.isDone = false;
+    }
+
+    private checkAndSetTurnOver(): void {
+        if (this.isDone) {
+            return;
+        }
+        if (this.extraActionsAvailable.some((charAction) => charAction.isFree)) {
+            // If free actions available, need to explicitly call setTurnOver.
+            return;
+        }
+        if (this.hasMoved && (this.hasShot || !this.settings.canShootAfterMoving)) {
+            this.isDone = true;
+            return;
+        }
+        if (this.hasShot && !this.settings.canShootAfterMoving) {
+            this.isDone = true;
+            return;
+        }
+
     }
 }
