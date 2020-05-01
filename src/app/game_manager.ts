@@ -109,34 +109,6 @@ export class GameManager {
         context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
 
-        // Draw grid lines.
-        for (let i = 0; i < Grid.TILES_WIDE; i++) {
-            const startX = i * Grid.TILE_SIZE;
-            const endX = startX;
-            const startY = 0;
-            const endY = RENDER_SETTINGS.canvasHeight;
-
-            context.beginPath();
-            context.strokeStyle = THEME.gridLineColor;
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.closePath();
-            context.stroke();
-        }
-        for (let i = 0; i < Grid.TILES_TALL; i++) {
-            const startX = 0;
-            const endX = RENDER_SETTINGS.canvasWidth;
-            const startY = i * Grid.TILE_SIZE;
-            const endY = startY;
-
-            context.beginPath();
-            context.strokeStyle = THEME.gridLineColor;
-            context.moveTo(startX, startY);
-            context.lineTo(endX, endY);
-            context.closePath();
-            context.stroke();
-        }
-
         if (this.selectableTiles != null
             && this.selectableTiles.length
             && this.inputState === InputState.AWAITING_LOCAL_PLAYER_INPUT) {
@@ -167,6 +139,34 @@ export class GameManager {
             context.strokeStyle = THEME.selectedCharacterOutlineColor;
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+        }
+
+        // Draw grid lines.
+        for (let i = 0; i < Grid.TILES_WIDE; i++) {
+            const startX = i * Grid.TILE_SIZE;
+            const endX = startX;
+            const startY = 0;
+            const endY = RENDER_SETTINGS.canvasHeight;
+
+            context.beginPath();
+            context.strokeStyle = THEME.gridLineColor;
+            context.moveTo(startX, startY);
+            context.lineTo(endX, endY);
+            context.closePath();
+            context.stroke();
+        }
+        for (let i = 0; i < Grid.TILES_TALL; i++) {
+            const startX = 0;
+            const endX = RENDER_SETTINGS.canvasWidth;
+            const startY = i * Grid.TILE_SIZE;
+            const endY = startY;
+
+            context.beginPath();
+            context.strokeStyle = THEME.gridLineColor;
+            context.moveTo(startX, startY);
+            context.lineTo(endX, endY);
+            context.closePath();
+            context.stroke();
         }
 
         this.hud.render();
