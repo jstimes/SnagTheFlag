@@ -238,7 +238,6 @@ export class GameManager {
         if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             if (this.isBlueTurn) {
                 this.isBlueTurn = false;
-                // TODO check match type when others are supported 
                 this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
                 this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
                 this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
@@ -248,45 +247,27 @@ export class GameManager {
                     Duration.LONG);
             } else {
                 this.gamePhase = GamePhase.COMBAT;
-                this.isBlueTurn = true;
-                this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-                this.setSelectedCharacter(this.getFirstCharacterIndex());
-                this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
-                this.hud.setText(
-                    `Move squad members`,
-                    TextType.SUBTITLE,
-                    Duration.LONG);
+                this.advanceToNextCombatTurn();
             }
             return;
         }
-        // TODO - dedupe
-        if (this.isBlueTurn) {
-            this.isBlueTurn = false;
-            for (const character of this.redSquad) {
-                character.hasMoved = false;
-            }
-            // TODO check match type when others are supported 
-            this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-            this.setSelectedCharacter(this.getFirstCharacterIndex());
-            this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
-            this.hud.setText(
-                `Move squad members`,
-                TextType.SUBTITLE,
-                Duration.LONG);
-        } else {
-            this.isBlueTurn = true;
-            for (const character of this.blueSquad) {
-                character.hasMoved = false;
-            }
-            // TODO check match type when others are supported 
-            this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
-            this.setSelectedCharacter(this.getFirstCharacterIndex());
-            this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
-            this.hud.setText(
-                `Move squad members`,
-                TextType.SUBTITLE,
-                Duration.LONG);
+        this.advanceToNextCombatTurn();
+    }
+
+    private advanceToNextCombatTurn(): void {
+        this.isBlueTurn = !this.isBlueTurn;
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        for (const character of squad) {
+            character.hasMoved = false;
         }
+        const teamName = this.isBlueTurn ? `Blue` : `Red`;
+        this.setInputState(InputState.AWAITING_LOCAL_PLAYER_INPUT);
+        this.setSelectedCharacter(this.getFirstCharacterIndex());
+        this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
+        this.hud.setText(
+            `Move squad members`,
+            TextType.SUBTITLE,
+            Duration.LONG);
     }
 
     private tryPlacingCharacter(tileCoords: Point): void {
