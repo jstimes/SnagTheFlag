@@ -12,6 +12,7 @@ export class Character {
 
     hasFlag: boolean;
     hasMoved: boolean;
+    health: number;
     tileCoords: Point;
 
     constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number }) {
@@ -21,24 +22,44 @@ export class Character {
 
         // TODO - use character classes.
         this.maxMoves = 4;
+        this.health = 10;
+
         this.hasFlag = false;
         this.hasMoved = false;
     }
 
     render(context: CanvasRenderingContext2D): void {
-        const tileCenterCanvas = Grid.getCanvasFromTileCoords(this.tileCoords)
-            .add(new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2));
+
+        // Red or blue circle.
+        const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
+        const tileCenterCanvas = tileTopLeftCanvas.add(new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2));
         const radius = Grid.TILE_SIZE / 4;
         context.fillStyle = this.isBlueTeam ? THEME.blueFlagColor : THEME.redFlagColor;
         context.beginPath();
         context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
         context.closePath();
         context.fill();
+
+        // Character number.
+        const text = `${this.index + 1}`;
+        context.fillStyle = THEME.textColor;
+        const fontSize = 12;
+        const margins = new Point(Grid.TILE_SIZE / 12, fontSize);
+        context.font = `${fontSize}px fantasy`;
+        // const textWidth = context.measureText(text).width;
+        context.fillText(
+            text,
+            tileTopLeftCanvas.x + margins.x,
+            tileTopLeftCanvas.y + margins.y);
     }
 
     moveTo(tileCoords: Point): void {
         // TODO - animate with movement speed and update.
         this.tileCoords = tileCoords;
         this.hasMoved = true;
+    }
+
+    isAlive(): boolean {
+        return this.health > 0;
     }
 }

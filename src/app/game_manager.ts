@@ -402,16 +402,13 @@ export class GameManager {
 
         // Combat controls.
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-        for (let index = 0; index < squad.length; index++) {
+        for (const character of squad) {
             // Use 1-based numbers for UI.
-            const characterNumber = index + 1;
+            const characterNumber = character.index + 1;
             this.controlMap.add({
-                // TODO - render character number
-                // TODO - should use number from character class 
-                //     because of gaps upon death
                 key: numberToKey.get(characterNumber),
                 name: `Select ${numberToOrdinal.get(characterNumber)} character`,
-                func: () => { this.setSelectedCharacter(index); },
+                func: () => { this.setSelectedCharacter(character.index); },
                 eventType: EventType.KeyPress,
             });
         }
@@ -419,7 +416,13 @@ export class GameManager {
 
     private setSelectedCharacter(index: number): void {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-        this.selectedCharacter = squad[index];
+        const character = squad[index];
+        if (character.hasMoved) {
+            this.hud.setText(
+                `Unit ${index + 1} has already moved.`, TextType.TOAST, Duration.SHORT);
+            return;
+        }
+        this.selectedCharacter = character;
         this.selectableTiles = this.getAvailableTilesForCharacterMovement();
     }
 
@@ -490,5 +493,15 @@ export class GameManager {
             func: () => { this.hud.toggleShowControlMap(); },
             eventType: EventType.KeyPress,
         });
+    }
+
+    private getFirstCharacterIndex(): number {
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        for (let index = 0; index < squad.length; index++) {
+            if (squad[index].isAlive()) {
+                return squad[index];
+            }
+        }
+        throw new Error(`No more characters alive - should be game over?`);
     }
 }
