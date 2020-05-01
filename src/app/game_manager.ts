@@ -326,7 +326,8 @@ export class GameManager {
 
     private trySelectingCharacter(tileCoords: Point): void {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-        const squadMemeberAtTile = squad.find((character) => character.tileCoords.equals(tileCoords));
+        const squadMemeberAtTile =
+            squad.find((character) => character.tileCoords.equals(tileCoords));
         if (squadMemeberAtTile) {
             this.setSelectedCharacter(squadMemeberAtTile.index);
         }
@@ -359,7 +360,7 @@ export class GameManager {
         const currentCoords = this.selectedCharacter.tileCoords;
         const maxMoves = this.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
-            return (!this.isTileOccupied(tile) || tile.equals(currentCoords))
+            return !this.isTileOccupied(tile)
                 && (!tile.equals(ownFlagCoords) || this.selectedCharacter.hasFlag);
         };
         const canGoThrough = (tile: Point): boolean => {
