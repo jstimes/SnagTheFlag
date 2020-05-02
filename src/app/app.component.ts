@@ -32,13 +32,13 @@ export class AppComponent {
   lastRenderTime = 0;
 
   gameState: GameState = GameState.START_MENU;
-  gameStateManager?: GameStateManager;
+  gameStateManager: GameStateManager;
 
   ngOnInit() {
     this.canvas = document.getElementById('canvas') as HTMLCanvasElement;
     this.canvas.setAttribute('height', `${RENDER_SETTINGS.canvasHeight}px`);
     this.canvas.setAttribute('width', `${RENDER_SETTINGS.canvasWidth}px`);
-    this.context = this.canvas.getContext('2d');
+    this.context = this.canvas.getContext('2d')!;
     CONTROLS.initMouseControls(this.canvas);
     this.initStartMenu();
     window.requestAnimationFrame((timestamp: number) => {
@@ -105,6 +105,5 @@ export class AppComponent {
 
   private tearDownCurrentGameState(): void {
     this.gameStateManager.destroy();
-    this.gameStateManager = null;
   }
 }

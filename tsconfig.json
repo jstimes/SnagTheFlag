@@ -10,6 +10,7 @@
     "module": "es6",
     "moduleResolution": "node",
     "importHelpers": true,
+    "strictNullChecks": true,
     "target": "es6",
     "typeRoots": [
       "node_modules/@types"

@@ -16,6 +16,7 @@ export function rotateClockwise(direction: Point): Point {
         case LEFT:
             return UP;
     }
+    throw new Error(`This is a 2d game template, not 3d!`);
 }
 
 export function rotateCounterClockwise(direction: Point): Point {
@@ -29,4 +30,5 @@ export function rotateCounterClockwise(direction: Point): Point {
         case RIGHT:
             return UP;
     }
+    throw new Error(`This is a 2d game template, not 3d!`);
 }

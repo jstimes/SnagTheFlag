@@ -80,7 +80,7 @@ export class GameManager {
     private isBlueTurn: boolean;
 
     private controlMap: ControlMap;
-    private selectableTiles?: Point[];
+    private selectableTiles: Point[];
     private selectedCharacter?: Character;
     private selectedCharacterState?: SelectedCharacterState;
 
@@ -318,7 +318,7 @@ export class GameManager {
 
         const moveCharacterAction: MoveCharacterAction = {
             type: ActionType.MOVE_CHARACTER,
-            character: this.selectedCharacter,
+            character: this.selectedCharacter!,
             tileCoords,
         };
         this.onAction(moveCharacterAction);
@@ -361,7 +361,7 @@ export class GameManager {
         const maxMoves = this.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
             return !this.isTileOccupied(tile)
-                && (!tile.equals(ownFlagCoords) || this.selectedCharacter.hasFlag);
+                && (!tile.equals(ownFlagCoords) || this.selectedCharacter!.hasFlag);
         };
         const canGoThrough = (tile: Point): boolean => {
             // Characters can go through tiles occupied by squad members.
@@ -394,6 +394,10 @@ export class GameManager {
     }
 
     private setSelectedCharacterState(state: SelectedCharacterState) {
+        if (this.selectedCharacter == null) {
+            throw new Error(
+                `There needs to be a selected character before calling setSelectedCharacterState`);
+        }
         this.selectedCharacterState = state;
         this.controlMap.clear();
         this.addDefaultControls();
@@ -403,6 +407,10 @@ export class GameManager {
             key: END_TURN_KEY,
             name: 'End character turn',
             func: () => {
+                if (this.selectedCharacter == null) {
+                    throw new Error(
+                        `There's no selected character when ending turn.`);
+                }
                 const action: EndCharacterTurnAction = {
                     type: ActionType.END_CHARACTER_TURN,
                     character: this.selectedCharacter,
@@ -536,8 +544,12 @@ export class GameManager {
         for (const character of squad) {
             // Use 1-based numbers for UI.
             const characterNumber = character.index + 1;
+            const key = numberToKey.get(characterNumber);
+            if (key == null) {
+                throw new Error(`Not enough keys for all character numbers!`);
+            }
             this.controlMap.add({
-                key: numberToKey.get(characterNumber),
+                key,
                 name: `Select ${numberToOrdinal.get(characterNumber)} character`,
                 func: () => { this.setSelectedCharacter(character.index); },
                 eventType: EventType.KeyPress,

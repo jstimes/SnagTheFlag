@@ -52,7 +52,7 @@ export class ControlMap {
             const isKeyDown = CONTROLS.isKeyDown(key);
             if (eventType === EventType.KeyDown && isKeyDown
                 || eventType === EventType.KeyUp && !isKeyDown) {
-                this.assignedControls.get(key)();
+                this.assignedControls.get(key)!();
             } else if (eventType === EventType.KeyPress) {
                 const currentState = this.keyToKeyPressState.get(key);
                 if (isKeyDown) {
@@ -62,7 +62,7 @@ export class ControlMap {
                 } else {
                     switch (currentState) {
                         case KeyPressState.DOWN:
-                            this.assignedControls.get(key)();
+                            this.assignedControls.get(key)!();
                             this.keyToKeyPressState.set(key, KeyPressState.READY);
                             break;
                         case KeyPressState.NOT_STARTED:
@@ -144,7 +144,12 @@ class Controls {
     }
 
     isKeyDown(key: Key): boolean {
-        return this.keyMap.get(key);
+        const isDown = this.keyMap.get(key);
+        if (isDown == null) {
+            throw new Error(
+                `Called isKeyDown for unmapped key: ${this.getStringForKey(key)}`);
+        }
+        return isDown;
     }
 
     addAssignedControl(key: Key, action: string): void {
@@ -152,6 +157,9 @@ class Controls {
             throw new Error(`Double-bound a control: ${key}`);
         }
         this.assignedControlMap.set(key, action);
+        if (!this.keyMap.has(key)) {
+            this.keyMap.set(key, false);
+        }
     }
 
     removeAssignedControl(key: Key): void {

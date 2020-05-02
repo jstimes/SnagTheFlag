@@ -84,22 +84,31 @@ export class Hud {
             this.renderControls();
         }
         if (this.titleMsLeft > 0) {
+            if (!this.titleText) {
+                throw new Error(`Expected title text to set when titleMsLeft > 0`);
+            }
             this.renderText(
                 this.titleText,
-                textTypeToRenderSettings.get(TextType.TITLE),
-                this.titleMsLeft / durationToMs.get(this.titleDuration));
+                textTypeToRenderSettings.get(TextType.TITLE)!,
+                this.titleMsLeft / durationToMs.get(this.titleDuration)!);
         }
         if (this.subtitleMsLeft > 0) {
+            if (!this.subtitleText) {
+                throw new Error(`Expected subtitle text to set when subtitleMsLeft > 0`);
+            }
             this.renderText(
                 this.subtitleText,
-                textTypeToRenderSettings.get(TextType.SUBTITLE),
-                this.subtitleMsLeft / durationToMs.get(this.subtitleDuration));
+                textTypeToRenderSettings.get(TextType.SUBTITLE)!,
+                this.subtitleMsLeft / durationToMs.get(this.subtitleDuration)!);
         }
         if (this.toastMsLeft > 0) {
+            if (!this.toastText) {
+                throw new Error(`Expected toastText text to set when toastMsLeft > 0`);
+            }
             this.renderText(
                 this.toastText,
-                textTypeToRenderSettings.get(TextType.TOAST),
-                this.toastMsLeft / durationToMs.get(this.toastDuration));
+                textTypeToRenderSettings.get(TextType.TOAST)!,
+                this.toastMsLeft / durationToMs.get(this.toastDuration)!);
         }
     }
 
@@ -113,7 +122,7 @@ export class Hud {
     }
 
     setText(text: string, textType: TextType, duration: Duration): void {
-        const ms = durationToMs.get(duration);
+        const ms = durationToMs.get(duration)!;
         switch (textType) {
             case TextType.TITLE:
                 this.titleText = text;
@@ -142,7 +151,7 @@ export class Hud {
         let renderTop = new Point(
             RENDER_SETTINGS.canvasWidth / 64,
             RENDER_SETTINGS.canvasHeight / 32);
-        for (const key of this.controlMap.assignedControls.keys()) {
+        for (const key of this.controlMap!.assignedControls.keys()) {
             const action = CONTROLS.getAssignedControlMap().get(key);
             context.fillText(
                 `${CONTROLS.getStringForKey(key)} - ${action}`,

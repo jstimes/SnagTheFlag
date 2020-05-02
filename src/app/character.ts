@@ -5,7 +5,7 @@ import { THEME } from 'src/app/theme';
 const TWO_PI = Math.PI * 2;
 
 enum CharacterActionType {
-    HEAL,
+    HEAL = 'HEAL',
 }
 
 /** Abilities characters can perform in addition to moving and shooting. */
@@ -166,6 +166,9 @@ export class Character {
         this.extraActionsAvailable = [];
         for (const action of this.settings.extraActions) {
             const state = this.characterActionsToState.get(action.type);
+            if (!state) {
+                throw new Error(`Didn't initialize characterActionsToState for ${action.type}`);
+            }
             if (state.usesLeft !== 0 && state.cooldownTurnsLeft <= 0) {
                 this.extraActionsAvailable.push(action);
             }

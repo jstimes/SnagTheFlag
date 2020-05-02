@@ -75,10 +75,10 @@ export class LevelCreator {
 
     private removeObjectInTile(tileCoords: Point): void {
         if (this.redFlag != null && this.redFlag.tileCoords.equals(tileCoords)) {
-            this.redFlag = null;
+            this.redFlag = undefined;
         }
         if (this.blueFlag != null && this.blueFlag.tileCoords.equals(tileCoords)) {
-            this.blueFlag = null;
+            this.blueFlag = undefined;
         }
         this.obstacles = this.obstacles.filter((obstacle: Obstacle) => !obstacle.tileCoords.equals(tileCoords));
     }
@@ -196,8 +196,8 @@ export class LevelCreator {
         this.destroy();
         this.placementMode = PlacementMode.OBSTACLE;
         this.obstacles = [];
-        this.redFlag = null;
-        this.blueFlag = null;
+        this.redFlag = undefined;
+        this.blueFlag = undefined;
         this.controlMap = new ControlMap();
         this.controlMap.add({
             key: Key.Q,

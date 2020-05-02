@@ -30,7 +30,7 @@ export class Grid {
     }
 
     static getAdjacentTiles(tileCoords: Point): Point[] {
-        const result = [];
+        const result: Point[] = [];
 
         const upAdjacent = tileCoords.add(UP);
         const downAdjacent = tileCoords.add(DOWN);
@@ -67,7 +67,7 @@ export function bfs(params: {
         }
     });
     while (queue.length) {
-        const queuedTile = queue.shift();
+        const queuedTile = queue.shift()!;
         if (queuedTile.depth > maxDepth || !canGoThrough(queuedTile.coords)) {
             continue;
         }
