@@ -10,6 +10,15 @@ export interface Theme {
     readonly redFlagColor: string;
     readonly blueFlagColor: string;
 
+    /** Color for red squad members when they can move/take action. */
+    readonly redCharacterReadyColor: string;
+    /** Color for blue squad members when they can move/take action. */
+    readonly blueCharacterReadyColor: string;
+    /** Color for red squad members when their turn is done. */
+    readonly redCharacterDoneColor: string;
+    /** Color for blue squad members when their turn is done. */
+    readonly blueCharacterDoneColor: string;
+
     readonly selectedCharacterOutlineColor: string;
     readonly availableForMovementColor: string;
     readonly emptyCellHoverColor: string;
@@ -29,6 +38,11 @@ export const THEME: Theme = {
     flagPoleColor: '#7a5f3e',
     redFlagColor: '#e34055',
     blueFlagColor: '#3d7cd4',
+
+    redCharacterReadyColor: '#e34055',
+    blueCharacterReadyColor: '#3d7cd4',
+    redCharacterDoneColor: '#b05662',
+    blueCharacterDoneColor: '#547199',
 
     selectedCharacterOutlineColor: '#000000',
     availableForMovementColor: '#b8b6a5',

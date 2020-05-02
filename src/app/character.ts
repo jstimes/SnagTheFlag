@@ -110,7 +110,8 @@ export class Character {
         const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
         const tileCenterCanvas = tileTopLeftCanvas.add(new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2));
         const radius = Grid.TILE_SIZE / 4;
-        context.fillStyle = this.isBlueTeam ? THEME.blueFlagColor : THEME.redFlagColor;
+
+        context.fillStyle = this.getCharacterColor();
         context.beginPath();
         context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
         context.closePath();
@@ -188,6 +189,12 @@ export class Character {
             this.isDone = true;
             return;
         }
+    }
 
+    private getCharacterColor(): string {
+        if (this.isDone) {
+            return this.isBlueTeam ? THEME.blueCharacterDoneColor : THEME.redCharacterDoneColor;
+        }
+        return this.isBlueTeam ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
     }
 }
