@@ -48,7 +48,7 @@ interface CharacterSettings {
      * If true, shooting ends character turn without option to move.
      * TODO - add canMoveAfterShooting ?
      */
-    readonly canShootAfterMoving: boolean;
+    readonly canFireAfterMoving: boolean;
     /** Special abilities a character can use. */
     readonly extraActions: Set<CharacterAction>;
 }
@@ -56,11 +56,13 @@ interface CharacterSettings {
 const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
     maxHealth: 10,
     maxMovesPerTurn: 4,
-    canShootAfterMoving: true,
+    canFireAfterMoving: true,
     extraActions: new Set<CharacterAction>([
         HEAL,
     ]),
 };
+
+const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 
 /** Represents one squad member on a team. */
 export class Character {
@@ -73,6 +75,10 @@ export class Character {
     hasShot: boolean;
     extraActionsAvailable: CharacterAction[];
     isFinishedWithTurn: boolean;
+
+    private isAiming: boolean;
+    private aimAngleRadiansClockwise: number;
+
 
     // Game-state.
     hasFlag: boolean;
@@ -100,6 +106,8 @@ export class Character {
             }
             this.characterActionsToState.set(extraAction.type, actionState);
         }
+        this.isAiming = false;
+        this.aimAngleRadiansClockwise = 0;
 
         this.resetTurnState();
     }
@@ -127,6 +135,23 @@ export class Character {
             text,
             tileTopLeftCanvas.x + margins.x,
             tileTopLeftCanvas.y + margins.y);
+
+        // Aim indicator.
+        if (!this.isAiming) {
+            return;
+        }
+        const aimLength = .75 * Grid.TILE_SIZE;
+        const aimIndicatorEnd =
+            tileCenterCanvas
+                .add(new Point(
+                    Math.cos(this.aimAngleRadiansClockwise),
+                    Math.sin(this.aimAngleRadiansClockwise))
+                    .multiplyScaler(aimLength));
+        context.beginPath();
+        context.moveTo(tileCenterCanvas.x, tileCenterCanvas.y);
+        context.lineTo(aimIndicatorEnd.x, aimIndicatorEnd.y);
+        context.closePath();
+        context.stroke();
     }
 
     moveTo(tileCoords: Point): void {
@@ -143,9 +168,30 @@ export class Character {
         return this.health > 0;
     }
 
-    shoot(): void {
-        if (this.isFinishedWithTurn || this.hasShot
-            || (!this.settings.canShootAfterMoving && this.hasMoved)) {
+    startAiming(): void {
+        if (!this.canShoot()) {
+            throw new Error(`Already shot or used non-free action.`);
+        }
+        this.isAiming = true;
+    }
+
+    cancelAiming(): void {
+        this.isAiming = false;
+    }
+
+    aimCounterClockwise(): void {
+        console.log("Aiming ccw");
+        this.aimAngleRadiansClockwise -= AIM_ANGLE_RADIANS_DELTA;
+    }
+
+    aimClockwise(): void {
+        console.log("Aiming cc");
+        this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
+    }
+
+    // TODO - return aimangle radians
+    fireAndGetAimAngle(): void {
+        if (!this.canShoot()) {
             throw new Error(`Already shot or used non-free action.`);
         }
         this.hasShot = true;
@@ -158,6 +204,7 @@ export class Character {
 
     setTurnOver(): void {
         this.isFinishedWithTurn = true;
+        this.isAiming = false;
     }
 
     resetTurnState(): void {
@@ -184,12 +231,12 @@ export class Character {
             // If free actions available, need to explicitly call setTurnOver.
             return;
         }
-        if (this.hasMoved && (this.hasShot || !this.settings.canShootAfterMoving)) {
-            this.isFinishedWithTurn = true;
+        if (this.hasMoved && (this.hasShot || !this.settings.canFireAfterMoving)) {
+            this.setTurnOver();
             return;
         }
-        if (this.hasShot && !this.settings.canShootAfterMoving) {
-            this.isFinishedWithTurn = true;
+        if (this.hasShot && !this.settings.canFireAfterMoving) {
+            this.setTurnOver();
             return;
         }
     }
@@ -199,5 +246,15 @@ export class Character {
             return this.isBlueTeam ? THEME.blueCharacterDoneColor : THEME.redCharacterDoneColor;
         }
         return this.isBlueTeam ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
+    }
+
+    canShoot(): boolean {
+        if (this.isFinishedWithTurn) {
+            return false;
+        }
+        if (!this.settings.canFireAfterMoving && this.hasMoved) {
+            return false;
+        }
+        return !this.hasShot;
     }
 }

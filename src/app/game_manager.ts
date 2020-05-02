@@ -22,7 +22,7 @@ enum GamePhase {
 enum ActionType {
     PLACE_CHARACTER,
     MOVE_CHARACTER,
-    SHOOT,
+    FIRE,
     END_CHARACTER_TURN,
 }
 
@@ -42,7 +42,13 @@ interface EndCharacterTurnAction {
     readonly character: Character;
 }
 
-type Action = PlaceCharacterAction | MoveCharacterAction | EndCharacterTurnAction;
+interface FireAction {
+    readonly type: ActionType.FIRE;
+    readonly firingCharacter: Character;
+}
+
+type Action = PlaceCharacterAction | MoveCharacterAction |
+    EndCharacterTurnAction | FireAction;
 
 /** Used for exhaustive Action checking. */
 function throwBadAction(action: never): never {
@@ -52,12 +58,16 @@ function throwBadAction(action: never): never {
 enum SelectedCharacterState {
     AWAITING,
     MOVING,
-    SHOOTING,
+    AIMING,
     // TODO - add other character actions.
 }
 
 const MOVE_KEY = Key.M;
-const SHOOT_KEY = Key.S;
+/** Used to start and cancel shooting, but doesn't fire the shot.  */
+const TOGGLE_AIM_KEY = Key.A;
+const AIM_COUNTERCLOCKWISE_KEY = Key.S;
+const AIM_CLOCKWISE_KEY = Key.D;
+const FIRE_KEY = Key.SPACE;
 const END_TURN_KEY = Key.E;
 
 export class GameManager {
@@ -219,6 +229,13 @@ export class GameManager {
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
+                break;
+            case ActionType.FIRE:
+                if (this.selectedCharacter == null || action.firingCharacter !== this.selectedCharacter) {
+                    throw new Error(`Selected character is null or is not firing character on FIRE action`);
+                }
+                // TODO - and get projectile details?
+                const aimAngle = this.selectedCharacter.fireAndGetAimAngle();
                 break;
             case ActionType.END_CHARACTER_TURN:
                 action.character.setTurnOver();
@@ -403,12 +420,12 @@ export class GameManager {
                         eventType: EventType.KeyPress,
                     });
                 }
-                if (!this.selectedCharacter.hasShot) {
+                if (this.selectedCharacter.canShoot()) {
                     this.controlMap.add({
-                        key: SHOOT_KEY,
-                        name: 'Shoot',
+                        key: TOGGLE_AIM_KEY,
+                        name: 'Aim',
                         func: () => {
-                            this.setSelectedCharacterState(SelectedCharacterState.SHOOTING);
+                            this.setSelectedCharacterState(SelectedCharacterState.AIMING);
                         },
                         eventType: EventType.KeyPress,
                     });
@@ -425,11 +442,58 @@ export class GameManager {
                     eventType: EventType.KeyPress,
                 });
                 break;
-            case SelectedCharacterState.SHOOTING:
+            case SelectedCharacterState.AIMING:
+                this.selectedCharacter.startAiming();
                 this.controlMap.add({
-                    key: SHOOT_KEY,
-                    name: 'Cancel Shoot',
+                    key: TOGGLE_AIM_KEY,
+                    name: 'Stop Aiming',
                     func: () => {
+                        if (this.selectedCharacter == null) {
+                            throw new Error(
+                                `There's no selected character when canceling shooting.`);
+                        }
+                        this.selectedCharacter.cancelAiming();
+                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                    },
+                    eventType: EventType.KeyPress,
+                });
+                this.controlMap.add({
+                    key: AIM_COUNTERCLOCKWISE_KEY,
+                    name: 'Aim counterclockwise',
+                    func: () => {
+                        if (this.selectedCharacter == null) {
+                            throw new Error(
+                                `There's no selected character when aiming CCW.`);
+                        }
+                        this.selectedCharacter.aimCounterClockwise();
+                    },
+                    eventType: EventType.KeyDown,
+                });
+                this.controlMap.add({
+                    key: AIM_CLOCKWISE_KEY,
+                    name: 'Aim clockwise',
+                    func: () => {
+                        if (this.selectedCharacter == null) {
+                            throw new Error(
+                                `There's no selected character when aiming CC.`);
+                        }
+                        this.selectedCharacter.aimClockwise();
+                    },
+                    eventType: EventType.KeyDown,
+                });
+                this.controlMap.add({
+                    key: FIRE_KEY,
+                    name: 'Fire',
+                    func: () => {
+                        if (this.selectedCharacter == null) {
+                            throw new Error(
+                                `There's no selected character when canceling shooting.`);
+                        }
+                        const fireAction: FireAction = {
+                            type: ActionType.FIRE,
+                            firingCharacter: this.selectedCharacter,
+                        };
+                        this.onAction(fireAction);
                         this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                     },
                     eventType: EventType.KeyPress,
