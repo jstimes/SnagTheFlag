@@ -72,7 +72,7 @@ export class Character {
     hasMoved: boolean;
     hasShot: boolean;
     extraActionsAvailable: CharacterAction[];
-    isDone: boolean;
+    isFinishedWithTurn: boolean;
 
     // Game-state.
     hasFlag: boolean;
@@ -130,7 +130,7 @@ export class Character {
     }
 
     moveTo(tileCoords: Point): void {
-        if (this.isDone || this.hasMoved) {
+        if (this.isFinishedWithTurn || this.hasMoved) {
             throw new Error(`Already moved.`);
         }
         // TODO - animate with movement speed and update.
@@ -144,7 +144,7 @@ export class Character {
     }
 
     shoot(): void {
-        if (this.isDone || this.hasShot
+        if (this.isFinishedWithTurn || this.hasShot
             || (!this.settings.canShootAfterMoving && this.hasMoved)) {
             throw new Error(`Already shot or used non-free action.`);
         }
@@ -153,11 +153,11 @@ export class Character {
     }
 
     isTurnOver(): boolean {
-        return this.isDone;
+        return this.isFinishedWithTurn;
     }
 
     setTurnOver(): void {
-        this.isDone = true;
+        this.isFinishedWithTurn = true;
     }
 
     resetTurnState(): void {
@@ -170,11 +170,11 @@ export class Character {
                 this.extraActionsAvailable.push(action);
             }
         }
-        this.isDone = false;
+        this.isFinishedWithTurn = false;
     }
 
     private checkAndSetTurnOver(): void {
-        if (this.isDone) {
+        if (this.isFinishedWithTurn) {
             return;
         }
         if (this.extraActionsAvailable.some((charAction) => charAction.isFree)) {
@@ -182,17 +182,17 @@ export class Character {
             return;
         }
         if (this.hasMoved && (this.hasShot || !this.settings.canShootAfterMoving)) {
-            this.isDone = true;
+            this.isFinishedWithTurn = true;
             return;
         }
         if (this.hasShot && !this.settings.canShootAfterMoving) {
-            this.isDone = true;
+            this.isFinishedWithTurn = true;
             return;
         }
     }
 
     private getCharacterColor(): string {
-        if (this.isDone) {
+        if (this.isFinishedWithTurn) {
             return this.isBlueTeam ? THEME.blueCharacterDoneColor : THEME.redCharacterDoneColor;
         }
         return this.isBlueTeam ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
