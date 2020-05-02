@@ -13,9 +13,9 @@ import { Hud, TextType, Duration } from 'src/app/hud';
 
 
 enum GamePhase {
-    // Setup:
+    // Setup.
     CHARACTER_PLACEMENT,
-    // Main game:
+    // Main game.
     COMBAT,
 }
 
@@ -27,19 +27,19 @@ enum ActionType {
 }
 
 interface PlaceCharacterAction {
-    type: ActionType.PLACE_CHARACTER;
-    tileCoords: Point;
+    readonly type: ActionType.PLACE_CHARACTER;
+    readonly tileCoords: Point;
 }
 
 interface MoveCharacterAction {
-    type: ActionType.MOVE_CHARACTER;
-    character: Character;
-    tileCoords: Point;
+    readonly type: ActionType.MOVE_CHARACTER;
+    readonly character: Character;
+    readonly tileCoords: Point;
 }
 
 interface EndCharacterTurnAction {
-    type: ActionType.END_CHARACTER_TURN;
-    character: Character;
+    readonly type: ActionType.END_CHARACTER_TURN;
+    readonly character: Character;
 }
 
 type Action = PlaceCharacterAction | MoveCharacterAction | EndCharacterTurnAction;
@@ -116,7 +116,6 @@ export class GameManager {
                     this.tryMovingSelectedCharacter(mouseTileCoords);
                     break;
             }
-
         }
         this.hud.update(elapsedMs);
     }
@@ -155,34 +154,6 @@ export class GameManager {
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
-
-        // Draw grid lines.
-        // for (let i = 0; i < Grid.TILES_WIDE; i++) {
-        //     const startX = i * Grid.TILE_SIZE;
-        //     const endX = startX;
-        //     const startY = 0;
-        //     const endY = RENDER_SETTINGS.canvasHeight;
-
-        //     context.beginPath();
-        //     context.strokeStyle = THEME.gridLineColor;
-        //     context.moveTo(startX, startY);
-        //     context.lineTo(endX, endY);
-        //     context.closePath();
-        //     context.stroke();
-        // }
-        // for (let i = 0; i < Grid.TILES_TALL; i++) {
-        //     const startX = 0;
-        //     const endX = RENDER_SETTINGS.canvasWidth;
-        //     const startY = i * Grid.TILE_SIZE;
-        //     const endY = startY;
-
-        //     context.beginPath();
-        //     context.strokeStyle = THEME.gridLineColor;
-        //     context.moveTo(startX, startY);
-        //     context.lineTo(endX, endY);
-        //     context.closePath();
-        //     context.stroke();
-        // }
 
         this.hud.render();
     }
@@ -355,7 +326,6 @@ export class GameManager {
         if (this.selectedCharacter == null) {
             throw new Error(`No character selected in getAvailableTilesForCharacterMovement`);
         }
-        // TODO - turn on strict null checks?
         const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const currentCoords = this.selectedCharacter.tileCoords;
         const maxMoves = this.selectedCharacter.settings.maxMovesPerTurn;
