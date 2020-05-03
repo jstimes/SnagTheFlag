@@ -213,12 +213,10 @@ export class Character {
     }
 
     aimCounterClockwise(): void {
-        console.log("Aiming ccw");
         this.aimAngleRadiansClockwise -= AIM_ANGLE_RADIANS_DELTA;
     }
 
     aimClockwise(): void {
-        console.log("Aiming cc");
         this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
     }
 

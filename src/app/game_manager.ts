@@ -95,7 +95,9 @@ export class GameManager {
     private selectableTiles: Point[];
     private selectedCharacter?: Character;
     private selectedCharacterState?: SelectedCharacterState;
+
     private projectile?: Projectile;
+    private projectileTargetTile?: Point;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -115,6 +117,11 @@ export class GameManager {
     }
 
     update(elapsedMs: number): void {
+        if (this.projectile != null) {
+            this.updateProjectile(elapsedMs);
+            return;
+        }
+
         this.controlMap.check();
         if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT && CONTROLS.hasClick()) {
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
@@ -130,13 +137,32 @@ export class GameManager {
                     break;
             }
         }
-        if (this.projectile != null) {
-            this.projectile.update(elapsedMs);
-            if (this.projectile.distance > this.projectile.maxDistance) {
-                this.projectile = undefined;
+        this.hud.update(elapsedMs);
+    }
+
+    private updateProjectile(elapsedMs: number): void {
+        if (this.projectile == null) {
+            throw new Error(`Projectile is null in updateProjectile`);
+        }
+        this.projectile.update(elapsedMs);
+        if (this.projectile.distance < this.projectile.maxDistance) {
+            return;
+        }
+        if (this.projectileTargetTile != null) {
+            const targetCharacter = this.redSquad.concat(this.blueSquad)
+                .find((character) => character.tileCoords.equals(this.projectileTargetTile!));
+            if (targetCharacter) {
+                // Assumes friendly fire check occurred in 'fire'.
+                targetCharacter.health -= this.projectile.damage;
             }
         }
-        this.hud.update(elapsedMs);
+        // TODO - ricochet
+        if (this.selectedCharacter!.isTurnOver()) {
+            this.onCharacterTurnOver();
+        } else {
+            this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+        }
+        this.projectile = undefined;
     }
 
     render(): void {
@@ -164,7 +190,11 @@ export class GameManager {
         }
         this.redFlag.render(this.context);
         this.blueFlag.render(this.context);
-        for (const character of this.blueSquad.concat(this.redSquad)) {
+        const remainingCharacters =
+            this.blueSquad
+                .concat(this.redSquad)
+                .filter((character) => character.isAlive());
+        for (const character of remainingCharacters) {
             character.render(this.context);
         }
         if (this.selectedCharacter != null) {
@@ -173,11 +203,9 @@ export class GameManager {
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
-
         if (this.projectile != null) {
             this.projectile.render();
         }
-
         this.hud.render();
     }
 
@@ -244,11 +272,7 @@ export class GameManager {
                 }
                 const shotInfo = this.selectedCharacter.shoot();
                 this.fireShot(shotInfo);
-                if (action.firingCharacter.isTurnOver()) {
-                    this.onCharacterTurnOver();
-                } else {
-                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
-                }
+                // Next turn logic runs when projectile dies.
                 break;
             case ActionType.END_CHARACTER_TURN:
                 action.character.setTurnOver();
@@ -259,9 +283,12 @@ export class GameManager {
         }
     }
 
+    /** Checks if there's another squad member still active, or advances turn if not. */
     private onCharacterTurnOver(): void {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-        const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
+        const activeSquadMember = squad.find((character: Character) => {
+            return !character.isTurnOver() && character.isAlive();
+        });
         if (activeSquadMember) {
             this.setSelectedCharacter(activeSquadMember.index);
         } else {
@@ -338,6 +365,7 @@ export class GameManager {
         let curDistance = stepSize;
         const checkedTilesStringSet: Set<string> = new Set([ray.startPt.toString()]);
         let closestCollisionPt: Point | null = null;
+        let closestCollisionTile: Point | null = null;
         let closestCollisionDistance = maxProjectileDistance;
         while (curDistance < maxProjectileDistance) {
             const curTile = Grid.getTileFromCanvasCoords(ray.pointAtDistance(curDistance));
@@ -351,7 +379,7 @@ export class GameManager {
                 if (!this.isTileOccupied(tile)) {
                     continue;
                 }
-                // Either an obstacle of player in tile.
+                // Either an obstacle or player in tile.
                 const obstacle = this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile));
                 if (obstacle) {
                     for (const edge of obstacle.getEdges()) {
@@ -360,12 +388,14 @@ export class GameManager {
                             const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
                             if (distance < closestCollisionDistance) {
                                 closestCollisionDistance = distance;
+                                closestCollisionTile = tile;
                                 closestCollisionPt = collisionResult.collisionPt!;
                             }
                         }
                     }
                 } else {
                     const character = this.redSquad.concat(this.blueSquad)
+                        .filter((character) => character.isAlive())
                         .find((character) => character.tileCoords.equals(tile));
                     if (!character) {
                         throw new Error(`Tile is occupied but no obstacle or character...`);
@@ -381,6 +411,7 @@ export class GameManager {
                             const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
                             if (distance < closestCollisionDistance) {
                                 closestCollisionDistance = distance;
+                                closestCollisionTile = tile;
                                 closestCollisionPt = collisionResult.collisionPt!;
                             }
                         }
@@ -393,10 +424,14 @@ export class GameManager {
             curDistance += stepSize;
         }
 
+        if (closestCollisionTile != null) {
+            this.projectileTargetTile = closestCollisionTile;
+        }
         this.projectile = new Projectile({
             context: this.context,
             ray,
             maxDistance: closestCollisionDistance,
+            damage: shotInfo.damage,
         });
     }
 
@@ -626,8 +661,13 @@ export class GameManager {
     private isTileOccupied(tileCoords: Point): boolean {
         const potentialObstacle = this.obstacles.find(
             (obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
-        const potentialCharacter = this.blueSquad.concat(this.redSquad).find(
-            (character) => character.tileCoords.equals(tileCoords));
+        const potentialCharacter =
+            this.blueSquad
+                .concat(this.redSquad)
+                .find(
+                (character) => {
+                    return character.isAlive() && character.tileCoords.equals(tileCoords);
+                });
         return potentialObstacle != null || potentialCharacter != null;
     }
 

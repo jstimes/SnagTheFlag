@@ -14,16 +14,19 @@ export class Projectile {
     private readonly context: CanvasRenderingContext2D;
     readonly ray: Ray;
     readonly maxDistance: number;
+    readonly damage: number;
     distance: number;
 
     constructor(params: {
         context: CanvasRenderingContext2D;
         ray: Ray;
         maxDistance: number;
+        damage: number;
     }) {
         this.context = params.context;
         this.ray = params.ray;
         this.maxDistance = params.maxDistance;
+        this.damage = params.damage;
         this.distance = 0;
     }
 
