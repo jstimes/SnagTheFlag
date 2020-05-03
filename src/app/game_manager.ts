@@ -233,12 +233,7 @@ export class GameManager {
                 }
                 action.character.moveTo(action.tileCoords);
                 if (action.character.isTurnOver()) {
-                    const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
-                    if (activeSquadMember) {
-                        this.setSelectedCharacter(activeSquadMember.index);
-                    } else {
-                        this.nextTurn();
-                    }
+                    this.onCharacterTurnOver();
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
@@ -250,27 +245,27 @@ export class GameManager {
                 const shotInfo = this.selectedCharacter.shoot();
                 this.fireShot(shotInfo);
                 if (action.firingCharacter.isTurnOver()) {
-                    const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
-                    if (activeSquadMember) {
-                        this.setSelectedCharacter(activeSquadMember.index);
-                    } else {
-                        this.nextTurn();
-                    }
+                    this.onCharacterTurnOver();
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
                 break;
             case ActionType.END_CHARACTER_TURN:
                 action.character.setTurnOver();
-                const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
-                if (activeSquadMember) {
-                    this.setSelectedCharacter(activeSquadMember.index);
-                } else {
-                    this.nextTurn();
-                }
+                this.onCharacterTurnOver();
                 break;
             default:
                 throwBadAction(action);
+        }
+    }
+
+    private onCharacterTurnOver(): void {
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
+        if (activeSquadMember) {
+            this.setSelectedCharacter(activeSquadMember.index);
+        } else {
+            this.nextTurn();
         }
     }
 
@@ -387,7 +382,6 @@ export class GameManager {
                             if (distance < closestCollisionDistance) {
                                 closestCollisionDistance = distance;
                                 closestCollisionPt = collisionResult.collisionPt!;
-                                console.log("Hit character");
                             }
                         }
                     }
@@ -399,7 +393,11 @@ export class GameManager {
             curDistance += stepSize;
         }
 
-        this.projectile = new Projectile({ context: this.context, ray, maxDistance: closestCollisionDistance });
+        this.projectile = new Projectile({
+            context: this.context,
+            ray,
+            maxDistance: closestCollisionDistance,
+        });
     }
 
     private tryPlacingCharacter(tileCoords: Point): void {

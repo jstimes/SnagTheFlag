@@ -4,7 +4,7 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 
 const PROJECTILE_CANVAS_RADIUS = Grid.TILE_SIZE / 12;
-const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 60;
+const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 90;
 
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
@@ -12,7 +12,7 @@ const TWO_PI = Math.PI * 2;
 export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
-    private readonly ray: Ray;
+    readonly ray: Ray;
     readonly maxDistance: number;
     distance: number;
 
@@ -28,11 +28,7 @@ export class Projectile {
     }
 
     update(elapsedMs: number): void {
-        const newDistance = this.distance + PROJECTILE_SPEED_PER_MS * elapsedMs;
-        if (newDistance > this.maxDistance) {
-            return;
-        }
-        this.distance = newDistance;
+        this.distance = this.distance + PROJECTILE_SPEED_PER_MS * elapsedMs;
     }
 
     // TODO - draw trail?

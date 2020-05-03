@@ -92,7 +92,6 @@ class Controls {
     constructor() {
         document.onkeydown = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, true);
-            console.log(e.keyCode);
         };
         document.onkeyup = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, false);
