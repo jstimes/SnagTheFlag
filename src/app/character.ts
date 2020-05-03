@@ -1,6 +1,7 @@
 import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
+import { LineSegment } from 'src/app/math/collision_detection';
 
 const TWO_PI = Math.PI * 2;
 
@@ -51,6 +52,13 @@ interface CharacterSettings {
     readonly canFireAfterMoving: boolean;
     /** Special abilities a character can use. */
     readonly extraActions: Set<CharacterAction>;
+    /** Damage dealt when shooting. */
+    readonly shotDamage: number;
+    /** 
+     * Number of times a character's shot projectile can
+     * bounce off of walls.
+     */
+    readonly numRicochets: number;
 }
 
 const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
@@ -60,9 +68,21 @@ const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
     extraActions: new Set<CharacterAction>([
         HEAL,
     ]),
+    shotDamage: 5,
+    numRicochets: 0,
 };
 
+export interface ShotInfo {
+    // TODO friendly fire?
+    readonly isShotFromBlueTeam: boolean;
+    readonly fromTileCoords: Point;
+    readonly aimAngleRadiansClockwise: number;
+    readonly damage: number;
+    readonly numRicochets: number;
+}
+
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
+const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
 
 /** Represents one squad member on a team. */
 export class Character {
@@ -116,12 +136,16 @@ export class Character {
 
         // Red or blue circle.
         const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
-        const tileCenterCanvas = tileTopLeftCanvas.add(new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2));
-        const radius = Grid.TILE_SIZE / 4;
+        const tileCenterCanvas = tileTopLeftCanvas.add(Grid.HALF_TILE);
 
         context.fillStyle = this.getCharacterColor();
         context.beginPath();
-        context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
+        context.arc(
+            tileCenterCanvas.x,
+            tileCenterCanvas.y,
+            CHARACTER_CIRCLE_RADIUS,
+            0,
+            TWO_PI);
         context.closePath();
         context.fill();
 
@@ -135,6 +159,15 @@ export class Character {
             text,
             tileTopLeftCanvas.x + margins.x,
             tileTopLeftCanvas.y + margins.y);
+
+        // Draws bounding box.
+        // for (const edge of this.getEdges()) {
+        //     context.beginPath();
+        //     context.moveTo(edge.startPt.x, edge.startPt.y);
+        //     context.lineTo(edge.endPt.x, edge.endPt.y);
+        //     context.closePath();
+        //     context.stroke();
+        // }
 
         // Aim indicator.
         if (!this.isAiming) {
@@ -189,13 +222,43 @@ export class Character {
         this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
     }
 
-    // TODO - return aimangle radians
-    fireAndGetAimAngle(): void {
+    shoot(): ShotInfo {
         if (!this.canShoot()) {
             throw new Error(`Already shot or used non-free action.`);
         }
+        this.isAiming = false;
         this.hasShot = true;
         this.checkAndSetTurnOver();
+        const shotInfo: ShotInfo = {
+            isShotFromBlueTeam: this.isBlueTeam,
+            fromTileCoords: this.tileCoords,
+            aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
+            damage: this.settings.shotDamage,
+            numRicochets: this.settings.numRicochets,
+        };
+        return shotInfo;
+    }
+
+    // TODO - cache after first construction.
+    getEdges(): LineSegment[] {
+        const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
+        const tileCenterCanvas = tileTopLeftCanvas.add(Grid.HALF_TILE);
+        const topLeftCorner =
+            tileCenterCanvas.subtract(
+                new Point(CHARACTER_CIRCLE_RADIUS, CHARACTER_CIRCLE_RADIUS));
+        const topRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, 0));
+        const bottomLeftCorner = topLeftCorner.add(new Point(0, CHARACTER_CIRCLE_RADIUS * 2));
+        const bottomRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, CHARACTER_CIRCLE_RADIUS * 2));
+        const topEdge = new LineSegment(topLeftCorner, topRightCorner);
+        const rightEdge = new LineSegment(topRightCorner, bottomRightCorner);
+        const bottomEdge = new LineSegment(bottomLeftCorner, bottomRightCorner);
+        const leftEdge = new LineSegment(topLeftCorner, bottomLeftCorner);
+        return [
+            topEdge,
+            rightEdge,
+            bottomEdge,
+            leftEdge,
+        ];
     }
 
     isTurnOver(): boolean {

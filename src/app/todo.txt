@@ -1,13 +1,15 @@
 MVP
- - Toasts!
- - Add health, max moves to Character
-    - render health bar
-    - render character number (name?)
- - Add HUD for indicating controls, turn, game phase
+ - Health bar 
+ - ricochets
+ - particles
+ - wait for particle to hit before moving on
+    - Freeze controls?
+    - damage enemy
 
 
 
 Things to experiment with:
+- destructible obstacles
 - Fog of war
 - Character classes
     - sprinters: more movement, weaker

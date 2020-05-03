@@ -8,8 +8,10 @@ import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
-import { Character } from 'src/app/character';
+import { Character, ShotInfo } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
+import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
+import { Projectile } from 'src/app/projectile';
 
 
 enum GamePhase {
@@ -22,7 +24,7 @@ enum GamePhase {
 enum ActionType {
     PLACE_CHARACTER,
     MOVE_CHARACTER,
-    FIRE,
+    SHOOT,
     END_CHARACTER_TURN,
 }
 
@@ -42,13 +44,13 @@ interface EndCharacterTurnAction {
     readonly character: Character;
 }
 
-interface FireAction {
-    readonly type: ActionType.FIRE;
+interface ShootAction {
+    readonly type: ActionType.SHOOT;
     readonly firingCharacter: Character;
 }
 
 type Action = PlaceCharacterAction | MoveCharacterAction |
-    EndCharacterTurnAction | FireAction;
+    EndCharacterTurnAction | ShootAction;
 
 /** Used for exhaustive Action checking. */
 function throwBadAction(action: never): never {
@@ -67,7 +69,7 @@ const MOVE_KEY = Key.M;
 const TOGGLE_AIM_KEY = Key.A;
 const AIM_COUNTERCLOCKWISE_KEY = Key.S;
 const AIM_CLOCKWISE_KEY = Key.D;
-const FIRE_KEY = Key.SPACE;
+const SHOOT_KEY = Key.F;
 const END_TURN_KEY = Key.E;
 
 export class GameManager {
@@ -93,6 +95,7 @@ export class GameManager {
     private selectableTiles: Point[];
     private selectedCharacter?: Character;
     private selectedCharacterState?: SelectedCharacterState;
+    private projectile?: Projectile;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -125,6 +128,12 @@ export class GameManager {
                 case (SelectedCharacterState.MOVING):
                     this.tryMovingSelectedCharacter(mouseTileCoords);
                     break;
+            }
+        }
+        if (this.projectile != null) {
+            this.projectile.update(elapsedMs);
+            if (this.projectile.distance > this.projectile.maxDistance) {
+                this.projectile = undefined;
             }
         }
         this.hud.update(elapsedMs);
@@ -163,6 +172,10 @@ export class GameManager {
             context.strokeStyle = THEME.selectedCharacterOutlineColor;
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+        }
+
+        if (this.projectile != null) {
+            this.projectile.render();
         }
 
         this.hud.render();
@@ -230,12 +243,22 @@ export class GameManager {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
                 break;
-            case ActionType.FIRE:
+            case ActionType.SHOOT:
                 if (this.selectedCharacter == null || action.firingCharacter !== this.selectedCharacter) {
                     throw new Error(`Selected character is null or is not firing character on FIRE action`);
                 }
-                // TODO - and get projectile details?
-                const aimAngle = this.selectedCharacter.fireAndGetAimAngle();
+                const shotInfo = this.selectedCharacter.shoot();
+                this.fireShot(shotInfo);
+                if (action.firingCharacter.isTurnOver()) {
+                    const activeSquadMember = squad.find((character: Character) => !character.isTurnOver());
+                    if (activeSquadMember) {
+                        this.setSelectedCharacter(activeSquadMember.index);
+                    } else {
+                        this.nextTurn();
+                    }
+                } else {
+                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                }
                 break;
             case ActionType.END_CHARACTER_TURN:
                 action.character.setTurnOver();
@@ -283,6 +306,100 @@ export class GameManager {
             `Move squad members`,
             TextType.SUBTITLE,
             Duration.LONG);
+    }
+
+    // TODO - this is a monster method.
+    private fireShot(shotInfo: ShotInfo): void {
+        const ray = new Ray(
+            Grid.getCanvasFromTileCoords(shotInfo.fromTileCoords).add(Grid.HALF_TILE),
+            new Point(
+                Math.cos(shotInfo.aimAngleRadiansClockwise),
+                Math.sin(shotInfo.aimAngleRadiansClockwise)));
+
+        // Find which game border the ray intersects.
+        const topLeftCanvas = new Point(0, 0);
+        const topRightCanvas = topLeftCanvas.add(new Point(RENDER_SETTINGS.canvasWidth, 0));
+        const bottomLeftCanvas = topLeftCanvas.add(new Point(0, RENDER_SETTINGS.canvasHeight));
+        const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
+        const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas);
+        const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas);
+        const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas);
+        const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas);
+        const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
+        let gridBorderCollisionPt: Point | null = null;
+        for (const border of borders) {
+            const collisionResult = detectRayLineSegmentCollision(ray, border);
+            if (collisionResult.isCollision) {
+                gridBorderCollisionPt = collisionResult.collisionPt!;
+                break;
+            }
+        }
+        if (gridBorderCollisionPt == null) {
+            throw new Error(`Shot ray does not intersect with any Grid`);
+        }
+
+        const maxProjectileDistance = ray.startPt.distanceTo(gridBorderCollisionPt);
+        const stepSize = 3 * Grid.TILE_SIZE / 4;
+        let curDistance = stepSize;
+        const checkedTilesStringSet: Set<string> = new Set([ray.startPt.toString()]);
+        let closestCollisionPt: Point | null = null;
+        let closestCollisionDistance = maxProjectileDistance;
+        while (curDistance < maxProjectileDistance) {
+            const curTile = Grid.getTileFromCanvasCoords(ray.pointAtDistance(curDistance));
+            const tilesToCheck =
+                [curTile]
+                    .concat(Grid.getAdjacentTiles(curTile))
+                    .filter((tile: Point) => !checkedTilesStringSet.has(tile.toString()));
+
+            for (const tile of tilesToCheck) {
+                checkedTilesStringSet.add(tile.toString());
+                if (!this.isTileOccupied(tile)) {
+                    continue;
+                }
+                // Either an obstacle of player in tile.
+                const obstacle = this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile));
+                if (obstacle) {
+                    for (const edge of obstacle.getEdges()) {
+                        const collisionResult = detectRayLineSegmentCollision(ray, edge);
+                        if (collisionResult.isCollision) {
+                            const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
+                            if (distance < closestCollisionDistance) {
+                                closestCollisionDistance = distance;
+                                closestCollisionPt = collisionResult.collisionPt!;
+                            }
+                        }
+                    }
+                } else {
+                    const character = this.redSquad.concat(this.blueSquad)
+                        .find((character) => character.tileCoords.equals(tile));
+                    if (!character) {
+                        throw new Error(`Tile is occupied but no obstacle or character...`);
+                    }
+                    if (character.isBlueTeam === shotInfo.isShotFromBlueTeam) {
+                        // TODO - allow friendly fire?
+                        continue;
+                    }
+                    // Approximate with bounding box for now.
+                    for (const edge of character.getEdges()) {
+                        const collisionResult = detectRayLineSegmentCollision(ray, edge);
+                        if (collisionResult.isCollision) {
+                            const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
+                            if (distance < closestCollisionDistance) {
+                                closestCollisionDistance = distance;
+                                closestCollisionPt = collisionResult.collisionPt!;
+                                console.log("Hit character");
+                            }
+                        }
+                    }
+                }
+            }
+            if (closestCollisionPt != null) {
+                break;
+            }
+            curDistance += stepSize;
+        }
+
+        this.projectile = new Projectile({ context: this.context, ray, maxDistance: closestCollisionDistance });
     }
 
     private tryPlacingCharacter(tileCoords: Point): void {
@@ -482,15 +599,15 @@ export class GameManager {
                     eventType: EventType.KeyDown,
                 });
                 this.controlMap.add({
-                    key: FIRE_KEY,
+                    key: SHOOT_KEY,
                     name: 'Fire',
                     func: () => {
                         if (this.selectedCharacter == null) {
                             throw new Error(
                                 `There's no selected character when canceling shooting.`);
                         }
-                        const fireAction: FireAction = {
-                            type: ActionType.FIRE,
+                        const fireAction: ShootAction = {
+                            type: ActionType.SHOOT,
                             firingCharacter: this.selectedCharacter,
                         };
                         this.onAction(fireAction);

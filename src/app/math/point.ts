@@ -52,6 +52,14 @@ export class Point {
     toString(): string {
         return `(${this.x}, ${this.y})`;
     }
+
+    getNormalVectorClockwise(): Point {
+        return new Point(this.y, -this.x);
+    }
+
+    getNormalVectorCounterclockwise(): Point {
+        return new Point(-this.y, this.x);
+    }
 }
 
 export function containsPoint(x: Point, points: Point[]): boolean {

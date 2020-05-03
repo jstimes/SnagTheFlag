@@ -92,6 +92,7 @@ class Controls {
     constructor() {
         document.onkeydown = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, true);
+            console.log(e.keyCode);
         };
         document.onkeyup = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, false);
@@ -250,7 +251,15 @@ class Controls {
             case Key.SPACE:
                 return 'Space';
             case Key.QUESTION_MARK:
-                return '?'
+                return '?';
+            case Key.LEFT_ARROW:
+                return 'Left arrow';
+            case Key.UP_ARROW:
+                return 'Up arrow';
+            case Key.RIGHT_ARROW:
+                return 'Right arrow';
+            case Key.DOWN_ARROW:
+                return 'Down arrow';
             default:
                 throw new Error("Need to add string for Key");
         }
@@ -261,6 +270,11 @@ export enum Key {
     ENTER = 13,
     SHIFT = 16,
     SPACE = 32,
+
+    LEFT_ARROW = 37,
+    UP_ARROW = 38,
+    RIGHT_ARROW = 39,
+    DOWN_ARROW = 40,
 
     ONE = 49,
     TWO = 50,

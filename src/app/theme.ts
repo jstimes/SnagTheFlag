@@ -23,6 +23,8 @@ export interface Theme {
     readonly availableForMovementColor: string;
     readonly emptyCellHoverColor: string;
 
+    readonly projectileColor: string;
+
     /* UI colors. */
     readonly uiBackgroundColor;
     readonly buttonTextColor;
@@ -47,6 +49,8 @@ export const THEME: Theme = {
     selectedCharacterOutlineColor: '#000000',
     availableForMovementColor: '#b8b6a5',
     emptyCellHoverColor: '#d9d7bf',
+
+    projectileColor: '#ad8a2a',
 
     uiBackgroundColor: '#959aa3',
     buttonTextColor: '#1560e8',
