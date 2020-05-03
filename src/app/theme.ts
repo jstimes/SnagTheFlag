@@ -24,6 +24,8 @@ export interface Theme {
     readonly emptyCellHoverColor: string;
 
     readonly projectileColor: string;
+    readonly remainingHealthBarColor: string;
+    readonly lostHealthBarColor: string;
 
     /* UI colors. */
     readonly uiBackgroundColor;
@@ -51,6 +53,8 @@ export const THEME: Theme = {
     emptyCellHoverColor: '#d9d7bf',
 
     projectileColor: '#ad8a2a',
+    remainingHealthBarColor: '#00FF00',
+    lostHealthBarColor: '#FF0000',
 
     uiBackgroundColor: '#959aa3',
     buttonTextColor: '#1560e8',

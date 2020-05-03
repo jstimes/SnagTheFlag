@@ -150,15 +150,16 @@ export class Character {
         context.fill();
 
         // Character number.
+        const tileBottomLeftCanvas = tileTopLeftCanvas.add(new Point(0, Grid.TILE_SIZE));
         const text = `${this.index + 1}`;
         context.fillStyle = THEME.textColor;
         const fontSize = 12;
-        const margins = new Point(Grid.TILE_SIZE / 12, fontSize);
+        const margins = new Point(Grid.TILE_SIZE / 12, Grid.TILE_SIZE / 12);
         context.font = `${fontSize}px fantasy`;
         context.fillText(
             text,
-            tileTopLeftCanvas.x + margins.x,
-            tileTopLeftCanvas.y + margins.y);
+            tileBottomLeftCanvas.x + margins.x,
+            tileBottomLeftCanvas.y - margins.y);
 
         // Draws bounding box.
         // for (const edge of this.getEdges()) {
@@ -168,6 +169,26 @@ export class Character {
         //     context.closePath();
         //     context.stroke();
         // }
+
+        // Health bar.
+        const healthBarHeight = Grid.TILE_SIZE / 10;
+        const healthBarWidth = 2 * CHARACTER_CIRCLE_RADIUS + healthBarHeight;
+        const fractionHealthLeft = this.health / this.settings.maxHealth;
+        const healthBarTopLeft = tileCenterCanvas
+            .add(new Point(
+                -healthBarWidth / 2,
+                -CHARACTER_CIRCLE_RADIUS - healthBarHeight * 2));
+        const remainingHealthWidth = healthBarWidth * fractionHealthLeft;
+        context.fillStyle = THEME.remainingHealthBarColor;
+        context.fillRect(healthBarTopLeft.x, healthBarTopLeft.y, remainingHealthWidth, healthBarHeight);
+        if (this.health !== this.settings.maxHealth) {
+            context.fillStyle = THEME.lostHealthBarColor;
+            context.fillRect(
+                healthBarTopLeft.x + remainingHealthWidth,
+                healthBarTopLeft.y,
+                healthBarWidth - remainingHealthWidth,
+                healthBarHeight);
+        }
 
         // Aim indicator.
         if (!this.isAiming) {

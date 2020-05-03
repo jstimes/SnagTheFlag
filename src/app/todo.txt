@@ -6,7 +6,8 @@ MVP
     - Freeze controls?
     - damage enemy
 
-
+Make every render size in terms of Grid.TILE_SIZE
+so it's easy to resize.
 
 Things to experiment with:
 - destructible obstacles

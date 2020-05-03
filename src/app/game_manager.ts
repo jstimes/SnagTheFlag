@@ -174,7 +174,7 @@ export class GameManager {
             .pointAtDistance(this.projectile.maxDistance);
         const particleSystem = new ParticleSystem({
             startPositionCanvas: hitPositionCanvas,
-            particleCount: 300,
+            particleCount: 100,
             colorA: '#FF0000',
             colorB: '#00FF00',
             shape: ParticleShape.LINE,
