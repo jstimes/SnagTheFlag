@@ -12,6 +12,7 @@ import { Character, ShotInfo } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile } from 'src/app/projectile';
+import { ParticleSystem, ParticleShape } from 'src/app/particle_system';
 
 
 enum GamePhase {
@@ -99,6 +100,8 @@ export class GameManager {
     private projectile?: Projectile;
     private projectileTargetTile?: Point;
 
+    private particleSystems: ParticleSystem[];
+
     constructor(
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
@@ -137,6 +140,11 @@ export class GameManager {
                     break;
             }
         }
+        for (const particleSystem of this.particleSystems) {
+            particleSystem.update(elapsedMs);
+        }
+        this.particleSystems = this.particleSystems
+            .filter((particleSystem) => particleSystem.isAlive);
         this.hud.update(elapsedMs);
     }
 
@@ -162,6 +170,17 @@ export class GameManager {
         } else {
             this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
         }
+        const hitPositionCanvas = this.projectile.ray
+            .pointAtDistance(this.projectile.maxDistance);
+        const particleSystem = new ParticleSystem({
+            startPositionCanvas: hitPositionCanvas,
+            particleCount: 300,
+            colorA: '#FF0000',
+            colorB: '#00FF00',
+            shape: ParticleShape.LINE,
+        });
+        console.log("Created PS");
+        this.particleSystems.push(particleSystem);
         this.projectile = undefined;
     }
 
@@ -205,6 +224,10 @@ export class GameManager {
         }
         if (this.projectile != null) {
             this.projectile.render();
+        }
+        for (const particleSystem of this.particleSystems) {
+            // TODO - be consistent with giving context
+            particleSystem.render(this.context);
         }
         this.hud.render();
     }
@@ -678,6 +701,7 @@ export class GameManager {
         this.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.blueSquad = [];
         this.redSquad = [];
+        this.particleSystems = [];
         // Blue is always assumed to go first...
         this.isBlueTurn = true;
         this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
