@@ -70,7 +70,7 @@ const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
         HEAL,
     ]),
     shotDamage: 5,
-    numRicochets: 0,
+    numRicochets: 2,
 };
 
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
@@ -242,7 +242,8 @@ export class Character {
         this.checkAndSetTurnOver();
         const shotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
-            fromTileCoords: this.tileCoords,
+            // Shoot from center of tile.
+            fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
             damage: this.settings.shotDamage,
             numRicochets: this.settings.numRicochets,
@@ -260,10 +261,10 @@ export class Character {
         const topRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, 0));
         const bottomLeftCorner = topLeftCorner.add(new Point(0, CHARACTER_CIRCLE_RADIUS * 2));
         const bottomRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, CHARACTER_CIRCLE_RADIUS * 2));
-        const topEdge = new LineSegment(topLeftCorner, topRightCorner);
-        const rightEdge = new LineSegment(topRightCorner, bottomRightCorner);
-        const bottomEdge = new LineSegment(bottomLeftCorner, bottomRightCorner);
-        const leftEdge = new LineSegment(topLeftCorner, bottomLeftCorner);
+        const topEdge = new LineSegment(topLeftCorner, topRightCorner, new Point(0, 1));
+        const rightEdge = new LineSegment(topRightCorner, bottomRightCorner, new Point(1, 0));
+        const bottomEdge = new LineSegment(bottomLeftCorner, bottomRightCorner, new Point(0, -1));
+        const leftEdge = new LineSegment(topLeftCorner, bottomLeftCorner, new Point(-1, 0));
         return [
             topEdge,
             rightEdge,

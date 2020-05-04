@@ -11,7 +11,7 @@ import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
 import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
-import { Projectile } from 'src/app/projectile';
+import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape } from 'src/app/particle_system';
 import { ShotInfo } from 'src/app/shot_info';
 
@@ -157,6 +157,7 @@ export class GameManager {
         if (this.projectile.distance < this.projectile.maxDistance) {
             return;
         }
+        let foundHit = false;
         if (this.projectileTargetTile != null) {
             const targetCharacter = this.redSquad.concat(this.blueSquad)
                 .filter((character) => character.isAlive())
@@ -164,7 +165,21 @@ export class GameManager {
             if (targetCharacter) {
                 // Assumes friendly fire check occurred in 'fire'.
                 targetCharacter.health -= this.projectile.shotInfo.damage;
+                foundHit = true;
             }
+        }
+        if (!foundHit && this.projectile.shotInfo.numRicochets > 0) {
+            const newDirection = this.projectile.ray.direction
+                .reflect(this.projectile.target.normal);
+            const newShotInfo: ShotInfo = {
+                damage: this.projectile.shotInfo.damage,
+                numRicochets: this.projectile.shotInfo.numRicochets - 1,
+                isShotFromBlueTeam: this.projectile.shotInfo.isShotFromBlueTeam,
+                fromCanvasCoords: this.projectile.target.canvasCoords,
+                aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
+            };
+            this.fireShot(newShotInfo);
+            return;
         }
         // TODO - ricochet
         if (this.selectedCharacter!.isTurnOver()) {
@@ -358,7 +373,7 @@ export class GameManager {
     // TODO - this is a monster method.
     private fireShot(shotInfo: ShotInfo): void {
         const ray = new Ray(
-            Grid.getCanvasFromTileCoords(shotInfo.fromTileCoords).add(Grid.HALF_TILE),
+            shotInfo.fromCanvasCoords,
             new Point(
                 Math.cos(shotInfo.aimAngleRadiansClockwise),
                 Math.sin(shotInfo.aimAngleRadiansClockwise)));
@@ -368,16 +383,18 @@ export class GameManager {
         const topRightCanvas = topLeftCanvas.add(new Point(RENDER_SETTINGS.canvasWidth, 0));
         const bottomLeftCanvas = topLeftCanvas.add(new Point(0, RENDER_SETTINGS.canvasHeight));
         const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
-        const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas);
-        const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas);
-        const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas);
-        const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas);
+        const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
+        const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, -1));
+        const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas, new Point(-1, 0));
+        const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, 1));
         const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
         let gridBorderCollisionPt: Point | null = null;
+        let borderNormal: Point | null = null;
         for (const border of borders) {
             const collisionResult = detectRayLineSegmentCollision(ray, border);
             if (collisionResult.isCollision) {
                 gridBorderCollisionPt = collisionResult.collisionPt!;
+                borderNormal = border.normal;
                 break;
             }
         }
@@ -388,10 +405,11 @@ export class GameManager {
         const maxProjectileDistance = ray.startPt.distanceTo(gridBorderCollisionPt);
         const stepSize = 3 * Grid.TILE_SIZE / 4;
         let curDistance = stepSize;
-        const checkedTilesStringSet: Set<string> = new Set([ray.startPt.toString()]);
+        const checkedTilesStringSet: Set<string> = new Set([Grid.getTileFromCanvasCoords(ray.startPt).toString()]);
         let closestCollisionPt: Point | null = null;
         let closestCollisionTile: Point | null = null;
         let closestCollisionDistance = maxProjectileDistance;
+        let closestTargetNormal: Point | null = null;
         while (curDistance < maxProjectileDistance) {
             const curTile = Grid.getTileFromCanvasCoords(ray.pointAtDistance(curDistance));
             const tilesToCheck =
@@ -415,6 +433,7 @@ export class GameManager {
                                 closestCollisionDistance = distance;
                                 closestCollisionTile = tile;
                                 closestCollisionPt = collisionResult.collisionPt!;
+                                closestTargetNormal = edge.normal;
                             }
                         }
                     }
@@ -438,6 +457,7 @@ export class GameManager {
                                 closestCollisionDistance = distance;
                                 closestCollisionTile = tile;
                                 closestCollisionPt = collisionResult.collisionPt!;
+                                closestTargetNormal = edge.normal;
                             }
                         }
                     }
@@ -449,14 +469,26 @@ export class GameManager {
             curDistance += stepSize;
         }
 
+        let target: Target | null = null;
         if (closestCollisionTile != null) {
             this.projectileTargetTile = closestCollisionTile;
+            target = {
+                normal: closestTargetNormal!,
+                tile: closestCollisionTile!,
+                canvasCoords: closestCollisionPt!,
+            };
+        } else {
+            target = {
+                normal: borderNormal!,
+                canvasCoords: gridBorderCollisionPt!,
+            };
         }
         this.projectile = new Projectile({
             context: this.context,
             ray,
             maxDistance: closestCollisionDistance,
             shotInfo,
+            target,
         });
     }
 

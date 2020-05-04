@@ -11,7 +11,7 @@ export class Ray {
 }
 
 export class LineSegment {
-    constructor(readonly startPt: Point, readonly endPt: Point) { }
+    constructor(readonly startPt: Point, readonly endPt: Point, readonly normal: Point) { }
 }
 
 interface RayLineSegmentCollisionResult {

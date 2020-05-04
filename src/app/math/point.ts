@@ -60,6 +60,11 @@ export class Point {
     getNormalVectorCounterclockwise(): Point {
         return new Point(-this.y, this.x);
     }
+
+    /** Assumes this point is incoming vector. */
+    reflect(normal: Point): Point {
+        return this.subtract(normal.multiplyScaler(2 * this.dot(normal)));
+    }
 }
 
 export function containsPoint(x: Point, points: Point[]): boolean {

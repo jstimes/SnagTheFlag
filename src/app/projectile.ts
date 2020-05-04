@@ -10,12 +10,19 @@ const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 90;
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
 
+export interface Target {
+    readonly normal: Point;
+    readonly tile?: Point;
+    readonly canvasCoords: Point;
+}
+
 export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
     readonly ray: Ray;
     readonly maxDistance: number;
     readonly shotInfo: ShotInfo;
+    readonly target: Target;
     distance: number;
 
     constructor(params: {
@@ -23,12 +30,14 @@ export class Projectile {
         ray: Ray;
         shotInfo: ShotInfo;
         maxDistance: number;
+        target: Target;
     }) {
         this.context = params.context;
         this.ray = params.ray;
         this.maxDistance = params.maxDistance;
         this.shotInfo = params.shotInfo;
         this.distance = 0;
+        this.target = params.target;
     }
 
     update(elapsedMs: number): void {
