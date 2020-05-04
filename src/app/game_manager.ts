@@ -158,6 +158,7 @@ export class GameManager {
         }
         if (this.projectileTargetTile != null) {
             const targetCharacter = this.redSquad.concat(this.blueSquad)
+                .filter((character) => character.isAlive())
                 .find((character) => character.tileCoords.equals(this.projectileTargetTile!));
             if (targetCharacter) {
                 // Assumes friendly fire check occurred in 'fire'.
@@ -528,7 +529,9 @@ export class GameManager {
             // but they can't stop there.
             const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
             const isSquadMemberAtTile = squad.find((squadMember: Character) => {
-                return squadMember.tileCoords.equals(tile) && squadMember !== this.selectedCharacter;
+                return squadMember.isAlive()
+                    && squadMember.tileCoords.equals(tile)
+                    && squadMember !== this.selectedCharacter;
             }) != null;
             return isAvailable(tile) || isSquadMemberAtTile;
         };
