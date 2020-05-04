@@ -8,11 +8,12 @@ import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
-import { Character, ShotInfo } from 'src/app/character';
+import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape } from 'src/app/particle_system';
+import { ShotInfo } from 'src/app/shot_info';
 
 
 enum GamePhase {
@@ -162,7 +163,7 @@ export class GameManager {
                 .find((character) => character.tileCoords.equals(this.projectileTargetTile!));
             if (targetCharacter) {
                 // Assumes friendly fire check occurred in 'fire'.
-                targetCharacter.health -= this.projectile.damage;
+                targetCharacter.health -= this.projectile.shotInfo.damage;
             }
         }
         // TODO - ricochet
@@ -455,7 +456,7 @@ export class GameManager {
             context: this.context,
             ray,
             maxDistance: closestCollisionDistance,
-            damage: shotInfo.damage,
+            shotInfo,
         });
     }
 

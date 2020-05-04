@@ -2,6 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
+import { ShotInfo } from 'src/app/shot_info';
 
 const TWO_PI = Math.PI * 2;
 
@@ -71,15 +72,6 @@ const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
     shotDamage: 5,
     numRicochets: 0,
 };
-
-export interface ShotInfo {
-    // TODO friendly fire?
-    readonly isShotFromBlueTeam: boolean;
-    readonly fromTileCoords: Point;
-    readonly aimAngleRadiansClockwise: number;
-    readonly damage: number;
-    readonly numRicochets: number;
-}
 
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;

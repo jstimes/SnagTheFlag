@@ -2,6 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
+import { ShotInfo } from 'src/app/shot_info';
 
 const PROJECTILE_CANVAS_RADIUS = Grid.TILE_SIZE / 12;
 const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 90;
@@ -14,19 +15,19 @@ export class Projectile {
     private readonly context: CanvasRenderingContext2D;
     readonly ray: Ray;
     readonly maxDistance: number;
-    readonly damage: number;
+    readonly shotInfo: ShotInfo;
     distance: number;
 
     constructor(params: {
         context: CanvasRenderingContext2D;
         ray: Ray;
+        shotInfo: ShotInfo;
         maxDistance: number;
-        damage: number;
     }) {
         this.context = params.context;
         this.ray = params.ray;
         this.maxDistance = params.maxDistance;
-        this.damage = params.damage;
+        this.shotInfo = params.shotInfo;
         this.distance = 0;
     }
 
