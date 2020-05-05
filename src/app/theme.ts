@@ -52,7 +52,7 @@ export const THEME: Theme = {
     availableForMovementColor: '#b8b6a5',
     emptyCellHoverColor: '#d9d7bf',
 
-    projectileColor: '#ad8a2a',
+    projectileColor: '#fff86e',
     remainingHealthBarColor: '#00FF00',
     lostHealthBarColor: '#FF0000',
 

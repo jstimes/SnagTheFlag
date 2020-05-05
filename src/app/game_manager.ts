@@ -175,13 +175,13 @@ export class GameManager {
                 damage: this.projectile.shotInfo.damage,
                 numRicochets: this.projectile.shotInfo.numRicochets - 1,
                 isShotFromBlueTeam: this.projectile.shotInfo.isShotFromBlueTeam,
+                fromTileCoords: this.projectile.target.tile,
                 fromCanvasCoords: this.projectile.target.canvasCoords,
                 aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
             };
             this.fireShot(newShotInfo);
             return;
         }
-        // TODO - ricochet
         if (this.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
         } else {
@@ -196,7 +196,6 @@ export class GameManager {
             colorB: '#00FF00',
             shape: ParticleShape.LINE,
         });
-        console.log("Created PS");
         this.particleSystems.push(particleSystem);
         this.projectile = undefined;
     }
@@ -389,12 +388,18 @@ export class GameManager {
         const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, 1));
         const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
         let gridBorderCollisionPt: Point | null = null;
+        let gridBorderCollisionTile: Point | null = null;
         let borderNormal: Point | null = null;
         for (const border of borders) {
             const collisionResult = detectRayLineSegmentCollision(ray, border);
             if (collisionResult.isCollision) {
-                gridBorderCollisionPt = collisionResult.collisionPt!;
                 borderNormal = border.normal;
+                const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .1);
+                gridBorderCollisionPt = collisionResult.collisionPt!.add(offset);
+
+                // Move out from edge a little to accurately get tile.
+                gridBorderCollisionTile = Grid.getTileFromCanvasCoords(gridBorderCollisionPt);
+
                 break;
             }
         }
@@ -405,7 +410,9 @@ export class GameManager {
         const maxProjectileDistance = ray.startPt.distanceTo(gridBorderCollisionPt);
         const stepSize = 3 * Grid.TILE_SIZE / 4;
         let curDistance = stepSize;
-        const checkedTilesStringSet: Set<string> = new Set([Grid.getTileFromCanvasCoords(ray.startPt).toString()]);
+        const currentTileString = shotInfo.fromTileCoords.toString();// Grid.getTileFromCanvasCoords(ray.startPt).toString();
+        console.log(`Current tile: ${currentTileString}`);
+        const checkedTilesStringSet: Set<string> = new Set([currentTileString]);
         let closestCollisionPt: Point | null = null;
         let closestCollisionTile: Point | null = null;
         let closestCollisionDistance = maxProjectileDistance;
@@ -481,7 +488,9 @@ export class GameManager {
             target = {
                 normal: borderNormal!,
                 canvasCoords: gridBorderCollisionPt!,
+                tile: gridBorderCollisionTile!,
             };
+            console.log(`Target tile: ${target.tile}`)
         }
         this.projectile = new Projectile({
             context: this.context,

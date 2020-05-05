@@ -242,6 +242,7 @@ export class Character {
         this.checkAndSetTurnOver();
         const shotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
+            fromTileCoords: this.tileCoords,
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,

@@ -4,6 +4,7 @@ export interface ShotInfo {
     // TODO friendly fire?
     readonly isShotFromBlueTeam: boolean;
     readonly fromCanvasCoords: Point;
+    readonly fromTileCoords: Point;
     readonly aimAngleRadiansClockwise: number;
     readonly damage: number;
     readonly numRicochets: number;

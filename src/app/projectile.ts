@@ -12,7 +12,7 @@ const TWO_PI = Math.PI * 2;
 
 export interface Target {
     readonly normal: Point;
-    readonly tile?: Point;
+    readonly tile: Point;
     readonly canvasCoords: Point;
 }
 
@@ -45,7 +45,6 @@ export class Projectile {
     }
 
     // TODO - draw trail?
-    //      - particles on hit?
     render(): void {
         if (this.distance > this.maxDistance) {
             return;
