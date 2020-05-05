@@ -112,7 +112,7 @@ export class GameManager {
     private selectedCharacter?: Character;
     private selectedCharacterState?: SelectedCharacterState;
 
-    private projectile?: Projectile;
+    private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
 
     constructor(
@@ -133,8 +133,23 @@ export class GameManager {
     }
 
     update(elapsedMs: number): void {
-        if (this.projectile != null) {
-            this.updateProjectile(elapsedMs);
+        for (const particleSystem of this.particleSystems) {
+            particleSystem.update(elapsedMs);
+        }
+        this.particleSystems = this.particleSystems
+            .filter((particleSystem) => particleSystem.isAlive);
+
+        let hasFiringProjectiles = false;
+        for (const projectile of this.projectiles) {
+            this.updateProjectile(elapsedMs, projectile);
+            if (!projectile.isAtTarget()) {
+                hasFiringProjectiles = true;
+            }
+        }
+        this.projectiles = this.projectiles
+            .filter((projectile) => !projectile.isDead || !projectile.isTrailGone());
+        if (hasFiringProjectiles) {
+            // No moves until shot is done.
             return;
         }
 
@@ -153,55 +168,47 @@ export class GameManager {
                     break;
             }
         }
-        for (const particleSystem of this.particleSystems) {
-            particleSystem.update(elapsedMs);
-        }
-        this.particleSystems = this.particleSystems
-            .filter((particleSystem) => particleSystem.isAlive);
         this.hud.update(elapsedMs);
     }
 
-    private updateProjectile(elapsedMs: number): void {
-        if (this.projectile == null) {
-            throw new Error(`Projectile is null in updateProjectile`);
-        }
-        this.projectile.update(elapsedMs);
-        if (this.projectile.distance < this.projectile.maxDistance) {
+    private updateProjectile(elapsedMs: number, projectile: Projectile): void {
+        projectile.update(elapsedMs);
+        if (projectile.isDead || !projectile.isAtTarget()) {
             return;
         }
-        let foundHit = false;
         const targetCharacter = this.redSquad.concat(this.blueSquad)
             .filter((character) => character.isAlive())
-            .find((character) => character.tileCoords.equals(this.projectile!.target.tile));
+            .find((character) => character.tileCoords.equals(projectile.target.tile));
         if (targetCharacter) {
             // Assumes friendly fire check occurred in 'fire'.
-            targetCharacter.health -= this.projectile.shotInfo.damage;
-            foundHit = true;
+            targetCharacter.health -= projectile.shotInfo.damage;
+            projectile.setIsDead();
         }
-        if (!foundHit && this.projectile.shotInfo.numRicochets > 0) {
-            const newDirection = this.projectile.ray.direction
-                .reflect(this.projectile.target.normal);
+        if (!projectile.isDead && projectile.shotInfo.numRicochets > 0) {
+            const newDirection = projectile.ray.direction
+                .reflect(projectile.target.normal);
             const newShotInfo: ShotInfo = {
-                damage: this.projectile.shotInfo.damage,
-                numRicochets: this.projectile.shotInfo.numRicochets - 1,
-                isShotFromBlueTeam: this.projectile.shotInfo.isShotFromBlueTeam,
-                fromTileCoords: this.projectile.target.tile,
-                fromCanvasCoords: this.projectile.target.canvasCoords,
+                damage: projectile.shotInfo.damage,
+                numRicochets: projectile.shotInfo.numRicochets - 1,
+                isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
+                fromTileCoords: projectile.target.tile,
+                fromCanvasCoords: projectile.target.canvasCoords,
                 aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
             };
             this.fireShot(newShotInfo);
+            projectile.setIsDead();
             return;
         }
+        projectile.setIsDead();
         if (this.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
         } else {
             this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
         }
-        const hitPositionCanvas = this.projectile.ray
-            .pointAtDistance(this.projectile.maxDistance);
+        const hitPositionCanvas = projectile.ray
+            .pointAtDistance(projectile.maxDistance);
         const particleSystem = new ParticleSystem(getBulletParticleSystemParams(hitPositionCanvas));
         this.particleSystems.push(particleSystem);
-        this.projectile = undefined;
     }
 
     render(): void {
@@ -247,8 +254,8 @@ export class GameManager {
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
-        if (this.projectile != null) {
-            this.projectile.render();
+        for (const projectile of this.projectiles) {
+            projectile.render();
         }
         this.hud.render();
     }
@@ -496,15 +503,14 @@ export class GameManager {
                 canvasCoords: gridBorderCollisionPt!,
                 tile: gridBorderCollisionTile!,
             };
-            console.log(`Target tile: ${target.tile}`)
         }
-        this.projectile = new Projectile({
+        this.projectiles.push(new Projectile({
             context: this.context,
             ray,
             maxDistance: closestCollisionDistance,
             shotInfo,
             target,
-        });
+        }));
     }
 
     private tryPlacingCharacter(tileCoords: Point): void {
@@ -752,6 +758,7 @@ export class GameManager {
         this.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.blueSquad = [];
         this.redSquad = [];
+        this.projectiles = [];
         this.particleSystems = [];
         // Blue is always assumed to go first...
         this.isBlueTurn = true;

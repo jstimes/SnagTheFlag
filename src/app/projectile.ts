@@ -3,9 +3,11 @@ import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { ShotInfo } from 'src/app/shot_info';
+import { hexStringToColor } from 'src/app/color';
 
 const PROJECTILE_CANVAS_RADIUS = Grid.TILE_SIZE / 12;
-const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 90;
+const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 260;
+const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 4;
 
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
@@ -23,6 +25,8 @@ export class Projectile {
     readonly maxDistance: number;
     readonly shotInfo: ShotInfo;
     readonly target: Target;
+
+    isDead: boolean;
     distance: number;
 
     constructor(params: {
@@ -38,19 +42,63 @@ export class Projectile {
         this.shotInfo = params.shotInfo;
         this.distance = 0;
         this.target = params.target;
+        this.isDead = false;
     }
 
     update(elapsedMs: number): void {
         this.distance = this.distance + PROJECTILE_SPEED_PER_MS * elapsedMs;
     }
 
-    // TODO - draw trail?
+    isAtTarget(): boolean {
+        return !this.isDead && this.distance >= this.maxDistance;
+    }
+
+    isTrailGone(): boolean {
+        return this.distance - this.maxDistance > MAX_TRAIL_DISTANCE;
+    }
+
+    setIsDead(): void {
+        this.isDead = true;
+    }
+
     render(): void {
-        if (this.distance > this.maxDistance) {
-            return;
-        }
         const context = this.context;
         const currentPointCanvas = this.ray.pointAtDistance(this.distance);
+
+        if (this.distance > PROJECTILE_CANVAS_RADIUS && !this.isTrailGone()) {
+            const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
+            let overshotDistance = 0;
+            let trailStartPointCanvas = currentPointCanvas;
+            if (this.distance > this.maxDistance) {
+                overshotDistance = MAX_TRAIL_DISTANCE - (this.distance - this.maxDistance);
+                trailStartPointCanvas = this.ray.pointAtDistance(this.maxDistance);
+            }
+            let trailDistance = Math.min(
+                MAX_TRAIL_DISTANCE,
+                this.distance,
+                this.distance + overshotDistance);
+            const trailFadePointCanvas = currentPointCanvas.add(
+                bacwardsDirection.multiplyScaler(trailDistance));
+            const gradient = context.createLinearGradient(
+                currentPointCanvas.x, currentPointCanvas.y,
+                trailFadePointCanvas.x, trailFadePointCanvas.y);
+            const fullColor = THEME.projectileTrailColor;
+            const fadedColor = `${THEME.projectileTrailColor}00`;
+            gradient.addColorStop(0, fullColor);
+            gradient.addColorStop(1, fadedColor);
+
+            // Draw trail.
+            context.strokeStyle = gradient;
+            context.beginPath();
+            context.moveTo(trailStartPointCanvas.x, trailStartPointCanvas.y);
+            context.lineTo(trailFadePointCanvas.x, trailFadePointCanvas.y);
+            context.closePath();
+            context.stroke();
+        }
+
+        if (this.isDead) {
+            return;
+        }
 
         context.fillStyle = THEME.projectileColor;
         context.beginPath();
