@@ -14,6 +14,7 @@ import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/co
 import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo } from 'src/app/shot_info';
+import { Action, ActionType, throwBadAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction } from 'src/app/actions';
 
 
 enum GamePhase {
@@ -21,42 +22,6 @@ enum GamePhase {
     CHARACTER_PLACEMENT,
     // Main game.
     COMBAT,
-}
-
-enum ActionType {
-    PLACE_CHARACTER,
-    MOVE_CHARACTER,
-    SHOOT,
-    END_CHARACTER_TURN,
-}
-
-interface PlaceCharacterAction {
-    readonly type: ActionType.PLACE_CHARACTER;
-    readonly tileCoords: Point;
-}
-
-interface MoveCharacterAction {
-    readonly type: ActionType.MOVE_CHARACTER;
-    readonly character: Character;
-    readonly tileCoords: Point;
-}
-
-interface EndCharacterTurnAction {
-    readonly type: ActionType.END_CHARACTER_TURN;
-    readonly character: Character;
-}
-
-interface ShootAction {
-    readonly type: ActionType.SHOOT;
-    readonly firingCharacter: Character;
-}
-
-type Action = PlaceCharacterAction | MoveCharacterAction |
-    EndCharacterTurnAction | ShootAction;
-
-/** Used for exhaustive Action checking. */
-function throwBadAction(action: never): never {
-    throw new Error('Action not handled');
 }
 
 enum SelectedCharacterState {
@@ -305,20 +270,24 @@ export class GameManager {
                     throw new Error(
                         `Invalid character movement location: ${action.tileCoords.toString()}`);
                 }
-                const manhattandDistanceAway = action.character.tileCoords.manhattanDistanceTo(action.tileCoords);
-                if (manhattandDistanceAway > action.character.settings.maxMovesPerTurn) {
-                    throw new Error(`Invalid character movement location (too far): ` +
-                        `start: ${action.character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`)
+                if (this.selectedCharacter == null) {
+                    throw new Error(`Selected character is null or is not firing character on MOVE action`);
                 }
-                action.character.moveTo(action.tileCoords);
-                if (action.character.isTurnOver()) {
+                const character = this.selectedCharacter!;
+                const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tileCoords);
+                if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
+                    throw new Error(`Invalid character movement location (too far): ` +
+                        `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`)
+                }
+                character.moveTo(action.tileCoords);
+                if (character.isTurnOver()) {
                     this.onCharacterTurnOver();
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
                 break;
             case ActionType.SHOOT:
-                if (this.selectedCharacter == null || action.firingCharacter !== this.selectedCharacter) {
+                if (this.selectedCharacter == null) {
                     throw new Error(`Selected character is null or is not firing character on FIRE action`);
                 }
                 const shotInfo = this.selectedCharacter.shoot();
@@ -326,7 +295,10 @@ export class GameManager {
                 // Next turn logic runs when projectile dies.
                 break;
             case ActionType.END_CHARACTER_TURN:
-                action.character.setTurnOver();
+                if (this.selectedCharacter == null) {
+                    throw new Error(`Selected character is null or is not firing character on END_CHARACTER_TURN action`);
+                }
+                this.selectedCharacter!.setTurnOver();
                 this.onCharacterTurnOver();
                 break;
             default:
@@ -534,7 +506,6 @@ export class GameManager {
 
         const moveCharacterAction: MoveCharacterAction = {
             type: ActionType.MOVE_CHARACTER,
-            character: this.selectedCharacter!,
             tileCoords,
         };
         this.onAction(moveCharacterAction);
@@ -630,7 +601,6 @@ export class GameManager {
                 }
                 const action: EndCharacterTurnAction = {
                     type: ActionType.END_CHARACTER_TURN,
-                    character: this.selectedCharacter,
                 };
                 this.onAction(action);
             },
@@ -721,7 +691,6 @@ export class GameManager {
                         }
                         const fireAction: ShootAction = {
                             type: ActionType.SHOOT,
-                            firingCharacter: this.selectedCharacter,
                         };
                         this.onAction(fireAction);
                         this.setSelectedCharacterState(SelectedCharacterState.AWAITING);

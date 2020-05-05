@@ -7,7 +7,7 @@ import { ShotInfo } from 'src/app/shot_info';
 const TWO_PI = Math.PI * 2;
 
 enum CharacterActionType {
-    HEAL = 'HEAL',
+    HEAL = 'Heal',
 }
 
 /** Abilities characters can perform in addition to moving and shooting. */
