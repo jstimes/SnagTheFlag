@@ -99,8 +99,6 @@ export class GameManager {
     private selectedCharacterState?: SelectedCharacterState;
 
     private projectile?: Projectile;
-    private projectileTargetTile?: Point;
-
     private particleSystems: ParticleSystem[];
 
     constructor(
@@ -158,15 +156,13 @@ export class GameManager {
             return;
         }
         let foundHit = false;
-        if (this.projectileTargetTile != null) {
-            const targetCharacter = this.redSquad.concat(this.blueSquad)
-                .filter((character) => character.isAlive())
-                .find((character) => character.tileCoords.equals(this.projectileTargetTile!));
-            if (targetCharacter) {
-                // Assumes friendly fire check occurred in 'fire'.
-                targetCharacter.health -= this.projectile.shotInfo.damage;
-                foundHit = true;
-            }
+        const targetCharacter = this.redSquad.concat(this.blueSquad)
+            .filter((character) => character.isAlive())
+            .find((character) => character.tileCoords.equals(this.projectile!.target.tile));
+        if (targetCharacter) {
+            // Assumes friendly fire check occurred in 'fire'.
+            targetCharacter.health -= this.projectile.shotInfo.damage;
+            foundHit = true;
         }
         if (!foundHit && this.projectile.shotInfo.numRicochets > 0) {
             const newDirection = this.projectile.ray.direction
@@ -383,9 +379,9 @@ export class GameManager {
         const bottomLeftCanvas = topLeftCanvas.add(new Point(0, RENDER_SETTINGS.canvasHeight));
         const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
         const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
-        const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, -1));
+        const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, 1));
         const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas, new Point(-1, 0));
-        const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, 1));
+        const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, -1));
         const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
         let gridBorderCollisionPt: Point | null = null;
         let gridBorderCollisionTile: Point | null = null;
@@ -410,8 +406,8 @@ export class GameManager {
         const maxProjectileDistance = ray.startPt.distanceTo(gridBorderCollisionPt);
         const stepSize = 3 * Grid.TILE_SIZE / 4;
         let curDistance = stepSize;
-        const currentTileString = shotInfo.fromTileCoords.toString();// Grid.getTileFromCanvasCoords(ray.startPt).toString();
-        console.log(`Current tile: ${currentTileString}`);
+        const currentTileString = shotInfo.fromTileCoords.toString();
+        console.log(`From tile: ${currentTileString}`);
         const checkedTilesStringSet: Set<string> = new Set([currentTileString]);
         let closestCollisionPt: Point | null = null;
         let closestCollisionTile: Point | null = null;
@@ -432,7 +428,9 @@ export class GameManager {
                 // Either an obstacle or player in tile.
                 const obstacle = this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile));
                 if (obstacle) {
-                    for (const edge of obstacle.getEdges()) {
+                    // Omit edges on opposite side of obstacle.
+                    const edges = obstacle.getEdges().filter((edge) => edge.normal.dot(ray.direction) <= 0);
+                    for (const edge of edges) {
                         const collisionResult = detectRayLineSegmentCollision(ray, edge);
                         if (collisionResult.isCollision) {
                             const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
@@ -478,7 +476,6 @@ export class GameManager {
 
         let target: Target | null = null;
         if (closestCollisionTile != null) {
-            this.projectileTargetTile = closestCollisionTile;
             target = {
                 normal: closestTargetNormal!,
                 tile: closestCollisionTile!,

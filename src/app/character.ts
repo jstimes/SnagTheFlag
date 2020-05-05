@@ -262,9 +262,9 @@ export class Character {
         const topRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, 0));
         const bottomLeftCorner = topLeftCorner.add(new Point(0, CHARACTER_CIRCLE_RADIUS * 2));
         const bottomRightCorner = topLeftCorner.add(new Point(CHARACTER_CIRCLE_RADIUS * 2, CHARACTER_CIRCLE_RADIUS * 2));
-        const topEdge = new LineSegment(topLeftCorner, topRightCorner, new Point(0, 1));
+        const topEdge = new LineSegment(topLeftCorner, topRightCorner, new Point(0, -1));
         const rightEdge = new LineSegment(topRightCorner, bottomRightCorner, new Point(1, 0));
-        const bottomEdge = new LineSegment(bottomLeftCorner, bottomRightCorner, new Point(0, -1));
+        const bottomEdge = new LineSegment(bottomLeftCorner, bottomRightCorner, new Point(0, 1));
         const leftEdge = new LineSegment(topLeftCorner, bottomLeftCorner, new Point(-1, 0));
         return [
             topEdge,
