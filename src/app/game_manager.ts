@@ -179,7 +179,7 @@ export class GameManager {
         const targetCharacter = this.redSquad.concat(this.blueSquad)
             .filter((character) => character.isAlive())
             .find((character) => character.tileCoords.equals(projectile.target.tile));
-        if (targetCharacter) {
+        if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
             // Assumes friendly fire check occurred in 'fire'.
             targetCharacter.health -= projectile.shotInfo.damage;
             projectile.setIsDead();

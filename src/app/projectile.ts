@@ -6,8 +6,8 @@ import { ShotInfo } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
 
 const PROJECTILE_CANVAS_RADIUS = Grid.TILE_SIZE / 12;
-const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 260;
-const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 4;
+const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 80;
+const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
 
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
