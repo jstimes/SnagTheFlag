@@ -37,6 +37,7 @@ const TOGGLE_AIM_KEY = Key.A;
 const AIM_COUNTERCLOCKWISE_KEY = Key.S;
 const AIM_CLOCKWISE_KEY = Key.D;
 const SHOOT_KEY = Key.F;
+const HEAL_KEY = Key.H;
 const END_TURN_KEY = Key.E;
 
 const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
@@ -271,13 +272,13 @@ export class GameManager {
                         `Invalid character movement location: ${action.tileCoords.toString()}`);
                 }
                 if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null or is not firing character on MOVE action`);
+                    throw new Error(`Selected character is null on MOVE action`);
                 }
                 const character = this.selectedCharacter!;
                 const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tileCoords);
                 if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
                     throw new Error(`Invalid character movement location (too far): ` +
-                        `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`)
+                        `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`);
                 }
                 character.moveTo(action.tileCoords);
                 if (character.isTurnOver()) {
@@ -288,15 +289,32 @@ export class GameManager {
                 break;
             case ActionType.SHOOT:
                 if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null or is not firing character on FIRE action`);
+                    throw new Error(`Selected character is null on FIRE action`);
                 }
                 const shotInfo = this.selectedCharacter.shoot();
                 this.fireShot(shotInfo);
                 // Next turn logic runs when projectile dies.
                 break;
+            case ActionType.HEAL:
+                if (this.selectedCharacter == null) {
+                    throw new Error(`Selected character is null on HEAL action`);
+                }
+                this.selectedCharacter.regenHealth(action.healAmount);
+                this.selectedCharacter.useAction(action);
+                if (this.selectedCharacter.isTurnOver()) {
+                    this.onCharacterTurnOver();
+                } else {
+                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                }
+                break;
+            case ActionType.THROW_GRENADE:
+                if (this.selectedCharacter == null) {
+                    throw new Error(`Selected character is null on HEAL action`);
+                }
+                break;
             case ActionType.END_CHARACTER_TURN:
                 if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null or is not firing character on END_CHARACTER_TURN action`);
+                    throw new Error(`Selected character is null on END_CHARACTER_TURN action`);
                 }
                 this.selectedCharacter!.setTurnOver();
                 this.onCharacterTurnOver();
@@ -629,6 +647,18 @@ export class GameManager {
                         },
                         eventType: EventType.KeyPress,
                     });
+                }
+                for (const extraAction of this.selectedCharacter.extraActionsAvailable) {
+                    if (extraAction.type === ActionType.HEAL) {
+                        this.controlMap.add({
+                            key: HEAL_KEY,
+                            name: 'Heal',
+                            func: () => {
+                                this.onAction(extraAction);
+                            },
+                            eventType: EventType.KeyPress,
+                        });
+                    }
                 }
                 break;
             case SelectedCharacterState.MOVING:

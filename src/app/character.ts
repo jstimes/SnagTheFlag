@@ -3,41 +3,17 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
 import { ShotInfo } from 'src/app/shot_info';
+import { HealAction, ActionType, CharacterAbility, CharacterAction } from 'src/app/actions';
 
 const TWO_PI = Math.PI * 2;
 
-enum CharacterActionType {
-    HEAL = 'Heal',
-}
-
-/** Abilities characters can perform in addition to moving and shooting. */
-interface CharacterAction {
-    readonly type: CharacterActionType;
-    /**  Max times this ability can be used. 0 indicates unlimited. */
-    readonly maxUses: number;
-    /** Number of turns after use before ability can be reused. */
-    readonly cooldownTurns: number;
-    /** 
-     * Whether the ability can be used in addition to shooting (true)
-     * or is used in place of shooting (false). 
-     */
-    readonly isFree: boolean;
-}
-
-/** Metadata about CharacterActions */
+/** Metadata about CharacterActions. */
 interface CharacterActionState {
     /** Remaining number of uses for action, or null if unlimited. */
     usesLeft?: number;
     /** Remaining number of turns until this action can be used again. */
     cooldownTurnsLeft: number;
 }
-
-const HEAL: CharacterAction = {
-    type: CharacterActionType.HEAL,
-    maxUses: 1,
-    cooldownTurns: 0,
-    isFree: false,
-};
 
 /** Parameters describing basic character attributes. */
 interface CharacterSettings {
@@ -62,12 +38,19 @@ interface CharacterSettings {
     readonly numRicochets: number;
 }
 
+const DEFAULT_HEAL: HealAction = {
+    type: ActionType.HEAL,
+    healAmount: 3,
+    maxUses: 3,
+    cooldownTurns: 1,
+    isFree: true,
+};
 const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
     maxHealth: 10,
     maxMovesPerTurn: 4,
     canFireAfterMoving: true,
     extraActions: new Set<CharacterAction>([
-        HEAL,
+        DEFAULT_HEAL,
     ]),
     shotDamage: 5,
     numRicochets: 2,
@@ -91,12 +74,11 @@ export class Character {
     private isAiming: boolean;
     private aimAngleRadiansClockwise: number;
 
-
     // Game-state.
     hasFlag: boolean;
     health: number;
     tileCoords: Point;
-    characterActionsToState: Map<CharacterActionType, CharacterActionState>;
+    characterActionsToState: Map<ActionType, CharacterActionState>;
 
     constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number }) {
         this.tileCoords = params.startCoords;
@@ -252,6 +234,27 @@ export class Character {
         return shotInfo;
     }
 
+    useAction(action: CharacterAction): void {
+        this.extraActionsAvailable = this.extraActionsAvailable
+            .filter((extraAction) => extraAction.type !== action.type);
+        const actionState = this.characterActionsToState.get(action.type)!;
+        if (actionState.usesLeft) {
+            actionState.usesLeft -= 1;
+        }
+        actionState.cooldownTurnsLeft =
+            [...this.settings.extraActions]
+                .find((extraAction) => extraAction.type === action.type)!.cooldownTurns;
+        if (!action.isFree) {
+            // Character can't shoot and use non-free actions in same turn.
+            this.hasShot = true;
+        }
+        this.checkAndSetTurnOver();
+    }
+
+    regenHealth(amount: number): void {
+        this.health = Math.min(this.health + amount, this.settings.maxHealth);
+    }
+
     // TODO - cache after first construction.
     getEdges(): LineSegment[] {
         const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
@@ -295,6 +298,7 @@ export class Character {
             if (state.usesLeft !== 0 && state.cooldownTurnsLeft <= 0) {
                 this.extraActionsAvailable.push(action);
             }
+            state.cooldownTurnsLeft -= 1;
         }
         this.isFinishedWithTurn = false;
     }
