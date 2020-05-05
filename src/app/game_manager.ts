@@ -12,7 +12,7 @@ import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile, Target } from 'src/app/projectile';
-import { ParticleSystem, ParticleShape } from 'src/app/particle_system';
+import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo } from 'src/app/shot_info';
 
 
@@ -73,6 +73,20 @@ const AIM_COUNTERCLOCKWISE_KEY = Key.S;
 const AIM_CLOCKWISE_KEY = Key.D;
 const SHOOT_KEY = Key.F;
 const END_TURN_KEY = Key.E;
+
+const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
+    return {
+        startPositionCanvas,
+        particleCount: 60,
+        colorA: '#a83232',
+        colorB: '#cc7606',
+        shape: ParticleShape.LINE,
+        minParticleSpeed: .003 * Grid.TILE_SIZE,
+        maxParticleSpeed: .005 * Grid.TILE_SIZE,
+        minLifetimeMs: 100,
+        maxLifetimeMs: 200,
+    };
+};
 
 export class GameManager {
 
@@ -185,13 +199,7 @@ export class GameManager {
         }
         const hitPositionCanvas = this.projectile.ray
             .pointAtDistance(this.projectile.maxDistance);
-        const particleSystem = new ParticleSystem({
-            startPositionCanvas: hitPositionCanvas,
-            particleCount: 100,
-            colorA: '#FF0000',
-            colorB: '#00FF00',
-            shape: ParticleShape.LINE,
-        });
+        const particleSystem = new ParticleSystem(getBulletParticleSystemParams(hitPositionCanvas));
         this.particleSystems.push(particleSystem);
         this.projectile = undefined;
     }
@@ -216,6 +224,11 @@ export class GameManager {
                 context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
             }
         }
+        // Render PS first to be covered by obstacle for now...
+        for (const particleSystem of this.particleSystems) {
+            // TODO - be consistent with giving context
+            particleSystem.render(this.context);
+        }
         for (const obstacle of this.obstacles) {
             obstacle.render(context);
         }
@@ -236,10 +249,6 @@ export class GameManager {
         }
         if (this.projectile != null) {
             this.projectile.render();
-        }
-        for (const particleSystem of this.particleSystems) {
-            // TODO - be consistent with giving context
-            particleSystem.render(this.context);
         }
         this.hud.render();
     }

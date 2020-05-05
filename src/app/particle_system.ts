@@ -26,14 +26,11 @@ interface Particle {
 const TWO_PI = Math.PI * 2;
 
 // TODO - this should be ParticlesParams when more diversity is supported.
-const MIN_SPEED = .001 * Grid.TILE_SIZE;
-const MAX_SPEED = .003 * Grid.TILE_SIZE;
-const MIN_LIFETIME_MS = 500;
-const MAX_LIFETIME_MS = 1000;
 const MIN_RADIUS = .035 * Grid.TILE_SIZE;
 const MAX_RADIUS = .065 * Grid.TILE_SIZE;
 
-interface ParticleSystemParams {
+// TODO - add normal direction and max angle deviation.
+export interface ParticleSystemParams {
     readonly startPositionCanvas: Point;
     readonly particleCount: number;
 
@@ -50,6 +47,11 @@ interface ParticleSystemParams {
     readonly colorB: string;
 
     readonly shape: ParticleShape;
+
+    readonly minParticleSpeed: number;
+    readonly maxParticleSpeed: number;
+    readonly minLifetimeMs: number;
+    readonly maxLifetimeMs: number;
 }
 
 /** 
@@ -76,8 +78,8 @@ export class ParticleSystem {
         for (let i = 0; i < params.particleCount; i++) {
             const theta = i * deltaTheta;
             const direction = new Point(Math.cos(theta), Math.sin(theta)).normalize();
-            const speed = lerp(MIN_SPEED, MAX_SPEED, Math.random());
-            const lifetimeMs = lerp(MIN_LIFETIME_MS, MAX_LIFETIME_MS, Math.random());
+            const speed = lerp(params.minParticleSpeed, params.maxParticleSpeed, Math.random());
+            const lifetimeMs = lerp(params.minLifetimeMs, params.maxLifetimeMs, Math.random());
             const color = lerpColors(
                 hexStringToColor(params.colorA),
                 hexStringToColor(params.colorB),

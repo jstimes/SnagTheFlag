@@ -20,8 +20,8 @@ export interface Level {
 const diagonal: Level = {
     name: 'Diagonal',
     data: {
-        redFlag: { x: 0, y: 0 },
-        blueFlag: { x: 19, y: 19 },
+        redFlag: { x: 0, y: 19 },
+        blueFlag: { x: 19, y: 0 },
         obstacles: [
             { x: 16, y: 18 },
             { x: 16, y: 17 },
