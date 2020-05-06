@@ -2,7 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
-import { ShotInfo, DamageType } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
 
@@ -245,6 +245,9 @@ export class Character {
         }
         this.isAiming = false;
         this.hasShot = true;
+        this.extraAbilities = this.extraAbilities.filter((ability: CharacterAbility) => {
+            return ability.isFree;
+        });
         this.checkAndSetTurnOver();
         const shotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
@@ -252,8 +255,12 @@ export class Character {
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
-            damage: { type: DamageType.BULLET, damage: this.settings.shotDamage, },
-            numRicochets: this.settings.numRicochets,
+            damage: {
+                type: ProjectileDetailsType.BULLET,
+                damage: this.settings.shotDamage,
+                numRicochets: this.settings.numRicochets,
+            },
+
         };
         return shotInfo;
     }

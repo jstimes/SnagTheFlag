@@ -2,7 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
-import { ShotInfo, DamageType } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
 
 const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
@@ -16,19 +16,19 @@ export interface Target {
     readonly canvasCoords: Point;
 }
 
-const speeds: Map<DamageType, number> = new Map([
-    [DamageType.BULLET, Grid.TILE_SIZE / 80],
-    [DamageType.SPLASH, Grid.TILE_SIZE / 160],
+const speeds: Map<ProjectileDetailsType, number> = new Map([
+    [ProjectileDetailsType.BULLET, Grid.TILE_SIZE / 80],
+    [ProjectileDetailsType.SPLASH, Grid.TILE_SIZE / 160],
 ]);
 
-const radii: Map<DamageType, number> = new Map([
-    [DamageType.BULLET, Grid.TILE_SIZE / 12],
-    [DamageType.SPLASH, Grid.TILE_SIZE / 6],
+const radii: Map<ProjectileDetailsType, number> = new Map([
+    [ProjectileDetailsType.BULLET, Grid.TILE_SIZE / 12],
+    [ProjectileDetailsType.SPLASH, Grid.TILE_SIZE / 6],
 ]);
 
-const colors: Map<DamageType, string> = new Map([
-    [DamageType.BULLET, THEME.bulletColor],
-    [DamageType.SPLASH, THEME.grenadeColor],
+const colors: Map<ProjectileDetailsType, string> = new Map([
+    [ProjectileDetailsType.BULLET, THEME.bulletColor],
+    [ProjectileDetailsType.SPLASH, THEME.grenadeColor],
 ]);
 
 export class Projectile {

@@ -6,18 +6,19 @@ export interface Gun {
     readonly numRicochets: number;
 }
 
-export enum DamageType {
+export enum ProjectileDetailsType {
     BULLET,
     SPLASH,
 }
 
-export interface BulletDamage {
-    type: DamageType.BULLET;
-    damage: number;
+export interface Bullet {
+    readonly type: ProjectileDetailsType.BULLET;
+    readonly damage: number;
+    readonly numRicochets: number;
 }
 
 export interface SplashDamage {
-    type: DamageType.SPLASH;
+    readonly type: ProjectileDetailsType.SPLASH;
     readonly maxManhattanDistance: number;
     readonly damage: number;
     /** Tiles away from target that will be hit by grenade. */
@@ -30,7 +31,7 @@ export interface SplashDamage {
     readonly tilesAwayDamageReduction: number;
 }
 
-export type ProjectileDamage = BulletDamage | SplashDamage;
+export type ProjectileDetails = Bullet | SplashDamage;
 
 export interface ShotInfo {
     // TODO friendly fire?
@@ -38,6 +39,5 @@ export interface ShotInfo {
     readonly fromCanvasCoords: Point;
     readonly fromTileCoords: Point;
     readonly aimAngleRadiansClockwise: number;
-    readonly damage: ProjectileDamage;
-    readonly numRicochets: number;
+    readonly damage: ProjectileDetails;
 }

@@ -1,5 +1,5 @@
 import { ActionType } from 'src/app/actions';
-import { SplashDamage, DamageType } from 'src/app/shot_info';
+import { SplashDamage, ProjectileDetailsType } from 'src/app/shot_info';
 import { Grid } from 'src/app/grid';
 
 /** Abilities characters can perform in addition to moving and shooting. */
@@ -92,7 +92,7 @@ const FULL_HEAL: HealAbility = {
 const LIGHT_GRENADE: ThrowGrenadeAbility = {
     actionType: ActionType.THROW_GRENADE,
     splashDamage: {
-        type: DamageType.SPLASH,
+        type: ProjectileDetailsType.SPLASH,
         damage: 5,
         damageManhattanDistanceRadius: 1,
         tilesAwayDamageReduction: .6,
@@ -105,7 +105,7 @@ const LIGHT_GRENADE: ThrowGrenadeAbility = {
 const MEDIUM_GRENADE: ThrowGrenadeAbility = {
     actionType: ActionType.THROW_GRENADE,
     splashDamage: {
-        type: DamageType.SPLASH,
+        type: ProjectileDetailsType.SPLASH,
         damage: 8,
         damageManhattanDistanceRadius: 3,
         tilesAwayDamageReduction: .5,

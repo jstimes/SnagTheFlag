@@ -13,7 +13,7 @@ import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
-import { ShotInfo, DamageType } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType, Bullet } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
 
@@ -170,7 +170,7 @@ export class GameManager {
         let particleSystemParams: ParticleSystemParams;
         const hitPositionCanvas = projectile.ray
             .pointAtDistance(projectile.maxDistance);
-        if (projectile.shotInfo.damage.type === DamageType.SPLASH) {
+        if (projectile.shotInfo.damage.type === ProjectileDetailsType.SPLASH) {
             const splashDamage = projectile.shotInfo.damage;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
@@ -203,12 +203,17 @@ export class GameManager {
                 targetCharacter.health -= projectile.shotInfo.damage.damage;
                 projectile.setIsDead();
             }
-            if (!projectile.isDead && projectile.shotInfo.numRicochets > 0) {
+            const ricochetsLeft = projectile.shotInfo.damage.numRicochets;
+            if (!projectile.isDead && ricochetsLeft > 0) {
                 const newDirection = projectile.ray.direction
                     .reflect(projectile.target.normal);
+                const newDamage: Bullet = {
+                    type: ProjectileDetailsType.BULLET,
+                    damage: projectile.shotInfo.damage.damage,
+                    numRicochets: ricochetsLeft - 1,
+                };
                 const newShotInfo: ShotInfo = {
-                    damage: projectile.shotInfo.damage,
-                    numRicochets: projectile.shotInfo.numRicochets - 1,
+                    damage: newDamage,
                     isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
                     fromTileCoords: projectile.target.tile,
                     fromCanvasCoords: projectile.target.canvasCoords,
@@ -577,7 +582,6 @@ export class GameManager {
             fromTileCoords: fromTile,
             aimAngleRadiansClockwise: direction.getPointRotationRadians(),
             damage: action.splashDamage,
-            numRicochets: 0,
         };
         const proj = new Projectile({
             context: this.context,
