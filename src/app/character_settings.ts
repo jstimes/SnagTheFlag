@@ -103,36 +103,53 @@ const MEDIUM_GRENADE: ThrowGrenadeAbility = {
     isFree: false,
 };
 
+const SHOTGUN: Gun = {
+    canFireAfterMoving: true,
+    projectileDetails: {
+        type: ProjectileDetailsType.BULLET,
+        numRicochets: 1,
+        damage: 2,
+    },
+    aimIndicatorLength: .35 * Grid.TILE_SIZE,
+    spray: {
+        projectiles: 3,
+        offsetAngleRadians: Math.PI / 12,
+    }
+};
+const ASSAULT_RIFLE: Gun = {
+    canFireAfterMoving: true,
+    projectileDetails: {
+        type: ProjectileDetailsType.BULLET,
+        numRicochets: 2,
+        damage: 6,
+    },
+    aimIndicatorLength: 1.5 * Grid.TILE_SIZE,
+};
+const SNIPER_RIFLE: Gun = {
+    canFireAfterMoving: false,
+    projectileDetails: {
+        type: ProjectileDetailsType.BULLET,
+        numRicochets: 3,
+        damage: 8,
+    },
+    aimIndicatorLength: 3 * Grid.TILE_SIZE,
+};
+
 export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SCOUT,
     maxHealth: 8,
     maxMovesPerTurn: 6,
-    gun: {
-        canFireAfterMoving: true,
-        projectileDetails: {
-            type: ProjectileDetailsType.BULLET,
-            numRicochets: 1,
-            damage: 5,
-        },
-        aimIndicatorLength: .75 * Grid.TILE_SIZE,
-    },
+    gun: SHOTGUN,
     extraActions: new Set<CharacterAbility>([
         LIGHT_HEAL,
+        LIGHT_GRENADE,
     ]),
 };
 export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.ASSAULT,
     maxHealth: 10,
     maxMovesPerTurn: 4,
-    gun: {
-        canFireAfterMoving: true,
-        projectileDetails: {
-            type: ProjectileDetailsType.BULLET,
-            numRicochets: 2,
-            damage: 6,
-        },
-        aimIndicatorLength: 1.5 * Grid.TILE_SIZE,
-    },
+    gun: ASSAULT_RIFLE,
     extraActions: new Set<CharacterAbility>([
         MEDIUM_HEAL,
         MEDIUM_GRENADE,
@@ -142,15 +159,7 @@ export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SNIPER,
     maxHealth: 8,
     maxMovesPerTurn: 3,
-    gun: {
-        canFireAfterMoving: false,
-        projectileDetails: {
-            type: ProjectileDetailsType.BULLET,
-            numRicochets: 3,
-            damage: 8,
-        },
-        aimIndicatorLength: 3 * Grid.TILE_SIZE,
-    },
+    gun: SNIPER_RIFLE,
     extraActions: new Set<CharacterAbility>([
         FULL_HEAL,
     ]),

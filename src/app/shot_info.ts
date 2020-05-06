@@ -28,6 +28,11 @@ export interface SplashDamage {
 
 export type ProjectileDetails = Bullet | SplashDamage;
 
+export interface Spray {
+    readonly projectiles: number;
+    readonly offsetAngleRadians: number;
+}
+
 export interface Gun {
     readonly projectileDetails: ProjectileDetails;
     readonly aimIndicatorLength: number;
@@ -37,6 +42,8 @@ export interface Gun {
      * TODO - add canMoveAfterShooting ?
      */
     readonly canFireAfterMoving: boolean;
+
+    readonly spray?: Spray;
 }
 
 export interface ShotInfo {

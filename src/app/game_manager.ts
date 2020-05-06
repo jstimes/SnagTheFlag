@@ -226,6 +226,7 @@ export class GameManager {
             particleSystemParams = getBulletParticleSystemParams(hitPositionCanvas);
         }
         projectile.setIsDead();
+        // TODO - recalculate other projectile targets.
         if (this.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
         } else {
@@ -350,8 +351,10 @@ export class GameManager {
                 if (this.selectedCharacter == null) {
                     throw new Error(`Selected character is null on FIRE action`);
                 }
-                const shotInfo = this.selectedCharacter.shoot();
-                this.fireShot(shotInfo);
+                const shotInfos = this.selectedCharacter.shoot();
+                for (const shotInfo of shotInfos) {
+                    this.fireShot(shotInfo);
+                }
                 // Next turn logic runs when projectile dies.
                 break;
             case ActionType.HEAL:

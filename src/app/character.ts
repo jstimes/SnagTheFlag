@@ -239,7 +239,7 @@ export class Character {
         this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
     }
 
-    shoot(): ShotInfo {
+    shoot(): ShotInfo[] {
         if (!this.canShoot()) {
             throw new Error(`Already shot or used non-free action.`);
         }
@@ -249,16 +249,30 @@ export class Character {
             return ability.isFree;
         });
         this.checkAndSetTurnOver();
-        const shotInfo: ShotInfo = {
+        const straightShotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
             fromTileCoords: this.tileCoords,
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
             projectileDetails: this.settings.gun.projectileDetails,
-
         };
-        return shotInfo;
+        const shotInfos: ShotInfo[] = [straightShotInfo];
+        if (this.settings.gun.spray) {
+            const spray = this.settings.gun.spray;
+            while (shotInfos.length < spray.projectiles) {
+                const offsetDirection = shotInfos.length % 2 === 0 ? 1 : -1;
+                shotInfos.push({
+                    isShotFromBlueTeam: this.isBlueTeam,
+                    fromTileCoords: this.tileCoords,
+                    // Shoot from center of tile.
+                    fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
+                    aimAngleRadiansClockwise: this.aimAngleRadiansClockwise + spray.offsetAngleRadians * offsetDirection,
+                    projectileDetails: this.settings.gun.projectileDetails,
+                });
+            }
+        }
+        return shotInfos;
     }
 
     getGrenadeAbility(): ThrowGrenadeAbility {
