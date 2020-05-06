@@ -170,12 +170,12 @@ export class GameManager {
         let particleSystemParams: ParticleSystemParams;
         const hitPositionCanvas = projectile.ray
             .pointAtDistance(projectile.maxDistance);
-        if (projectile.shotInfo.damage.type === DamageType.GRENADE) {
-            const grenade = projectile.shotInfo.damage.grenade;
+        if (projectile.shotInfo.damage.type === DamageType.SPLASH) {
+            const splashDamage = projectile.shotInfo.damage;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
                 startTile: projectile.target.tile,
-                maxDepth: grenade.damageManhattanDistanceRadius,
+                maxDepth: splashDamage.damageManhattanDistanceRadius,
                 isAvailable: (tile: Point) => {
                     return true;
                 },
@@ -190,7 +190,7 @@ export class GameManager {
                 if (targetCharacter) {
                     const manhattanDistance = targetCharacter.tileCoords
                         .manhattanDistanceTo(projectile.target.tile);
-                    const damage = grenade.damage * Math.pow(grenade.tilesAwayDamageReduction, manhattanDistance);
+                    const damage = splashDamage.damage * Math.pow(splashDamage.tilesAwayDamageReduction, manhattanDistance);
                     targetCharacter.health -= damage;
                 }
             }
@@ -576,7 +576,7 @@ export class GameManager {
             fromCanvasCoords,
             fromTileCoords: fromTile,
             aimAngleRadiansClockwise: direction.getPointRotationRadians(),
-            damage: { type: DamageType.GRENADE, grenade: action.grenade },
+            damage: action.splashDamage,
             numRicochets: 0,
         };
         const proj = new Projectile({
@@ -632,7 +632,7 @@ export class GameManager {
         this.selectableTiles = [];
         const grenadeAction: ThrowGrenadeAction = {
             type: ActionType.THROW_GRENADE,
-            grenade: this.selectedCharacter!.getGrenadeAbility().grenade,
+            splashDamage: this.selectedCharacter!.getGrenadeAbility().splashDamage,
             targetTile: tileCoords,
         };
         this.onAction(grenadeAction);
@@ -687,7 +687,7 @@ export class GameManager {
         }
         const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const currentCoords = this.selectedCharacter.tileCoords;
-        const maxDist = this.selectedCharacter.getGrenadeAbility().grenade.maxManhattanDistance;
+        const maxDist = this.selectedCharacter.getGrenadeAbility().splashDamage.maxManhattanDistance;
         const isAvailable = (tile: Point): boolean => {
             return !this.tileHasObstacle(tile)
                 && !tile.equals(currentCoords)

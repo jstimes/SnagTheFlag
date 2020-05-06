@@ -2,7 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
-import { ShotInfo, Grenade, DamageType } from 'src/app/shot_info';
+import { ShotInfo, DamageType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
 

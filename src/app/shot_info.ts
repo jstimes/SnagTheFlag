@@ -1,6 +1,23 @@
 import { Point } from 'src/app/math/point';
 
-export interface Grenade {
+// TODO - use
+export interface Gun {
+    readonly damage: number;
+    readonly numRicochets: number;
+}
+
+export enum DamageType {
+    BULLET,
+    SPLASH,
+}
+
+export interface BulletDamage {
+    type: DamageType.BULLET;
+    damage: number;
+}
+
+export interface SplashDamage {
+    type: DamageType.SPLASH;
     readonly maxManhattanDistance: number;
     readonly damage: number;
     /** Tiles away from target that will be hit by grenade. */
@@ -13,28 +30,7 @@ export interface Grenade {
     readonly tilesAwayDamageReduction: number;
 }
 
-// TODO - use
-export interface Gun {
-    readonly damage: number;
-    readonly numRicochets: number;
-}
-
-export enum DamageType {
-    BULLET,
-    GRENADE,
-}
-
-export interface BulletDamage {
-    type: DamageType.BULLET;
-    damage: number;
-}
-
-export interface GrenadeDamage {
-    type: DamageType.GRENADE;
-    grenade: Grenade;
-}
-
-export type ProjectileDamage = BulletDamage | GrenadeDamage;
+export type ProjectileDamage = BulletDamage | SplashDamage;
 
 export interface ShotInfo {
     // TODO friendly fire?

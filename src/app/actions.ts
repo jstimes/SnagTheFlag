@@ -1,5 +1,5 @@
 import { Point } from 'src/app/math/point';
-import { Grenade } from 'src/app/shot_info';
+import { SplashDamage } from 'src/app/shot_info';
 
 export enum ActionType {
     PLACE_CHARACTER,
@@ -35,7 +35,7 @@ export interface HealAction {
 
 export interface ThrowGrenadeAction {
     readonly type: ActionType.THROW_GRENADE;
-    readonly grenade: Grenade;
+    readonly splashDamage: SplashDamage;
     readonly targetTile: Point;
 }
 

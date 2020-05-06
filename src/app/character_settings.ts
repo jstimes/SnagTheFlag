@@ -1,5 +1,5 @@
 import { ActionType } from 'src/app/actions';
-import { Grenade } from 'src/app/shot_info';
+import { SplashDamage, DamageType } from 'src/app/shot_info';
 import { Grid } from 'src/app/grid';
 
 /** Abilities characters can perform in addition to moving and shooting. */
@@ -22,7 +22,7 @@ export interface HealAbility extends BaseCharacterAbility {
 
 export interface ThrowGrenadeAbility extends BaseCharacterAbility {
     readonly actionType: ActionType.THROW_GRENADE;
-    readonly grenade: Grenade;
+    readonly splashDamage: SplashDamage;
 }
 
 export type CharacterAbility = HealAbility | ThrowGrenadeAbility;
@@ -91,7 +91,8 @@ const FULL_HEAL: HealAbility = {
 
 const LIGHT_GRENADE: ThrowGrenadeAbility = {
     actionType: ActionType.THROW_GRENADE,
-    grenade: {
+    splashDamage: {
+        type: DamageType.SPLASH,
         damage: 5,
         damageManhattanDistanceRadius: 1,
         tilesAwayDamageReduction: .6,
@@ -103,7 +104,8 @@ const LIGHT_GRENADE: ThrowGrenadeAbility = {
 };
 const MEDIUM_GRENADE: ThrowGrenadeAbility = {
     actionType: ActionType.THROW_GRENADE,
-    grenade: {
+    splashDamage: {
+        type: DamageType.SPLASH,
         damage: 8,
         damageManhattanDistanceRadius: 3,
         tilesAwayDamageReduction: .5,

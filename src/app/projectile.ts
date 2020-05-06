@@ -18,17 +18,17 @@ export interface Target {
 
 const speeds: Map<DamageType, number> = new Map([
     [DamageType.BULLET, Grid.TILE_SIZE / 80],
-    [DamageType.GRENADE, Grid.TILE_SIZE / 160],
+    [DamageType.SPLASH, Grid.TILE_SIZE / 160],
 ]);
 
 const radii: Map<DamageType, number> = new Map([
     [DamageType.BULLET, Grid.TILE_SIZE / 12],
-    [DamageType.GRENADE, Grid.TILE_SIZE / 6],
+    [DamageType.SPLASH, Grid.TILE_SIZE / 6],
 ]);
 
 const colors: Map<DamageType, string> = new Map([
     [DamageType.BULLET, THEME.bulletColor],
-    [DamageType.GRENADE, THEME.grenadeColor],
+    [DamageType.SPLASH, THEME.grenadeColor],
 ]);
 
 export class Projectile {
