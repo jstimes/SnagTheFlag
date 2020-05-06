@@ -23,7 +23,8 @@ export interface Theme {
     readonly availableForMovementColor: string;
     readonly emptyCellHoverColor: string;
 
-    readonly projectileColor: string;
+    readonly bulletColor: string;
+    readonly grenadeColor: string;
     readonly projectileTrailColor: string;
     readonly remainingHealthBarColor: string;
     readonly lostHealthBarColor: string;
@@ -53,7 +54,8 @@ export const THEME: Theme = {
     availableForMovementColor: '#b8b6a5',
     emptyCellHoverColor: '#d9d7bf',
 
-    projectileColor: '#fff86e',
+    bulletColor: '#fff86e',
+    grenadeColor: '#176107',
     projectileTrailColor: '#e8e1d8',
     remainingHealthBarColor: '#00FF00',
     lostHealthBarColor: '#FF0000',

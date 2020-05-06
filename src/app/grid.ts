@@ -60,23 +60,27 @@ export function bfs(params: {
 }): Point[] {
 
     const { startTile, maxDepth, isAvailable, canGoThrough } = params;
-    const availableTiles: Point[] = [];
-    const queue: QueuedTile[] = Grid.getAdjacentTiles(startTile).map((tile) => {
-        return {
-            depth: 1,
-            coords: tile,
-        }
-    });
+    const availableTiles: Map<string, Point> = new Map();;
+    const queue: QueuedTile[] =
+        Grid.getAdjacentTiles(startTile)
+            .concat(startTile)
+            .map((tile) => {
+                return {
+                    depth: 1,
+                    coords: tile,
+                };
+            });
     while (queue.length) {
         const queuedTile = queue.shift()!;
         if (queuedTile.depth > maxDepth || !canGoThrough(queuedTile.coords)) {
             continue;
         }
         if (isAvailable(queuedTile.coords)) {
-            availableTiles.push(queuedTile.coords);
+            availableTiles.set(queuedTile.coords.toString(), queuedTile.coords);
         }
         for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
-            if (availableTiles.find((tile) => tile.equals(adjacentTile))) continue;
+            if ([...availableTiles.values()]
+                .find((tile) => tile.equals(adjacentTile))) continue;
             queue.push({
                 depth: queuedTile.depth + 1,
                 coords: adjacentTile,
@@ -84,7 +88,7 @@ export function bfs(params: {
         }
     }
 
-    return availableTiles;
+    return [...availableTiles.values()];
 }
 
 /** 

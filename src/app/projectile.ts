@@ -2,11 +2,9 @@ import { Point } from 'src/app/math/point';
 import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
-import { ShotInfo } from 'src/app/shot_info';
+import { ShotInfo, DamageType } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
 
-const PROJECTILE_CANVAS_RADIUS = Grid.TILE_SIZE / 12;
-const PROJECTILE_SPEED_PER_MS = Grid.TILE_SIZE / 80;
 const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
 
 // TODO - extract into shared constant
@@ -17,6 +15,21 @@ export interface Target {
     readonly tile: Point;
     readonly canvasCoords: Point;
 }
+
+const speeds: Map<DamageType, number> = new Map([
+    [DamageType.BULLET, Grid.TILE_SIZE / 80],
+    [DamageType.GRENADE, Grid.TILE_SIZE / 160],
+]);
+
+const radii: Map<DamageType, number> = new Map([
+    [DamageType.BULLET, Grid.TILE_SIZE / 12],
+    [DamageType.GRENADE, Grid.TILE_SIZE / 6],
+]);
+
+const colors: Map<DamageType, string> = new Map([
+    [DamageType.BULLET, THEME.bulletColor],
+    [DamageType.GRENADE, THEME.grenadeColor],
+]);
 
 export class Projectile {
 
@@ -46,7 +59,8 @@ export class Projectile {
     }
 
     update(elapsedMs: number): void {
-        this.distance = this.distance + PROJECTILE_SPEED_PER_MS * elapsedMs;
+        const speed = speeds.get(this.shotInfo.damage.type)!
+        this.distance = this.distance + speed * elapsedMs;
     }
 
     isAtTarget(): boolean {
@@ -65,7 +79,8 @@ export class Projectile {
         const context = this.context;
         const currentPointCanvas = this.ray.pointAtDistance(this.distance);
 
-        if (this.distance > PROJECTILE_CANVAS_RADIUS && !this.isTrailGone()) {
+        const radius = radii.get(this.shotInfo.damage.type)!;
+        if (this.distance > radius && !this.isTrailGone()) {
             const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
             let overshotDistance = 0;
             let trailStartPointCanvas = currentPointCanvas;
@@ -100,9 +115,9 @@ export class Projectile {
             return;
         }
 
-        context.fillStyle = THEME.projectileColor;
+        context.fillStyle = colors.get(this.shotInfo.damage.type)!;
         context.beginPath();
-        context.arc(currentPointCanvas.x, currentPointCanvas.y, PROJECTILE_CANVAS_RADIUS, 0, TWO_PI);
+        context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
         context.closePath();
         context.fill();
     }

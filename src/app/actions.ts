@@ -1,4 +1,5 @@
 import { Point } from 'src/app/math/point';
+import { Grenade } from 'src/app/shot_info';
 
 export enum ActionType {
     PLACE_CHARACTER,
@@ -7,19 +8,6 @@ export enum ActionType {
     HEAL,
     THROW_GRENADE,
     END_CHARACTER_TURN,
-}
-
-/** Abilities characters can perform in addition to moving and shooting. */
-export interface CharacterAbility {
-    /**  Max times this ability can be used. 0 indicates unlimited. */
-    readonly maxUses: number;
-    /** Number of turns after use before ability can be reused. */
-    readonly cooldownTurns: number;
-    /** 
-     * Whether the ability can be used in addition to shooting (true)
-     * or is used in place of shooting (false). 
-     */
-    readonly isFree: boolean;
 }
 
 export interface PlaceCharacterAction {
@@ -40,19 +28,19 @@ export interface ShootAction {
     readonly type: ActionType.SHOOT;
 }
 
-export interface HealAction extends CharacterAbility {
+export interface HealAction {
     readonly type: ActionType.HEAL;
     readonly healAmount: number;
 }
 
-export interface ThrowGrenadeAction extends CharacterAbility {
+export interface ThrowGrenadeAction {
     readonly type: ActionType.THROW_GRENADE;
+    readonly grenade: Grenade;
+    readonly targetTile: Point;
 }
 
 export type Action = PlaceCharacterAction | MoveCharacterAction |
     EndCharacterTurnAction | ShootAction | HealAction | ThrowGrenadeAction;
-
-export type CharacterAction = HealAction | ThrowGrenadeAction;
 
 /** Used for exhaustive Action checking. */
 export function throwBadAction(action: never): never {

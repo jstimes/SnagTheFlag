@@ -8,13 +8,13 @@ import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
-import { Character } from 'src/app/character';
+import { Character, HealAbility } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
-import { ShotInfo } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction } from 'src/app/actions';
+import { ShotInfo, DamageType } from 'src/app/shot_info';
+import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
 
 
 enum GamePhase {
@@ -28,7 +28,7 @@ enum SelectedCharacterState {
     AWAITING,
     MOVING,
     AIMING,
-    // TODO - add other character actions.
+    THROWING_GRENADE,
 }
 
 const MOVE_KEY = Key.M;
@@ -38,6 +38,7 @@ const AIM_COUNTERCLOCKWISE_KEY = Key.S;
 const AIM_CLOCKWISE_KEY = Key.D;
 const SHOOT_KEY = Key.F;
 const HEAL_KEY = Key.H;
+const TOGGLE_THROW_GRENADE_KEY = Key.T;
 const END_TURN_KEY = Key.E;
 
 const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
@@ -51,6 +52,20 @@ const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSyst
         maxParticleSpeed: .005 * Grid.TILE_SIZE,
         minLifetimeMs: 100,
         maxLifetimeMs: 200,
+    };
+};
+
+const getGrenadeParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
+    return {
+        startPositionCanvas,
+        particleCount: 120,
+        colorA: '#a83232',
+        colorB: '#cc7606',
+        shape: ParticleShape.LINE,
+        minParticleSpeed: .002 * Grid.TILE_SIZE,
+        maxParticleSpeed: .004 * Grid.TILE_SIZE,
+        minLifetimeMs: 300,
+        maxLifetimeMs: 400,
     };
 };
 
@@ -132,6 +147,9 @@ export class GameManager {
                 case (SelectedCharacterState.MOVING):
                     this.tryMovingSelectedCharacter(mouseTileCoords);
                     break;
+                case (SelectedCharacterState.THROWING_GRENADE):
+                    this.tryThrowingGrenade(mouseTileCoords);
+                    break;
             }
         }
         this.hud.update(elapsedMs);
@@ -142,28 +160,59 @@ export class GameManager {
         if (projectile.isDead || !projectile.isAtTarget()) {
             return;
         }
-        const targetCharacter = this.redSquad.concat(this.blueSquad)
-            .filter((character) => character.isAlive())
-            .find((character) => character.tileCoords.equals(projectile.target.tile));
-        if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
-            // Assumes friendly fire check occurred in 'fire'.
-            targetCharacter.health -= projectile.shotInfo.damage;
-            projectile.setIsDead();
-        }
-        if (!projectile.isDead && projectile.shotInfo.numRicochets > 0) {
-            const newDirection = projectile.ray.direction
-                .reflect(projectile.target.normal);
-            const newShotInfo: ShotInfo = {
-                damage: projectile.shotInfo.damage,
-                numRicochets: projectile.shotInfo.numRicochets - 1,
-                isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
-                fromTileCoords: projectile.target.tile,
-                fromCanvasCoords: projectile.target.canvasCoords,
-                aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
-            };
-            this.fireShot(newShotInfo);
-            projectile.setIsDead();
-            return;
+        let particleSystemParams: ParticleSystemParams;
+        const hitPositionCanvas = projectile.ray
+            .pointAtDistance(projectile.maxDistance);
+        if (projectile.shotInfo.damage.type === DamageType.GRENADE) {
+            const grenade = projectile.shotInfo.damage.grenade;
+            particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
+            const hitTiles = bfs({
+                startTile: projectile.target.tile,
+                maxDepth: grenade.damageManhattanDistanceRadius,
+                isAvailable: (tile: Point) => {
+                    return true;
+                },
+                canGoThrough: (tile: Point) => {
+                    return true;
+                },
+            });
+            for (const hitTile of hitTiles) {
+                const targetCharacter = this.redSquad.concat(this.blueSquad)
+                    .filter((character) => character.isAlive())
+                    .find((character) => character.tileCoords.equals(hitTile));
+                if (targetCharacter) {
+                    const manhattanDistance = targetCharacter.tileCoords
+                        .manhattanDistanceTo(projectile.target.tile);
+                    const damage = grenade.damage * Math.pow(grenade.tilesAwayDamageReduction, manhattanDistance);
+                    targetCharacter.health -= damage;
+                }
+            }
+
+        } else {
+            const targetCharacter = this.redSquad.concat(this.blueSquad)
+                .filter((character) => character.isAlive())
+                .find((character) => character.tileCoords.equals(projectile.target.tile));
+            if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
+                // Assumes friendly fire check occurred in 'fire'.
+                targetCharacter.health -= projectile.shotInfo.damage.damage;
+                projectile.setIsDead();
+            }
+            if (!projectile.isDead && projectile.shotInfo.numRicochets > 0) {
+                const newDirection = projectile.ray.direction
+                    .reflect(projectile.target.normal);
+                const newShotInfo: ShotInfo = {
+                    damage: projectile.shotInfo.damage,
+                    numRicochets: projectile.shotInfo.numRicochets - 1,
+                    isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
+                    fromTileCoords: projectile.target.tile,
+                    fromCanvasCoords: projectile.target.canvasCoords,
+                    aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
+                };
+                this.fireShot(newShotInfo);
+                projectile.setIsDead();
+                return;
+            }
+            particleSystemParams = getBulletParticleSystemParams(hitPositionCanvas);
         }
         projectile.setIsDead();
         if (this.selectedCharacter!.isTurnOver()) {
@@ -171,9 +220,7 @@ export class GameManager {
         } else {
             this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
         }
-        const hitPositionCanvas = projectile.ray
-            .pointAtDistance(projectile.maxDistance);
-        const particleSystem = new ParticleSystem(getBulletParticleSystemParams(hitPositionCanvas));
+        const particleSystem = new ParticleSystem(particleSystemParams);
         this.particleSystems.push(particleSystem);
     }
 
@@ -300,7 +347,7 @@ export class GameManager {
                     throw new Error(`Selected character is null on HEAL action`);
                 }
                 this.selectedCharacter.regenHealth(action.healAmount);
-                this.selectedCharacter.useAction(action);
+                this.selectedCharacter.useAbility(action.type);
                 if (this.selectedCharacter.isTurnOver()) {
                     this.onCharacterTurnOver();
                 } else {
@@ -311,6 +358,8 @@ export class GameManager {
                 if (this.selectedCharacter == null) {
                     throw new Error(`Selected character is null on HEAL action`);
                 }
+                this.selectedCharacter.useAbility(action.type);
+                this.throwGrenade(action);
                 break;
             case ActionType.END_CHARACTER_TURN:
                 if (this.selectedCharacter == null) {
@@ -413,7 +462,6 @@ export class GameManager {
         const stepSize = 3 * Grid.TILE_SIZE / 4;
         let curDistance = stepSize;
         const currentTileString = shotInfo.fromTileCoords.toString();
-        console.log(`From tile: ${currentTileString}`);
         const checkedTilesStringSet: Set<string> = new Set([currentTileString]);
         let closestCollisionPt: Point | null = null;
         let closestCollisionTile: Point | null = null;
@@ -503,6 +551,37 @@ export class GameManager {
         }));
     }
 
+    private throwGrenade(action: ThrowGrenadeAction): void {
+        const fromTile = this.selectedCharacter!.tileCoords;
+        const fromCanvasCoords = Grid.getCanvasFromTileCoords(fromTile).add(Grid.HALF_TILE);
+        const targetTile = action.targetTile;
+        const targetCanvasCoords = Grid.getCanvasFromTileCoords(targetTile).add(Grid.HALF_TILE);
+        const target: Target = {
+            normal: new Point(-1, -1),
+            canvasCoords: targetCanvasCoords,
+            tile: targetTile,
+        };
+        const direction = targetCanvasCoords.subtract(fromCanvasCoords).normalize();
+        const ray = new Ray(fromCanvasCoords, direction);
+        const maxDistance = targetCanvasCoords.distanceTo(fromCanvasCoords);
+        const shotInfo: ShotInfo = {
+            isShotFromBlueTeam: this.selectedCharacter!.isBlueTeam,
+            fromCanvasCoords,
+            fromTileCoords: fromTile,
+            aimAngleRadiansClockwise: direction.getPointRotationRadians(),
+            damage: { type: DamageType.GRENADE, grenade: action.grenade },
+            numRicochets: 0,
+        };
+        const proj = new Projectile({
+            context: this.context,
+            ray,
+            maxDistance,
+            shotInfo,
+            target,
+        });
+        this.projectiles.push(proj);
+    }
+
     private tryPlacingCharacter(tileCoords: Point): void {
         if (!this.selectableTiles.find((tile) => tile.equals(tileCoords))) {
             this.hud.setText(`Can't place character here`, TextType.TOAST, Duration.SHORT);
@@ -538,6 +617,20 @@ export class GameManager {
         }
     }
 
+    private tryThrowingGrenade(tileCoords: Point): void {
+        if (!this.selectableTiles.find((tile) => tile.equals(tileCoords))) {
+            this.hud.setText(`Can't throw grenade here`, TextType.TOAST, Duration.SHORT);
+            return;
+        }
+        this.selectableTiles = [];
+        const grenadeAction: ThrowGrenadeAction = {
+            type: ActionType.THROW_GRENADE,
+            grenade: this.selectedCharacter!.getGrenadeAbility().grenade,
+            targetTile: tileCoords,
+        };
+        this.onAction(grenadeAction);
+    }
+
     private getAvailableTilesForCharacterPlacement(): Point[] {
         const flagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const maxDistFromFlag = this.gameSettings.maxSpawnDistanceFromFlag;
@@ -570,17 +663,36 @@ export class GameManager {
         const canGoThrough = (tile: Point): boolean => {
             // Characters can go through tiles occupied by squad members.
             // but they can't stop there.
-            const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
-            const isSquadMemberAtTile = squad.find((squadMember: Character) => {
-                return squadMember.isAlive()
-                    && squadMember.tileCoords.equals(tile)
-                    && squadMember !== this.selectedCharacter;
-            }) != null;
-            return isAvailable(tile) || isSquadMemberAtTile;
+            return isAvailable(tile) || this.isSquadMemberAtTile(tile);
         };
         const availableTiles = bfs({
             startTile: currentCoords,
             maxDepth: maxMoves,
+            isAvailable,
+            canGoThrough,
+        });
+        return availableTiles;
+    }
+
+    private getAvailableTilesForThrowingGrenade(): Point[] {
+        if (this.selectedCharacter == null) {
+            throw new Error(`No character selected in getAvailableTilesForCharacterMovement`);
+        }
+        const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
+        const currentCoords = this.selectedCharacter.tileCoords;
+        const maxDist = this.selectedCharacter.getGrenadeAbility().grenade.maxManhattanDistance;
+        const isAvailable = (tile: Point): boolean => {
+            return !this.tileHasObstacle(tile)
+                && !tile.equals(currentCoords)
+                && !this.isSquadMemberAtTile(tile);
+        };
+        const canGoThrough = (tile: Point): boolean => {
+            // Grenades can go over any tile.
+            return Grid.inbounds(tile);
+        };
+        const availableTiles = bfs({
+            startTile: currentCoords,
+            maxDepth: maxDist,
             isAvailable,
             canGoThrough,
         });
@@ -649,15 +761,31 @@ export class GameManager {
                     });
                 }
                 for (const extraAction of this.selectedCharacter.extraActionsAvailable) {
-                    if (extraAction.type === ActionType.HEAL) {
-                        this.controlMap.add({
-                            key: HEAL_KEY,
-                            name: 'Heal',
-                            func: () => {
-                                this.onAction(extraAction);
-                            },
-                            eventType: EventType.KeyPress,
-                        });
+                    switch (extraAction.actionType) {
+                        case ActionType.HEAL:
+                            this.controlMap.add({
+                                key: HEAL_KEY,
+                                name: 'Heal',
+                                func: () => {
+                                    const healAction: HealAction = {
+                                        type: ActionType.HEAL,
+                                        healAmount: extraAction.healAmount,
+                                    };
+                                    this.onAction(healAction);
+                                },
+                                eventType: EventType.KeyPress,
+                            });
+                            break;
+                        case ActionType.THROW_GRENADE:
+                            this.controlMap.add({
+                                key: TOGGLE_THROW_GRENADE_KEY,
+                                name: 'Throw grenade',
+                                func: () => {
+                                    this.setSelectedCharacterState(SelectedCharacterState.THROWING_GRENADE);
+                                },
+                                eventType: EventType.KeyPress,
+                            });
+                            break;
                     }
                 }
                 break;
@@ -723,6 +851,17 @@ export class GameManager {
                             type: ActionType.SHOOT,
                         };
                         this.onAction(fireAction);
+                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                    },
+                    eventType: EventType.KeyPress,
+                });
+                break;
+            case SelectedCharacterState.THROWING_GRENADE:
+                this.selectableTiles = this.getAvailableTilesForThrowingGrenade();
+                this.controlMap.add({
+                    key: TOGGLE_THROW_GRENADE_KEY,
+                    name: 'Cancel throwing grenade',
+                    func: () => {
                         this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                     },
                     eventType: EventType.KeyPress,
@@ -835,5 +974,18 @@ export class GameManager {
             }
         }
         throw new Error(`No more characters alive - should be game over?`);
+    }
+
+    private tileHasObstacle(tile: Point): boolean {
+        return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
+    }
+
+    private isSquadMemberAtTile(tile: Point): boolean {
+        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        return squad.find((squadMember: Character) => {
+            return squadMember.isAlive()
+                && squadMember.tileCoords.equals(tile)
+                && squadMember !== this.selectedCharacter;
+        }) != null;
     }
 }

@@ -1,10 +1,12 @@
 MVP
- - Health bar 
- - ricochets
- - particles
  - wait for particle to hit before moving on
     - Freeze controls?
     - damage enemy
+- flag capturing
+- game over logic.
+
+
+PS for heal.
 
 Make every render size in terms of Grid.TILE_SIZE
 so it's easy to resize.

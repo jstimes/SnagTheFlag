@@ -2,10 +2,35 @@ import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
-import { ShotInfo } from 'src/app/shot_info';
-import { HealAction, ActionType, CharacterAbility, CharacterAction } from 'src/app/actions';
+import { ShotInfo, Grenade, DamageType } from 'src/app/shot_info';
+import { ActionType } from 'src/app/actions';
 
 const TWO_PI = Math.PI * 2;
+
+/** Abilities characters can perform in addition to moving and shooting. */
+export interface BaseCharacterAbility {
+    /**  Max times this ability can be used. 0 indicates unlimited. */
+    readonly maxUses: number;
+    /** Number of turns after use before ability can be reused. */
+    readonly cooldownTurns: number;
+    /** 
+     * Whether the ability can be used in addition to shooting (true)
+     * or is used in place of shooting (false). 
+     */
+    readonly isFree: boolean;
+}
+
+export interface HealAbility extends BaseCharacterAbility {
+    readonly actionType: ActionType.HEAL;
+    readonly healAmount: number;
+}
+
+export interface ThrowGrenadeAbility extends BaseCharacterAbility {
+    readonly actionType: ActionType.THROW_GRENADE;
+    readonly grenade: Grenade;
+}
+
+type CharacterAbility = HealAbility | ThrowGrenadeAbility;
 
 /** Metadata about CharacterActions. */
 interface CharacterActionState {
@@ -28,7 +53,7 @@ interface CharacterSettings {
      */
     readonly canFireAfterMoving: boolean;
     /** Special abilities a character can use. */
-    readonly extraActions: Set<CharacterAction>;
+    readonly extraActions: Set<CharacterAbility>;
     /** Damage dealt when shooting. */
     readonly shotDamage: number;
     /** 
@@ -38,19 +63,32 @@ interface CharacterSettings {
     readonly numRicochets: number;
 }
 
-const DEFAULT_HEAL: HealAction = {
-    type: ActionType.HEAL,
+const DEFAULT_HEAL: HealAbility = {
+    actionType: ActionType.HEAL,
     healAmount: 3,
-    maxUses: 3,
-    cooldownTurns: 1,
-    isFree: true,
+    maxUses: 2,
+    cooldownTurns: 2,
+    isFree: false,
+};
+const DEFAULT_GRENADE: ThrowGrenadeAbility = {
+    actionType: ActionType.THROW_GRENADE,
+    grenade: {
+        damage: 5,
+        damageManhattanDistanceRadius: 1,
+        tilesAwayDamageReduction: .6,
+        maxManhattanDistance: 4,
+    },
+    maxUses: 1,
+    cooldownTurns: 0,
+    isFree: false,
 };
 const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
     maxHealth: 10,
-    maxMovesPerTurn: 4,
+    maxMovesPerTurn: 8,
     canFireAfterMoving: true,
-    extraActions: new Set<CharacterAction>([
+    extraActions: new Set<CharacterAbility>([
         DEFAULT_HEAL,
+        DEFAULT_GRENADE,
     ]),
     shotDamage: 5,
     numRicochets: 2,
@@ -68,7 +106,7 @@ export class Character {
     // Turn-state.
     hasMoved: boolean;
     hasShot: boolean;
-    extraActionsAvailable: CharacterAction[];
+    extraActionsAvailable: CharacterAbility[];
     isFinishedWithTurn: boolean;
 
     private isAiming: boolean;
@@ -98,7 +136,7 @@ export class Character {
             if (extraAction.maxUses !== 0) {
                 actionState.usesLeft = extraAction.maxUses;
             }
-            this.characterActionsToState.set(extraAction.type, actionState);
+            this.characterActionsToState.set(extraAction.actionType, actionState);
         }
         this.isAiming = false;
         this.aimAngleRadiansClockwise = 0;
@@ -228,22 +266,36 @@ export class Character {
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
-            damage: this.settings.shotDamage,
+            damage: { type: DamageType.BULLET, damage: this.settings.shotDamage, },
             numRicochets: this.settings.numRicochets,
         };
         return shotInfo;
     }
 
-    useAction(action: CharacterAction): void {
+    getGrenadeAbility(): ThrowGrenadeAbility {
+        const grenadeAction = this.extraActionsAvailable
+            .find((action) => action.actionType === ActionType.THROW_GRENADE);
+        if (grenadeAction == null) {
+            throw new Error(`Trying to getGrenadeAction but character does not have that action`);
+        }
+        return grenadeAction as ThrowGrenadeAbility;
+    }
+
+    useAbility(actionType: ActionType): void {
+        const action = this.extraActionsAvailable
+            .find((extraAction) => extraAction.actionType === actionType);
+        if (action == null) {
+            throw new Error(`Character doesn't have ability for ActionType: ${actionType}`);
+        }
         this.extraActionsAvailable = this.extraActionsAvailable
-            .filter((extraAction) => extraAction.type !== action.type);
-        const actionState = this.characterActionsToState.get(action.type)!;
+            .filter((extraAction) => extraAction.actionType !== actionType);
+        const actionState = this.characterActionsToState.get(actionType)!;
         if (actionState.usesLeft) {
             actionState.usesLeft -= 1;
         }
         actionState.cooldownTurnsLeft =
             [...this.settings.extraActions]
-                .find((extraAction) => extraAction.type === action.type)!.cooldownTurns;
+                .find((extraAction) => extraAction.actionType === action.actionType)!.cooldownTurns;
         if (!action.isFree) {
             // Character can't shoot and use non-free actions in same turn.
             this.hasShot = true;
@@ -291,9 +343,9 @@ export class Character {
         this.hasShot = false;
         this.extraActionsAvailable = [];
         for (const action of this.settings.extraActions) {
-            const state = this.characterActionsToState.get(action.type);
+            const state = this.characterActionsToState.get(action.actionType);
             if (!state) {
-                throw new Error(`Didn't initialize characterActionsToState for ${action.type}`);
+                throw new Error(`Didn't initialize characterActionsToState for ${action.actionType}`);
             }
             if (state.usesLeft !== 0 && state.cooldownTurnsLeft <= 0) {
                 this.extraActionsAvailable.push(action);
