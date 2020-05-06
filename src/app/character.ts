@@ -4,95 +4,9 @@ import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
 import { ShotInfo, Grenade, DamageType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
+import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
 
 const TWO_PI = Math.PI * 2;
-
-/** Abilities characters can perform in addition to moving and shooting. */
-export interface BaseCharacterAbility {
-    /**  Max times this ability can be used. 0 indicates unlimited. */
-    readonly maxUses: number;
-    /** Number of turns after use before ability can be reused. */
-    readonly cooldownTurns: number;
-    /** 
-     * Whether the ability can be used in addition to shooting (true)
-     * or is used in place of shooting (false). 
-     */
-    readonly isFree: boolean;
-}
-
-export interface HealAbility extends BaseCharacterAbility {
-    readonly actionType: ActionType.HEAL;
-    readonly healAmount: number;
-}
-
-export interface ThrowGrenadeAbility extends BaseCharacterAbility {
-    readonly actionType: ActionType.THROW_GRENADE;
-    readonly grenade: Grenade;
-}
-
-type CharacterAbility = HealAbility | ThrowGrenadeAbility;
-
-/** Metadata about CharacterActions. */
-interface CharacterActionState {
-    /** Remaining number of uses for action, or null if unlimited. */
-    usesLeft?: number;
-    /** Remaining number of turns until this action can be used again. */
-    cooldownTurnsLeft: number;
-}
-
-/** Parameters describing basic character attributes. */
-interface CharacterSettings {
-    /** Starting health. */
-    readonly maxHealth: number;
-    /** Manhattan distance from curent position a character can move */
-    readonly maxMovesPerTurn: number;
-    /** 
-     * Whether the character is allowed to shoot after moving. 
-     * If true, shooting ends character turn without option to move.
-     * TODO - add canMoveAfterShooting ?
-     */
-    readonly canFireAfterMoving: boolean;
-    /** Special abilities a character can use. */
-    readonly extraActions: Set<CharacterAbility>;
-    /** Damage dealt when shooting. */
-    readonly shotDamage: number;
-    /** 
-     * Number of times a character's shot projectile can
-     * bounce off of walls.
-     */
-    readonly numRicochets: number;
-}
-
-const DEFAULT_HEAL: HealAbility = {
-    actionType: ActionType.HEAL,
-    healAmount: 3,
-    maxUses: 2,
-    cooldownTurns: 2,
-    isFree: false,
-};
-const DEFAULT_GRENADE: ThrowGrenadeAbility = {
-    actionType: ActionType.THROW_GRENADE,
-    grenade: {
-        damage: 5,
-        damageManhattanDistanceRadius: 1,
-        tilesAwayDamageReduction: .6,
-        maxManhattanDistance: 4,
-    },
-    maxUses: 1,
-    cooldownTurns: 0,
-    isFree: false,
-};
-const DEFAULT_CHARACTER_SETTINGS: CharacterSettings = {
-    maxHealth: 10,
-    maxMovesPerTurn: 8,
-    canFireAfterMoving: true,
-    extraActions: new Set<CharacterAbility>([
-        DEFAULT_HEAL,
-        DEFAULT_GRENADE,
-    ]),
-    shotDamage: 5,
-    numRicochets: 2,
-};
 
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
@@ -106,7 +20,7 @@ export class Character {
     // Turn-state.
     hasMoved: boolean;
     hasShot: boolean;
-    extraActionsAvailable: CharacterAbility[];
+    extraAbilities: CharacterAbility[];
     isFinishedWithTurn: boolean;
 
     private isAiming: boolean;
@@ -116,27 +30,27 @@ export class Character {
     hasFlag: boolean;
     health: number;
     tileCoords: Point;
-    characterActionsToState: Map<ActionType, CharacterActionState>;
+    characterActionTypeToAbilityState: Map<ActionType, CharacterAbilityState>;
 
-    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number }) {
+    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number; settings: CharacterSettings; }) {
         this.tileCoords = params.startCoords;
         this.isBlueTeam = params.isBlueTeam;
         this.index = params.index;
 
-        this.settings = DEFAULT_CHARACTER_SETTINGS;
+        this.settings = params.settings;
 
         this.health = this.settings.maxHealth;
         this.hasFlag = false;
         this.hasMoved = false;
-        this.characterActionsToState = new Map();
+        this.characterActionTypeToAbilityState = new Map();
         for (const extraAction of this.settings.extraActions) {
-            const actionState: CharacterActionState = {
+            const actionState: CharacterAbilityState = {
                 cooldownTurnsLeft: 0,
             };
             if (extraAction.maxUses !== 0) {
                 actionState.usesLeft = extraAction.maxUses;
             }
-            this.characterActionsToState.set(extraAction.actionType, actionState);
+            this.characterActionTypeToAbilityState.set(extraAction.actionType, actionState);
         }
         this.isAiming = false;
         this.aimAngleRadiansClockwise = 0;
@@ -202,11 +116,83 @@ export class Character {
                 healthBarHeight);
         }
 
+        // Class Symbol.
+        switch (this.settings.type) {
+            case ClassType.SCOUT:
+                // Boots.
+                const ankleWidth = CHARACTER_CIRCLE_RADIUS * .75;
+                const ankleHeight = CHARACTER_CIRCLE_RADIUS * .75;
+                const toeWidth = CHARACTER_CIRCLE_RADIUS * .75;
+                const toeHeight = ankleHeight / 2;
+                const topLeftBoot = tileCenterCanvas.add(new Point(-ankleWidth, -ankleHeight / 2));
+                context.fillStyle = '#804526';
+                context.fillRect(
+                    topLeftBoot.x, topLeftBoot.y,
+                    ankleWidth, ankleHeight);
+                context.fillRect(
+                    tileCenterCanvas.x,
+                    tileCenterCanvas.y,
+                    toeWidth, toeHeight);
+                break;
+            case ClassType.ASSAULT:
+                // Up-arrows.
+                context.fillStyle = '#e8d100';
+                const arrowWidth = CHARACTER_CIRCLE_RADIUS * .6;
+                const arrowHeight = CHARACTER_CIRCLE_RADIUS * .4;
+                const drawPathFrom = (start: Point) => {
+                    context.beginPath();
+                    context.moveTo(start.x, start.y);
+                    const offsets: Point[] = [
+                        new Point(0, -arrowHeight / 2),
+                        new Point(arrowWidth / 2, -arrowHeight),
+                        new Point(arrowWidth, -arrowHeight / 2),
+                        new Point(arrowWidth, 0),
+                        new Point(arrowWidth / 2, -arrowHeight / 2),
+                    ];
+                    for (const offset of offsets) {
+                        const pt = start.add(offset);
+                        context.lineTo(pt.x, pt.y);
+                    }
+                    context.closePath();
+                    context.fill();
+                };
+                const topArrowStart = tileCenterCanvas.add(new Point(-arrowWidth / 2, 0));
+                const bottomArrowStart = topArrowStart.add(new Point(0, arrowHeight * 1.5));
+                drawPathFrom(topArrowStart);
+                drawPathFrom(bottomArrowStart);
+
+                break;
+            case ClassType.SNIPER:
+                // Crosshair.
+                context.strokeStyle = '#1d1570';
+                context.fillStyle = '#1d1570';
+
+                // Plus.
+                const radius = CHARACTER_CIRCLE_RADIUS * .7;
+                const width = radius * 2;
+                const height = CHARACTER_CIRCLE_RADIUS * .2;
+                const horizontalTopLeft = tileCenterCanvas.add(new Point(-width / 2, -height / 2));
+                context.fillRect(
+                    horizontalTopLeft.x, horizontalTopLeft.y,
+                    width, height);
+                const verticalTopLeft = tileCenterCanvas.add(new Point(-height / 2, -width / 2));
+                context.fillRect(
+                    verticalTopLeft.x, verticalTopLeft.y,
+                    height, width);
+
+                // Circle.
+                context.beginPath();
+                context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
+                context.closePath();
+                context.stroke();
+                break;
+        }
+
         // Aim indicator.
         if (!this.isAiming) {
             return;
         }
-        const aimLength = .75 * Grid.TILE_SIZE;
+        const aimLength = this.settings.aimIndicatorLength;
         const aimIndicatorEnd =
             tileCenterCanvas
                 .add(new Point(
@@ -273,23 +259,23 @@ export class Character {
     }
 
     getGrenadeAbility(): ThrowGrenadeAbility {
-        const grenadeAction = this.extraActionsAvailable
-            .find((action) => action.actionType === ActionType.THROW_GRENADE);
-        if (grenadeAction == null) {
+        const grenadeAbility = this.extraAbilities
+            .find((ability) => ability.actionType === ActionType.THROW_GRENADE);
+        if (grenadeAbility == null) {
             throw new Error(`Trying to getGrenadeAction but character does not have that action`);
         }
-        return grenadeAction as ThrowGrenadeAbility;
+        return grenadeAbility as ThrowGrenadeAbility;
     }
 
     useAbility(actionType: ActionType): void {
-        const action = this.extraActionsAvailable
-            .find((extraAction) => extraAction.actionType === actionType);
+        const action = this.extraAbilities
+            .find((extraAbility) => extraAbility.actionType === actionType);
         if (action == null) {
             throw new Error(`Character doesn't have ability for ActionType: ${actionType}`);
         }
-        this.extraActionsAvailable = this.extraActionsAvailable
-            .filter((extraAction) => extraAction.actionType !== actionType);
-        const actionState = this.characterActionsToState.get(actionType)!;
+        this.extraAbilities = this.extraAbilities
+            .filter((extraAbility) => extraAbility.actionType !== actionType);
+        const actionState = this.characterActionTypeToAbilityState.get(actionType)!;
         if (actionState.usesLeft) {
             actionState.usesLeft -= 1;
         }
@@ -299,6 +285,9 @@ export class Character {
         if (!action.isFree) {
             // Character can't shoot and use non-free actions in same turn.
             this.hasShot = true;
+            this.extraAbilities = this.extraAbilities.filter((ability: CharacterAbility) => {
+                return ability.isFree;
+            });
         }
         this.checkAndSetTurnOver();
     }
@@ -341,14 +330,14 @@ export class Character {
     resetTurnState(): void {
         this.hasMoved = false;
         this.hasShot = false;
-        this.extraActionsAvailable = [];
-        for (const action of this.settings.extraActions) {
-            const state = this.characterActionsToState.get(action.actionType);
+        this.extraAbilities = [];
+        for (const extraAbility of this.settings.extraActions) {
+            const state = this.characterActionTypeToAbilityState.get(extraAbility.actionType);
             if (!state) {
-                throw new Error(`Didn't initialize characterActionsToState for ${action.actionType}`);
+                throw new Error(`Didn't initialize characterActionsToState for ${extraAbility.actionType}`);
             }
             if (state.usesLeft !== 0 && state.cooldownTurnsLeft <= 0) {
-                this.extraActionsAvailable.push(action);
+                this.extraAbilities.push(extraAbility);
             }
             state.cooldownTurnsLeft -= 1;
         }
@@ -359,7 +348,7 @@ export class Character {
         if (this.isFinishedWithTurn) {
             return;
         }
-        if (this.extraActionsAvailable.some((charAction) => charAction.isFree)) {
+        if (this.extraAbilities.some((extraAbility) => extraAbility.isFree)) {
             // If free actions available, need to explicitly call setTurnOver.
             return;
         }

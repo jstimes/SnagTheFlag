@@ -13,6 +13,12 @@ export interface Grenade {
     readonly tilesAwayDamageReduction: number;
 }
 
+// TODO - use
+export interface Gun {
+    readonly damage: number;
+    readonly numRicochets: number;
+}
+
 export enum DamageType {
     BULLET,
     GRENADE,

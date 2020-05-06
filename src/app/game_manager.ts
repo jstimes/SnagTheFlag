@@ -8,13 +8,14 @@ import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
-import { Character, HealAbility } from 'src/app/character';
+import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo, DamageType } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
+import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
 
 
 enum GamePhase {
@@ -40,6 +41,11 @@ const SHOOT_KEY = Key.F;
 const HEAL_KEY = Key.H;
 const TOGGLE_THROW_GRENADE_KEY = Key.T;
 const END_TURN_KEY = Key.E;
+const keysToCharacterClassType: Map<Key, ClassType> = new Map([
+    [Key.J, ClassType.SCOUT],
+    [Key.K, ClassType.ASSAULT],
+    [Key.L, ClassType.SNIPER],
+]);
 
 const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
     return {
@@ -92,6 +98,7 @@ export class GameManager {
     private selectableTiles: Point[];
     private selectedCharacter?: Character;
     private selectedCharacterState?: SelectedCharacterState;
+    private selectedCharacterSettings: CharacterSettings = ASSAULT_CHARACTER_SETTINGS;
 
     private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
@@ -187,7 +194,6 @@ export class GameManager {
                     targetCharacter.health -= damage;
                 }
             }
-
         } else {
             const targetCharacter = this.redSquad.concat(this.blueSquad)
                 .filter((character) => character.isAlive())
@@ -298,6 +304,7 @@ export class GameManager {
                     startCoords: action.tileCoords,
                     isBlueTeam: this.isBlueTurn,
                     index: squadIndex,
+                    settings: this.selectedCharacterSettings,
                 }));
                 if (squad.length === this.gameSettings.squadSize) {
                     // Placed all characters, end turn.
@@ -760,7 +767,7 @@ export class GameManager {
                         eventType: EventType.KeyPress,
                     });
                 }
-                for (const extraAction of this.selectedCharacter.extraActionsAvailable) {
+                for (const extraAction of this.selectedCharacter.extraAbilities) {
                     switch (extraAction.actionType) {
                         case ActionType.HEAL:
                             this.controlMap.add({
@@ -903,6 +910,7 @@ export class GameManager {
         this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
         this.controlMap = new ControlMap();
         this.addDefaultControls();
+        this.addCharacterClassControls();
         this.hud = new Hud(this.context);
         this.hud.setControlMap(this.controlMap);
         this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
@@ -987,5 +995,24 @@ export class GameManager {
                 && squadMember.tileCoords.equals(tile)
                 && squadMember !== this.selectedCharacter;
         }) != null;
+    }
+
+    private addCharacterClassControls(): void {
+        for (const key of keysToCharacterClassType.keys()) {
+            const characterClassType = keysToCharacterClassType.get(key)!;
+            this.controlMap.add({
+                key,
+                name: key.toString(),
+                func: () => {
+                    const newClass = CHARACTER_CLASSES.find((settings) => {
+                        return settings.type === characterClassType;
+                    })!;
+                    this.selectedCharacterSettings = newClass;
+                    return true;
+                },
+                eventType: EventType.KeyPress,
+            });
+        }
+
     }
 }
