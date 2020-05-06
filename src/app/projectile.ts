@@ -14,6 +14,7 @@ export interface Target {
     readonly normal: Point;
     readonly tile: Point;
     readonly canvasCoords: Point;
+    readonly maxDistance: number;
 }
 
 const speeds: Map<ProjectileDetailsType, number> = new Map([
@@ -35,9 +36,8 @@ export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
     readonly ray: Ray;
-    readonly maxDistance: number;
     readonly shotInfo: ShotInfo;
-    readonly target: Target;
+    private target: Target;
 
     isDead: boolean;
     distance: number;
@@ -46,12 +46,10 @@ export class Projectile {
         context: CanvasRenderingContext2D;
         ray: Ray;
         shotInfo: ShotInfo;
-        maxDistance: number;
         target: Target;
     }) {
         this.context = params.context;
         this.ray = params.ray;
-        this.maxDistance = params.maxDistance;
         this.shotInfo = params.shotInfo;
         this.distance = 0;
         this.target = params.target;
@@ -64,11 +62,19 @@ export class Projectile {
     }
 
     isAtTarget(): boolean {
-        return !this.isDead && this.distance >= this.maxDistance;
+        return !this.isDead && this.distance >= this.target.maxDistance;
+    }
+
+    getTarget(): Target {
+        return this.target;
+    }
+
+    setNewTarget(target: Target): void {
+        this.target = target;
     }
 
     isTrailGone(): boolean {
-        return this.distance - this.maxDistance > MAX_TRAIL_DISTANCE;
+        return this.distance - this.target.maxDistance > MAX_TRAIL_DISTANCE;
     }
 
     setIsDead(): void {
@@ -84,9 +90,9 @@ export class Projectile {
             const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
             let overshotDistance = 0;
             let trailStartPointCanvas = currentPointCanvas;
-            if (this.distance > this.maxDistance) {
-                overshotDistance = MAX_TRAIL_DISTANCE - (this.distance - this.maxDistance);
-                trailStartPointCanvas = this.ray.pointAtDistance(this.maxDistance);
+            if (this.distance > this.target.maxDistance) {
+                overshotDistance = MAX_TRAIL_DISTANCE - (this.distance - this.target.maxDistance);
+                trailStartPointCanvas = this.ray.pointAtDistance(this.target.maxDistance);
             }
             let trailDistance = Math.min(
                 MAX_TRAIL_DISTANCE,

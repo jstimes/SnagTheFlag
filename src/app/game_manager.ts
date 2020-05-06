@@ -168,13 +168,14 @@ export class GameManager {
             return;
         }
         let particleSystemParams: ParticleSystemParams;
+        const target = projectile.getTarget();
         const hitPositionCanvas = projectile.ray
-            .pointAtDistance(projectile.maxDistance);
+            .pointAtDistance(target.maxDistance);
         if (projectile.shotInfo.projectileDetails.type === ProjectileDetailsType.SPLASH) {
             const splashDamage = projectile.shotInfo.projectileDetails;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
-                startTile: projectile.target.tile,
+                startTile: target.tile,
                 maxDepth: splashDamage.damageManhattanDistanceRadius,
                 isAvailable: (tile: Point) => {
                     return true;
@@ -189,7 +190,7 @@ export class GameManager {
                     .find((character) => character.tileCoords.equals(hitTile));
                 if (targetCharacter) {
                     const manhattanDistance = targetCharacter.tileCoords
-                        .manhattanDistanceTo(projectile.target.tile);
+                        .manhattanDistanceTo(target.tile);
                     const damage = splashDamage.damage * Math.pow(splashDamage.tilesAwayDamageReduction, manhattanDistance);
                     targetCharacter.health -= damage;
                 }
@@ -197,7 +198,7 @@ export class GameManager {
         } else {
             const targetCharacter = this.redSquad.concat(this.blueSquad)
                 .filter((character) => character.isAlive())
-                .find((character) => character.tileCoords.equals(projectile.target.tile));
+                .find((character) => character.tileCoords.equals(target.tile));
             if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
                 // Assumes friendly fire check occurred in 'fire'.
                 targetCharacter.health -= projectile.shotInfo.projectileDetails.damage;
@@ -205,8 +206,9 @@ export class GameManager {
             }
             const ricochetsLeft = projectile.shotInfo.projectileDetails.numRicochets;
             if (!projectile.isDead && ricochetsLeft > 0) {
+
                 const newDirection = projectile.ray.direction
-                    .reflect(projectile.target.normal);
+                    .reflect(target.normal);
                 const newDamage: Bullet = {
                     type: ProjectileDetailsType.BULLET,
                     damage: projectile.shotInfo.projectileDetails.damage,
@@ -215,8 +217,8 @@ export class GameManager {
                 const newShotInfo: ShotInfo = {
                     projectileDetails: newDamage,
                     isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
-                    fromTileCoords: projectile.target.tile,
-                    fromCanvasCoords: projectile.target.canvasCoords,
+                    fromTileCoords: target.tile,
+                    fromCanvasCoords: target.canvasCoords,
                     aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
                 };
                 this.fireShot(newShotInfo);
@@ -226,7 +228,12 @@ export class GameManager {
             particleSystemParams = getBulletParticleSystemParams(hitPositionCanvas);
         }
         projectile.setIsDead();
-        // TODO - recalculate other projectile targets.
+        // Recalculate other projectile targets as they may have been going towards a
+        // now destroyed character or obstacle.
+        for (const projectile of this.projectiles.filter((projectile) => !projectile.isDead)) {
+            const newTarget = this.getProjectileTarget(projectile.ray, projectile.shotInfo);
+            projectile.setNewTarget(newTarget);
+        }
         if (this.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
         } else {
@@ -441,7 +448,6 @@ export class GameManager {
         this.projectiles.push(new Projectile({
             context: this.context,
             ray,
-            maxDistance: ray.startPt.distanceTo(target.canvasCoords),
             shotInfo,
             target,
         }));
@@ -449,17 +455,14 @@ export class GameManager {
 
     private getProjectileTarget(ray: Ray, shotInfo: ShotInfo): Target {
         const gridBorderTarget: Target = getGridBorderTarget(ray);
-
-        const maxProjectileDistance = ray.startPt.distanceTo(gridBorderTarget.canvasCoords);
         const tileTarget = getTileTarget({
             startTile: shotInfo.fromTileCoords,
             ray,
             obstacles: this.obstacles,
             characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
-            maxDistance: maxProjectileDistance,
+            maxDistance: ray.startPt.distanceTo(gridBorderTarget.canvasCoords),
             isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
         });
-
         const target = tileTarget != null ? tileTarget : gridBorderTarget;
         return target;
     }
@@ -473,10 +476,10 @@ export class GameManager {
             normal: new Point(-1, -1),
             canvasCoords: targetCanvasCoords,
             tile: targetTile,
+            maxDistance: targetCanvasCoords.distanceTo(fromCanvasCoords),
         };
         const direction = targetCanvasCoords.subtract(fromCanvasCoords).normalize();
         const ray = new Ray(fromCanvasCoords, direction);
-        const maxDistance = targetCanvasCoords.distanceTo(fromCanvasCoords);
         const shotInfo: ShotInfo = {
             isShotFromBlueTeam: this.selectedCharacter!.isBlueTeam,
             fromCanvasCoords,
@@ -487,7 +490,6 @@ export class GameManager {
         const proj = new Projectile({
             context: this.context,
             ray,
-            maxDistance,
             shotInfo,
             target,
         });
@@ -959,10 +961,11 @@ function getGridBorderTarget(ray: Ray): Target {
     if (gridBorderCollisionPt == null) {
         throw new Error(`Shot ray does not intersect with any Grid`);
     }
-    const target = {
+    const target: Target = {
         normal: borderNormal!,
         canvasCoords: gridBorderCollisionPt!,
         tile: gridBorderCollisionTile!,
+        maxDistance: ray.startPt.distanceTo(gridBorderCollisionPt!),
     };
     return target;
 }
@@ -1055,6 +1058,7 @@ export function getTileTarget(
             normal: closestTargetNormal!,
             tile: closestCollisionTile!,
             canvasCoords: closestCollisionPt!,
+            maxDistance: closestCollisionDistance,
         };
         return target;
     }
