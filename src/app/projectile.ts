@@ -59,7 +59,7 @@ export class Projectile {
     }
 
     update(elapsedMs: number): void {
-        const speed = speeds.get(this.shotInfo.damage.type)!
+        const speed = speeds.get(this.shotInfo.projectileDetails.type)!
         this.distance = this.distance + speed * elapsedMs;
     }
 
@@ -79,7 +79,7 @@ export class Projectile {
         const context = this.context;
         const currentPointCanvas = this.ray.pointAtDistance(this.distance);
 
-        const radius = radii.get(this.shotInfo.damage.type)!;
+        const radius = radii.get(this.shotInfo.projectileDetails.type)!;
         if (this.distance > radius && !this.isTrailGone()) {
             const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
             let overshotDistance = 0;
@@ -115,7 +115,7 @@ export class Projectile {
             return;
         }
 
-        context.fillStyle = colors.get(this.shotInfo.damage.type)!;
+        context.fillStyle = colors.get(this.shotInfo.projectileDetails.type)!;
         context.beginPath();
         context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
         context.closePath();

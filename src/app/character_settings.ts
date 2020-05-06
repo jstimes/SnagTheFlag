@@ -1,5 +1,5 @@
 import { ActionType } from 'src/app/actions';
-import { SplashDamage, ProjectileDetailsType } from 'src/app/shot_info';
+import { SplashDamage, ProjectileDetailsType, Gun } from 'src/app/shot_info';
 import { Grid } from 'src/app/grid';
 
 /** Abilities characters can perform in addition to moving and shooting. */
@@ -48,23 +48,10 @@ export interface CharacterSettings {
     readonly maxHealth: number;
     /** Manhattan distance from curent position a character can move */
     readonly maxMovesPerTurn: number;
-    /** 
-     * Whether the character is allowed to shoot after moving. 
-     * If true, shooting ends character turn without option to move.
-     * TODO - add canMoveAfterShooting ?
-     */
-    readonly canFireAfterMoving: boolean;
     /** Special abilities a character can use. */
     readonly extraActions: Set<CharacterAbility>;
-    /** Damage dealt when shooting. */
-    readonly shotDamage: number;
-    /** 
-     * Number of times a character's shot projectile can
-     * bounce off of walls.
-     */
-    readonly numRicochets: number;
 
-    readonly aimIndicatorLength: number;
+    readonly gun: Gun;
 }
 
 const LIGHT_HEAL: HealAbility = {
@@ -120,38 +107,53 @@ export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SCOUT,
     maxHealth: 8,
     maxMovesPerTurn: 6,
-    canFireAfterMoving: true,
+    gun: {
+        canFireAfterMoving: true,
+        projectileDetails: {
+            type: ProjectileDetailsType.BULLET,
+            numRicochets: 1,
+            damage: 5,
+        },
+        aimIndicatorLength: .75 * Grid.TILE_SIZE,
+    },
     extraActions: new Set<CharacterAbility>([
         LIGHT_HEAL,
     ]),
-    shotDamage: 5,
-    numRicochets: 1,
-    aimIndicatorLength: .75 * Grid.TILE_SIZE,
 };
 export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.ASSAULT,
     maxHealth: 10,
     maxMovesPerTurn: 4,
-    canFireAfterMoving: true,
+    gun: {
+        canFireAfterMoving: true,
+        projectileDetails: {
+            type: ProjectileDetailsType.BULLET,
+            numRicochets: 2,
+            damage: 6,
+        },
+        aimIndicatorLength: 1.5 * Grid.TILE_SIZE,
+    },
     extraActions: new Set<CharacterAbility>([
         MEDIUM_HEAL,
         MEDIUM_GRENADE,
     ]),
-    shotDamage: 6,
-    numRicochets: 2,
-    aimIndicatorLength: 1.5 * Grid.TILE_SIZE,
 };
 export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SNIPER,
     maxHealth: 8,
     maxMovesPerTurn: 3,
-    canFireAfterMoving: false,
+    gun: {
+        canFireAfterMoving: false,
+        projectileDetails: {
+            type: ProjectileDetailsType.BULLET,
+            numRicochets: 3,
+            damage: 8,
+        },
+        aimIndicatorLength: 3 * Grid.TILE_SIZE,
+    },
     extraActions: new Set<CharacterAbility>([
         FULL_HEAL,
     ]),
-    shotDamage: 8,
-    numRicochets: 3,
-    aimIndicatorLength: 3 * Grid.TILE_SIZE,
 };
 
 export const CHARACTER_CLASSES: CharacterSettings[] = [

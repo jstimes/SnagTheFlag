@@ -170,8 +170,8 @@ export class GameManager {
         let particleSystemParams: ParticleSystemParams;
         const hitPositionCanvas = projectile.ray
             .pointAtDistance(projectile.maxDistance);
-        if (projectile.shotInfo.damage.type === ProjectileDetailsType.SPLASH) {
-            const splashDamage = projectile.shotInfo.damage;
+        if (projectile.shotInfo.projectileDetails.type === ProjectileDetailsType.SPLASH) {
+            const splashDamage = projectile.shotInfo.projectileDetails;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
                 startTile: projectile.target.tile,
@@ -200,20 +200,20 @@ export class GameManager {
                 .find((character) => character.tileCoords.equals(projectile.target.tile));
             if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
                 // Assumes friendly fire check occurred in 'fire'.
-                targetCharacter.health -= projectile.shotInfo.damage.damage;
+                targetCharacter.health -= projectile.shotInfo.projectileDetails.damage;
                 projectile.setIsDead();
             }
-            const ricochetsLeft = projectile.shotInfo.damage.numRicochets;
+            const ricochetsLeft = projectile.shotInfo.projectileDetails.numRicochets;
             if (!projectile.isDead && ricochetsLeft > 0) {
                 const newDirection = projectile.ray.direction
                     .reflect(projectile.target.normal);
                 const newDamage: Bullet = {
                     type: ProjectileDetailsType.BULLET,
-                    damage: projectile.shotInfo.damage.damage,
+                    damage: projectile.shotInfo.projectileDetails.damage,
                     numRicochets: ricochetsLeft - 1,
                 };
                 const newShotInfo: ShotInfo = {
-                    damage: newDamage,
+                    projectileDetails: newDamage,
                     isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
                     fromTileCoords: projectile.target.tile,
                     fromCanvasCoords: projectile.target.canvasCoords,
@@ -581,7 +581,7 @@ export class GameManager {
             fromCanvasCoords,
             fromTileCoords: fromTile,
             aimAngleRadiansClockwise: direction.getPointRotationRadians(),
-            damage: action.splashDamage,
+            projectileDetails: action.splashDamage,
         };
         const proj = new Projectile({
             context: this.context,

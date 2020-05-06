@@ -1,10 +1,5 @@
 import { Point } from 'src/app/math/point';
 
-// TODO - use
-export interface Gun {
-    readonly damage: number;
-    readonly numRicochets: number;
-}
 
 export enum ProjectileDetailsType {
     BULLET,
@@ -33,11 +28,22 @@ export interface SplashDamage {
 
 export type ProjectileDetails = Bullet | SplashDamage;
 
+export interface Gun {
+    readonly projectileDetails: ProjectileDetails;
+    readonly aimIndicatorLength: number;
+    /** 
+     * Whether the character is allowed to shoot after moving. 
+     * If true, shooting ends character turn without option to move.
+     * TODO - add canMoveAfterShooting ?
+     */
+    readonly canFireAfterMoving: boolean;
+}
+
 export interface ShotInfo {
     // TODO friendly fire?
     readonly isShotFromBlueTeam: boolean;
     readonly fromCanvasCoords: Point;
     readonly fromTileCoords: Point;
     readonly aimAngleRadiansClockwise: number;
-    readonly damage: ProjectileDetails;
+    readonly projectileDetails: ProjectileDetails;
 }

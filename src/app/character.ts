@@ -192,7 +192,7 @@ export class Character {
         if (!this.isAiming) {
             return;
         }
-        const aimLength = this.settings.aimIndicatorLength;
+        const aimLength = this.settings.gun.aimIndicatorLength;
         const aimIndicatorEnd =
             tileCenterCanvas
                 .add(new Point(
@@ -255,11 +255,7 @@ export class Character {
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
             aimAngleRadiansClockwise: this.aimAngleRadiansClockwise,
-            damage: {
-                type: ProjectileDetailsType.BULLET,
-                damage: this.settings.shotDamage,
-                numRicochets: this.settings.numRicochets,
-            },
+            projectileDetails: this.settings.gun.projectileDetails,
 
         };
         return shotInfo;
@@ -359,11 +355,11 @@ export class Character {
             // If free actions available, need to explicitly call setTurnOver.
             return;
         }
-        if (this.hasMoved && (this.hasShot || !this.settings.canFireAfterMoving)) {
+        if (this.hasMoved && (this.hasShot || !this.settings.gun.canFireAfterMoving)) {
             this.setTurnOver();
             return;
         }
-        if (this.hasShot && !this.settings.canFireAfterMoving) {
+        if (this.hasShot && !this.settings.gun.canFireAfterMoving) {
             this.setTurnOver();
             return;
         }
@@ -380,7 +376,7 @@ export class Character {
         if (this.isFinishedWithTurn) {
             return false;
         }
-        if (!this.settings.canFireAfterMoving && this.hasMoved) {
+        if (!this.settings.gun.canFireAfterMoving && this.hasMoved) {
             return false;
         }
         return !this.hasShot;
