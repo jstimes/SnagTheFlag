@@ -8,6 +8,7 @@ import { StartMenu } from 'src/app/start_menu';
 import { GameStateManager } from 'src/app/game_state_manager';
 import { LevelCreator } from 'src/app/level_creator';
 import { MatchType } from 'src/app/match_type';
+import { LevelMenu } from 'src/app/level_menu';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -16,6 +17,7 @@ const HOVERED_TILE_COLOR = '#f7c25e';
 
 enum GameState {
   START_MENU,
+  LEVEL_MENU,
   GAME,
   LEVEL_CREATOR,
 }
@@ -67,7 +69,7 @@ export class AppComponent {
       {
         onPlayGame: () => {
           this.tearDownCurrentGameState();
-          this.initGame();
+          this.initLevelMenu();
         },
         onCreateLevel: () => {
           this.tearDownCurrentGameState();
@@ -76,7 +78,7 @@ export class AppComponent {
       });
   }
 
-  private initGame(): void {
+  private initGame(levelIndex: number): void {
     this.gameState = GameState.GAME;
     this.gameStateManager = new GameManager(
       this.canvas,
@@ -84,12 +86,21 @@ export class AppComponent {
       {
         // TODO - level selector, match type selector
         matchType: MatchType.PLAYER_VS_PLAYER_LOCAL,
-        levelIndex: 0,
+        levelIndex,
         onExitGameCallback: () => {
           this.tearDownCurrentGameState();
           this.initStartMenu();
         },
       });
+  }
+
+  private initLevelMenu(): void {
+    this.gameState = GameState.LEVEL_MENU;
+    this.gameStateManager = new LevelMenu(this.canvas, this.context, {
+      onSelectLevel: (levelIndex) => {
+        this.initGame(levelIndex);
+      },
+    });
   }
 
   private initLevelCreator(): void {

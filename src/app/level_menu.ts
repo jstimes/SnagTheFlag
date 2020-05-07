@@ -5,34 +5,32 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { CONTROLS } from 'src/app/controls';
 import { GameStateManager } from 'src/app/game_state_manager';
 import { THEME } from 'src/app/theme';
+import { LEVELS } from 'src/app/level';
 
 interface ButtonMetadata {
     text: string;
     callback: () => void;
 }
 
-export class StartMenu implements GameStateManager {
+export class LevelMenu implements GameStateManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
-    private readonly onPlayGame: () => void;
-    private readonly onCreateLevel: () => void;
+    private readonly onSelectLevel: (levelIndex: number) => void;
     private readonly uiManager: UiManager;
 
     constructor(
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         callbacks: {
-            onPlayGame: () => void;
-            onCreateLevel: () => void;
+            readonly onSelectLevel: (levelIndex: number) => void;
         }) {
 
         this.canvas = canvas;
         this.context = context;
-        this.onPlayGame = callbacks.onPlayGame;
-        this.onCreateLevel = callbacks.onCreateLevel;
+        this.onSelectLevel = callbacks.onSelectLevel;
 
         this.uiManager = new UiManager(context);
-        this.initMenu();
+        this.initLevelMenu();
     }
 
     update(elapsedTime: number): void {
@@ -55,7 +53,7 @@ export class StartMenu implements GameStateManager {
         // no-op
     }
 
-    private initMenu(): void {
+    private initLevelMenu(): void {
         const leftMargin = .4;
         const topMargin = .3;
         const buttonOffsetY = .08;
@@ -63,22 +61,18 @@ export class StartMenu implements GameStateManager {
         const buttonColor = '#f7c25e';
         const buttonHoverColor = '#fcd281';
         const fontSize = 24;
-        const buttonMetadatas: ButtonMetadata[] = [
-            { text: 'Play', callback: this.onPlayGame },
-            { text: 'Create Level', callback: this.onCreateLevel },
-        ];
-        for (let buttonIndex = 0; buttonIndex < buttonMetadatas.length; buttonIndex++) {
+        for (let buttonIndex = 0; buttonIndex < LEVELS.length; buttonIndex++) {
             const topLeftY = topMargin + buttonIndex * buttonOffsetY + buttonIndex * buttonSize.y;
-            const buttonMetadata = buttonMetadatas[buttonIndex];
+            const level = LEVELS[buttonIndex];
             const button = new Button({
                 topLeft: new Point(leftMargin, topLeftY),
                 size: buttonSize,
-                text: buttonMetadata.text,
+                text: level.name,
                 fontSize,
                 color: buttonColor,
                 hoverColor: buttonHoverColor,
                 textColor: THEME.buttonTextColor,
-                onClickCallback: buttonMetadata.callback,
+                onClickCallback: () => { this.onSelectLevel(buttonIndex); },
             });
             this.uiManager.addElement(button);
         }
