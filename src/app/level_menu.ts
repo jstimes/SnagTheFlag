@@ -3,7 +3,7 @@ import { Button } from 'src/app/ui/button';
 import { Point } from 'src/app/math/point';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { CONTROLS } from 'src/app/controls';
-import { GameStateManager } from 'src/app/game_state_manager';
+import { GameModeManager } from 'src/app/game_mode_manager';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
 
@@ -12,7 +12,7 @@ interface ButtonMetadata {
     callback: () => void;
 }
 
-export class LevelMenu implements GameStateManager {
+export class LevelMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onSelectLevel: (levelIndex: number) => void;

@@ -5,7 +5,7 @@ import { Point } from 'src/app/math/point';
 import { CONTROLS } from 'src/app/controls';
 import { GameManager } from 'src/app/game_manager';
 import { StartMenu } from 'src/app/start_menu';
-import { GameStateManager } from 'src/app/game_state_manager';
+import { GameModeManager } from 'src/app/game_mode_manager';
 import { LevelCreator } from 'src/app/level_creator';
 import { MatchType } from 'src/app/match_type';
 import { LevelMenu } from 'src/app/level_menu';
@@ -34,7 +34,7 @@ export class AppComponent {
   lastRenderTime = 0;
 
   gameState: GameState = GameState.START_MENU;
-  gameStateManager: GameStateManager;
+  gameStateManager: GameModeManager;
 
   ngOnInit() {
     this.canvas = document.getElementById('canvas') as HTMLCanvasElement;

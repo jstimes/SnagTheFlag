@@ -1,14 +1,17 @@
 MVP
- - wait for particle to hit before moving on, character movement
-    - Freeze controls?
-- flag capturing
-- game over logic.
-- ParticleSystem for heal.
-- Distinct graphic for missile vs grenade.
-    - shotgun vs normal bullet?
-- level selector
+    - wait for particle to hit before moving on, character movement
+        - Freeze controls?
+    - flag capturing
+    - game over logic.
+    - ParticleSystem for heal.
+    - Distinct graphic for missile vs grenade.
+        - shotgun vs normal bullet?
+    - level selector - unlock one at a time.
 
 - AI
+    - Start using GameState struct.
+    - Make select character, character state into Actions?
+
 
 Make every render size in terms of Grid.TILE_SIZE
 so it's easy to resize.
@@ -18,12 +21,8 @@ Use indices instead of isBlueTeam - allows for >2 teams in the future.
 Things to experiment with:
 - destructible obstacles
 - Fog of war
-- Character classes
-    - Missle launcher!
 - pickups
-    - grenades...
 - To respawn, or not to respawn.
-- Ricochet and non-ricochet weapons
 - Teleport pads
 - classic explosive barrels
 

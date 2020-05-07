@@ -16,21 +16,10 @@ import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/par
 import { ShotInfo, ProjectileDetailsType, Bullet } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
+import { Ai } from 'src/app/ai';
+import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
+import { GameModeManager } from 'src/app/game_mode_manager';
 
-
-enum GamePhase {
-    // Setup.
-    CHARACTER_PLACEMENT,
-    // Main game.
-    COMBAT,
-}
-
-enum SelectedCharacterState {
-    AWAITING,
-    MOVING,
-    AIMING,
-    THROWING_GRENADE,
-}
 
 const MOVE_KEY = Key.M;
 /** Used to start and cancel shooting, but doesn't fire the shot.  */
@@ -76,7 +65,7 @@ const getGrenadeParticleSystemParams = (startPositionCanvas: Point): ParticleSys
     };
 };
 
-export class GameManager {
+export class GameManager implements GameModeManager {
 
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
@@ -103,6 +92,8 @@ export class GameManager {
 
     private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
+
+    private ai: Ai;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -446,6 +437,10 @@ export class GameManager {
             `Move squad members`,
             TextType.SUBTITLE,
             Duration.LONG);
+
+        if (this.matchType === MatchType.PLAYER_VS_AI) {
+            // this.ai...
+        }
     }
 
     private fireShot(shotInfo: ShotInfo): void {
@@ -830,6 +825,9 @@ export class GameManager {
         this.redSquad = [];
         this.projectiles = [];
         this.particleSystems = [];
+        if (this.matchType === MatchType.PLAYER_VS_AI) {
+            this.ai = new Ai();
+        }
         // Blue is always assumed to go first...
         this.isBlueTurn = true;
         this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
