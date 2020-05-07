@@ -1,10 +1,12 @@
 MVP
- - wait for particle to hit before moving on
+ - wait for particle to hit before moving on, character movement
     - Freeze controls?
 - flag capturing
 - game over logic.
 - ParticleSystem for heal.
-- Animate character movement.
+- Distinct graphic for missile vs grenade.
+    - shotgun vs normal bullet?
+- level selector
 
 - AI
 

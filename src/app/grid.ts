@@ -60,7 +60,7 @@ export function bfs(params: {
 }): Point[] {
 
     const { startTile, maxDepth, isAvailable, canGoThrough } = params;
-    const availableTiles: Map<string, Point> = new Map();;
+    const availableTiles: Map<string, Point> = new Map();
     const queue: QueuedTile[] =
         Grid.getAdjacentTiles(startTile)
             .concat(startTile)
@@ -89,6 +89,66 @@ export function bfs(params: {
     }
 
     return [...availableTiles.values()];
+}
+
+interface PathedTile {
+    parent: Point;
+    coords: Point;
+}
+
+export function pathTo(params: {
+    startTile: Point;
+    endTile: Point;
+    isAvailable: (tile: Point) => boolean;
+    canGoThrough: (tile: Point) => boolean;
+}): Point[] {
+
+    const { startTile, endTile, isAvailable, canGoThrough } = params;
+    const pathedTiles: Map<string, PathedTile> = new Map();
+    const queue: PathedTile[] =
+        [startTile]
+            .map((tile) => {
+                return {
+                    parent: startTile,
+                    coords: tile,
+                };
+            });
+    let hasFoundEnd = false;
+    while (!hasFoundEnd) {
+        const queuedTile = queue.shift()!;
+        if (!canGoThrough(queuedTile.coords)) {
+            continue;
+        }
+        if (isAvailable(queuedTile.coords) && !pathedTiles.has(queuedTile.coords.toString())) {
+            pathedTiles.set(queuedTile.coords.toString(), queuedTile);
+        }
+        if (queuedTile.coords.equals(endTile)) {
+            hasFoundEnd = true;
+            break;
+        }
+        for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
+            if ([...pathedTiles.values()]
+                .find((tile) => tile.coords.equals(adjacentTile))) continue;
+            queue.push({
+                parent: queuedTile.coords,
+                coords: adjacentTile,
+            });
+        }
+    }
+
+    const getPathedTile = (tile: Point): PathedTile => {
+        return [...pathedTiles.values()].find((pathedTile: PathedTile) => {
+            return pathedTile.coords.equals(tile);
+        })!;
+    };
+    const endPathedTile = getPathedTile(endTile);
+    let current = endPathedTile;
+    const path: Point[] = [];
+    while (!current.coords.equals(startTile)) {
+        path.push(current.coords);
+        current = getPathedTile(current.parent);
+    }
+    return path.reverse();
 }
 
 /** 

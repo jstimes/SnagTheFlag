@@ -1,5 +1,5 @@
 import { RENDER_SETTINGS } from 'src/app/render_settings';
-import { Grid, bfs } from 'src/app/grid';
+import { Grid, bfs, pathTo } from 'src/app/grid';
 import { Point, pointFromSerialized, containsPoint } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
 import { MatchType } from 'src/app/match_type';
@@ -159,6 +159,9 @@ export class GameManager {
                     this.tryThrowingGrenade(mouseTileCoords);
                     break;
             }
+        }
+        for (const character of this.redSquad.concat(this.blueSquad)) {
+            character.update(elapsedMs);
         }
         this.hud.update(elapsedMs);
     }
@@ -348,12 +351,14 @@ export class GameManager {
                     throw new Error(`Invalid character movement location (too far): ` +
                         `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`);
                 }
-                character.moveTo(action.tileCoords);
+                const path = this.getPath({ from: character.tileCoords, to: action.tileCoords });
+                character.moveTo(action.tileCoords, path);
                 if (character.isTurnOver()) {
                     this.onCharacterTurnOver();
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
+                this.selectableTiles = path;
                 break;
             case ActionType.SHOOT:
                 if (this.selectedCharacter == null) {
@@ -587,6 +592,18 @@ export class GameManager {
             canGoThrough,
         });
         return availableTiles;
+    }
+
+    private getPath({ from, to }: { from: Point; to: Point }): Point[] {
+        const isObstacleFree = (tile: Point): boolean => {
+            return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) == null;
+        };
+        return pathTo({
+            startTile: from,
+            endTile: to,
+            isAvailable: isObstacleFree,
+            canGoThrough: isObstacleFree,
+        });
     }
 
     private getAvailableTilesForThrowingGrenade(): Point[] {

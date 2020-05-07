@@ -11,6 +11,14 @@ const TWO_PI = Math.PI * 2;
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
 
+interface AnimationState {
+    movementSpeedMs: number;
+    isAnimating: boolean;
+    currentCoords: Point;
+    targetCoords?: Point;
+    remainingTargetCoords: Point[];
+}
+
 /** Represents one squad member on a team. */
 export class Character {
     readonly isBlueTeam: boolean;
@@ -31,9 +39,16 @@ export class Character {
     health: number;
     tileCoords: Point;
     characterActionTypeToAbilityState: Map<ActionType, CharacterAbilityState>;
+    animationState: AnimationState;
 
     constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number; settings: CharacterSettings; }) {
         this.tileCoords = params.startCoords;
+        this.animationState = {
+            movementSpeedMs: Grid.TILE_SIZE * .005,
+            isAnimating: false,
+            remainingTargetCoords: [],
+            currentCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
+        }
         this.isBlueTeam = params.isBlueTeam;
         this.index = params.index;
 
@@ -59,10 +74,8 @@ export class Character {
     }
 
     render(context: CanvasRenderingContext2D): void {
-
-        // Red or blue circle.
-        const tileTopLeftCanvas = Grid.getCanvasFromTileCoords(this.tileCoords);
-        const tileCenterCanvas = tileTopLeftCanvas.add(Grid.HALF_TILE);
+        const tileTopLeftCanvas = this.animationState.currentCoords.subtract(Grid.HALF_TILE);
+        const tileCenterCanvas = this.animationState.currentCoords;
 
         context.fillStyle = this.getCharacterColor();
         context.beginPath();
@@ -242,14 +255,37 @@ export class Character {
         context.stroke();
     }
 
-    moveTo(tileCoords: Point): void {
+    moveTo(tileCoords: Point, path: Point[]): void {
         if (this.isFinishedWithTurn || this.hasMoved) {
             throw new Error(`Already moved.`);
         }
-        // TODO - animate with movement speed and update.
+        this.animationState.currentCoords = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
         this.tileCoords = tileCoords;
+        this.animationState.targetCoords = Grid.getCanvasFromTileCoords(path.shift()!).add(Grid.HALF_TILE);
+        this.animationState.remainingTargetCoords = path;
+        this.animationState.isAnimating = true;
         this.hasMoved = true;
         this.checkAndSetTurnOver();
+    }
+
+    // TODO - extract common animation state logic.
+    update(elapsedMs: number): void {
+        if (!this.animationState.isAnimating || this.animationState.targetCoords == null) {
+            return;
+        }
+        const direction = this.animationState.targetCoords.subtract(this.animationState.currentCoords).normalize();
+        this.animationState.currentCoords = this.animationState.currentCoords.add(direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs));
+
+        const distanceAway = this.animationState.currentCoords.distanceTo(this.animationState.targetCoords);
+        if (distanceAway > Grid.TILE_SIZE * .1) {
+            return;
+        }
+        if (this.animationState.remainingTargetCoords.length === 0) {
+            this.animationState.currentCoords = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
+            this.animationState.isAnimating = false;
+            return;
+        }
+        this.animationState.targetCoords = Grid.getCanvasFromTileCoords(this.animationState.remainingTargetCoords.shift()!).add(Grid.HALF_TILE);
     }
 
     isAlive(): boolean {
