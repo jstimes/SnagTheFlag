@@ -23,6 +23,7 @@ export interface HealAbility extends BaseCharacterAbility {
 export interface ThrowGrenadeAbility extends BaseCharacterAbility {
     readonly actionType: ActionType.THROW_GRENADE;
     readonly splashDamage: SplashDamage;
+    readonly maxManhattanDistance: number;
 }
 
 export type CharacterAbility = HealAbility | ThrowGrenadeAbility;
@@ -39,6 +40,7 @@ export enum ClassType {
     SCOUT = 'Scout',
     ASSAULT = 'Assault',
     SNIPER = 'Sniper',
+    DEMOLITION = 'Demolition',
 }
 
 /** Parameters describing basic character attributes. */
@@ -83,8 +85,8 @@ const LIGHT_GRENADE: ThrowGrenadeAbility = {
         damage: 5,
         damageManhattanDistanceRadius: 1,
         tilesAwayDamageReduction: .6,
-        maxManhattanDistance: 4,
     },
+    maxManhattanDistance: 4,
     maxUses: 1,
     cooldownTurns: 0,
     isFree: false,
@@ -96,8 +98,8 @@ const MEDIUM_GRENADE: ThrowGrenadeAbility = {
         damage: 8,
         damageManhattanDistanceRadius: 3,
         tilesAwayDamageReduction: .5,
-        maxManhattanDistance: 4,
     },
+    maxManhattanDistance: 4,
     maxUses: 1,
     cooldownTurns: 0,
     isFree: false,
@@ -134,6 +136,16 @@ const SNIPER_RIFLE: Gun = {
     },
     aimIndicatorLength: 3 * Grid.TILE_SIZE,
 };
+const MISSILE_LAUNCHER: Gun = {
+    canFireAfterMoving: true,
+    projectileDetails: {
+        type: ProjectileDetailsType.SPLASH,
+        damage: 10,
+        damageManhattanDistanceRadius: 2,
+        tilesAwayDamageReduction: .6,
+    },
+    aimIndicatorLength: .5 * Grid.TILE_SIZE,
+};
 
 export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SCOUT,
@@ -152,7 +164,7 @@ export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     gun: ASSAULT_RIFLE,
     extraActions: new Set<CharacterAbility>([
         MEDIUM_HEAL,
-        MEDIUM_GRENADE,
+        LIGHT_GRENADE,
     ]),
 };
 export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
@@ -164,9 +176,20 @@ export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
         FULL_HEAL,
     ]),
 };
+export const DEMOLITION_CHARACTER_SETTINGS: CharacterSettings = {
+    type: ClassType.DEMOLITION,
+    maxHealth: 12,
+    maxMovesPerTurn: 3,
+    gun: MISSILE_LAUNCHER,
+    extraActions: new Set<CharacterAbility>([
+        FULL_HEAL,
+        MEDIUM_GRENADE,
+    ]),
+};
 
 export const CHARACTER_CLASSES: CharacterSettings[] = [
     SCOUT_CHARACTER_SETTINGS,
     ASSAULT_CHARACTER_SETTINGS,
     SNIPER_CHARACTER_SETTINGS,
+    DEMOLITION_CHARACTER_SETTINGS,
 ]

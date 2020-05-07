@@ -45,6 +45,7 @@ const keysToCharacterClassType: Map<Key, ClassType> = new Map([
     [Key.J, ClassType.SCOUT],
     [Key.K, ClassType.ASSAULT],
     [Key.L, ClassType.SNIPER],
+    [Key.I, ClassType.DEMOLITION],
 ]);
 
 const getBulletParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
@@ -594,7 +595,7 @@ export class GameManager {
         }
         const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
         const currentCoords = this.selectedCharacter.tileCoords;
-        const maxDist = this.selectedCharacter.getGrenadeAbility().splashDamage.maxManhattanDistance;
+        const maxDist = this.selectedCharacter.getGrenadeAbility().maxManhattanDistance;
         const isAvailable = (tile: Point): boolean => {
             return !this.tileHasObstacle(tile)
                 && !tile.equals(currentCoords)

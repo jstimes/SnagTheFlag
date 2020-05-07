@@ -1,24 +1,23 @@
 MVP
  - wait for particle to hit before moving on
     - Freeze controls?
-    - damage enemy
 - flag capturing
 - game over logic.
+- ParticleSystem for heal.
+- Animate character movement.
 
-
-PS for heal.
+- AI
 
 Make every render size in terms of Grid.TILE_SIZE
 so it's easy to resize.
+
+Use indices instead of isBlueTeam - allows for >2 teams in the future.
 
 Things to experiment with:
 - destructible obstacles
 - Fog of war
 - Character classes
-    - sprinters: more movement, weaker
-    - defenders: slow, strong, set down cover?
-    - demolitions: rockets, grenades
-    - snipers, shotguns
+    - Missle launcher!
 - pickups
     - grenades...
 - To respawn, or not to respawn.
@@ -34,3 +33,6 @@ Level creation:
 Things to copy to template:
 - Theme
 - closePath on grid lines
+- particle system
+- update math & ui libs
+

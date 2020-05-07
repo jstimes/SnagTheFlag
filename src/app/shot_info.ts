@@ -14,7 +14,6 @@ export interface Bullet {
 
 export interface SplashDamage {
     readonly type: ProjectileDetailsType.SPLASH;
-    readonly maxManhattanDistance: number;
     readonly damage: number;
     /** Tiles away from target that will be hit by grenade. */
     readonly damageManhattanDistanceRadius: number;

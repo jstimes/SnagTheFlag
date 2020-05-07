@@ -134,6 +134,7 @@ export class Character {
                     tileCenterCanvas.y,
                     toeWidth, toeHeight);
                 break;
+
             case ClassType.ASSAULT:
                 // Up-arrows.
                 context.fillStyle = '#e8d100';
@@ -160,8 +161,8 @@ export class Character {
                 const bottomArrowStart = topArrowStart.add(new Point(0, arrowHeight * 1.5));
                 drawPathFrom(topArrowStart);
                 drawPathFrom(bottomArrowStart);
-
                 break;
+
             case ClassType.SNIPER:
                 // Crosshair.
                 context.strokeStyle = '#1d1570';
@@ -185,6 +186,41 @@ export class Character {
                 context.arc(tileCenterCanvas.x, tileCenterCanvas.y, radius, 0, TWO_PI);
                 context.closePath();
                 context.stroke();
+                break;
+
+            case ClassType.DEMOLITION:
+
+                // Draw flame.
+                const flameWidth = CHARACTER_CIRCLE_RADIUS * .75;
+                const flameHeight = CHARACTER_CIRCLE_RADIUS * .85;
+                const drawFlameFrom = (start: Point) => {
+                    context.beginPath();
+                    context.moveTo(start.x, start.y);
+                    const offsets: Point[] = [
+                        new Point(flameWidth / 4, -flameHeight / 4),
+                        new Point(flameWidth / 2, -flameHeight / 2),
+                        new Point(flameWidth, -flameHeight / 4),
+                        new Point(flameWidth, 0),
+                        new Point(3 * flameWidth / 4, flameHeight / 2),
+                        new Point(flameWidth / 4, flameHeight / 2),
+                    ];
+                    for (const offset of offsets) {
+                        const pt = start.add(offset);
+                        context.lineTo(pt.x, pt.y);
+                    }
+                    context.closePath();
+                    context.fill();
+                };
+                const flameStart = tileCenterCanvas.add(new Point(-flameWidth / 2, 0));
+                const gradient = context.createLinearGradient(
+                    flameStart.x, flameStart.y - flameHeight,
+                    flameStart.x + flameWidth, flameStart.y);
+                const fullColor = '#f74d40';
+                const fadedColor = `#e8ba3c`;
+                gradient.addColorStop(0, fullColor);
+                gradient.addColorStop(1, fadedColor);
+                context.fillStyle = gradient;
+                drawFlameFrom(flameStart);
                 break;
         }
 
@@ -241,7 +277,7 @@ export class Character {
 
     shoot(): ShotInfo[] {
         if (!this.canShoot()) {
-            throw new Error(`Already shot or used non-free action.`);
+            throw new Error(`Already shot or used non - free action.`);
         }
         this.isAiming = false;
         this.hasShot = true;
