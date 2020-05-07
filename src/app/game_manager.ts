@@ -910,7 +910,7 @@ export class GameManager {
             const characterClassType = keysToCharacterClassType.get(key)!;
             this.controlMap.add({
                 key,
-                name: key.toString(),
+                name: characterClassType,
                 func: () => {
                     const newClass = CHARACTER_CLASSES.find((settings) => {
                         return settings.type === characterClassType;
