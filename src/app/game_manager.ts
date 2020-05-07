@@ -342,14 +342,14 @@ export class GameManager implements GameModeManager {
                     throw new Error(`Invalid character movement location (too far): ` +
                         `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`);
                 }
-                const path = this.getPath({ from: character.tileCoords, to: action.tileCoords });
-                character.moveTo(action.tileCoords, path);
+                const tilePath = this.getPath({ from: character.tileCoords, to: action.tileCoords });
+                const canvasPath = tilePath.map((tile: Point) => Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE));
+                character.moveTo(action.tileCoords, canvasPath);
                 if (character.isTurnOver()) {
                     this.onCharacterTurnOver();
                 } else {
                     this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
-                this.selectableTiles = path;
                 break;
             case ActionType.SHOOT:
                 if (this.selectedCharacter == null) {

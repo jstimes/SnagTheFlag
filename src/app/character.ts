@@ -5,19 +5,12 @@ import { LineSegment } from 'src/app/math/collision_detection';
 import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
+import { AnimationState } from 'src/app/animation_state';
 
 const TWO_PI = Math.PI * 2;
 
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
-
-interface AnimationState {
-    movementSpeedMs: number;
-    isAnimating: boolean;
-    currentCoords: Point;
-    targetCoords?: Point;
-    remainingTargetCoords: Point[];
-}
 
 /** Represents one squad member on a team. */
 export class Character {
@@ -47,7 +40,7 @@ export class Character {
             movementSpeedMs: Grid.TILE_SIZE * .005,
             isAnimating: false,
             remainingTargetCoords: [],
-            currentCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
+            currentCenterCanvas: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
         }
         this.isBlueTeam = params.isBlueTeam;
         this.index = params.index;
@@ -74,8 +67,8 @@ export class Character {
     }
 
     render(context: CanvasRenderingContext2D): void {
-        const tileTopLeftCanvas = this.animationState.currentCoords.subtract(Grid.HALF_TILE);
-        const tileCenterCanvas = this.animationState.currentCoords;
+        const tileTopLeftCanvas = this.animationState.currentCenterCanvas.subtract(Grid.HALF_TILE);
+        const tileCenterCanvas = this.animationState.currentCenterCanvas;
 
         context.fillStyle = this.getCharacterColor();
         context.beginPath();
@@ -255,14 +248,14 @@ export class Character {
         context.stroke();
     }
 
-    moveTo(tileCoords: Point, path: Point[]): void {
+    moveTo(tileCoords: Point, canvasCoordsPath: Point[]): void {
         if (this.isFinishedWithTurn || this.hasMoved) {
             throw new Error(`Already moved.`);
         }
-        this.animationState.currentCoords = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
+        this.animationState.currentCenterCanvas = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
         this.tileCoords = tileCoords;
-        this.animationState.targetCoords = Grid.getCanvasFromTileCoords(path.shift()!).add(Grid.HALF_TILE);
-        this.animationState.remainingTargetCoords = path;
+        this.animationState.targetCoords = canvasCoordsPath.shift()!;
+        this.animationState.remainingTargetCoords = canvasCoordsPath;
         this.animationState.isAnimating = true;
         this.hasMoved = true;
         this.checkAndSetTurnOver();
@@ -273,19 +266,24 @@ export class Character {
         if (!this.animationState.isAnimating || this.animationState.targetCoords == null) {
             return;
         }
-        const direction = this.animationState.targetCoords.subtract(this.animationState.currentCoords).normalize();
-        this.animationState.currentCoords = this.animationState.currentCoords.add(direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs));
+        const direction = this.animationState.targetCoords
+            .subtract(this.animationState.currentCenterCanvas).normalize();
+        this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
+            .add(direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs));
 
-        const distanceAway = this.animationState.currentCoords.distanceTo(this.animationState.targetCoords);
+        const distanceAway = this.animationState.currentCenterCanvas
+            .distanceTo(this.animationState.targetCoords);
         if (distanceAway > Grid.TILE_SIZE * .1) {
             return;
         }
         if (this.animationState.remainingTargetCoords.length === 0) {
-            this.animationState.currentCoords = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
+            // Ensure end state is centered in destination tile.
+            this.animationState.currentCenterCanvas =
+                Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
             this.animationState.isAnimating = false;
             return;
         }
-        this.animationState.targetCoords = Grid.getCanvasFromTileCoords(this.animationState.remainingTargetCoords.shift()!).add(Grid.HALF_TILE);
+        this.animationState.targetCoords = this.animationState.remainingTargetCoords.shift()!;
     }
 
     isAlive(): boolean {

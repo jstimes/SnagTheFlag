@@ -9,6 +9,10 @@ MVP
     - level selector - unlock one at a time.
 
 - AI
+    - Freeze projectiles before animations
+        - use AnimationState in characters AND projectiles.
+    - Need flag logic
+    - Projectile target prediction (figure ricochets ahead of time).
     - Start using GameState struct.
     - Make select character, character state into Actions?
 
