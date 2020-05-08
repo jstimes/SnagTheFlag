@@ -88,7 +88,7 @@ export class GameManager implements GameModeManager {
     private blueSquad: Character[];
     private redSquad: Character[];
     private gamePhase: GamePhase;
-    private isBlueTurn: boolean;
+    private currentTeamIndex: number;
 
     private clickHandler: ClickHandler | null = null;
     private controlMap: ControlMap;
@@ -210,7 +210,7 @@ export class GameManager implements GameModeManager {
             const newTargets = getProjectileTargetsPath({
                 ray: projectile.getCurrentTarget().ray,
                 startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
-                isShotFromBlueTeam: projectile.isFromBlueTeam,
+                fromTeamIndex: projectile.fromTeamIndex,
                 numRicochets: projectile.getNumRicochetsLeft(),
                 characters: this.getAliveCharacters(),
                 obstacles: this.obstacles,
@@ -294,7 +294,7 @@ export class GameManager implements GameModeManager {
                 const squadIndex = activeSquad.length;
                 activeSquad.push(new Character({
                     startCoords: action.tileCoords,
-                    isBlueTeam: this.isBlueTurn,
+                    teamIndex: this.currentTeamIndex,
                     index: squadIndex,
                     settings: this.selectedCharacterSettings,
                     gameInfo: this.getGameInfo(),
@@ -410,8 +410,8 @@ export class GameManager implements GameModeManager {
 
     private nextTurn(): void {
         if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            if (this.isBlueTurn) {
-                this.isBlueTurn = false;
+            if (this.currentTeamIndex + 1 < this.gameSettings.numTeams) {
+                this.currentTeamIndex += 1;
                 this.initCharacterPlacementTurn();
             } else {
                 this.gamePhase = GamePhase.COMBAT;
@@ -438,7 +438,7 @@ export class GameManager implements GameModeManager {
     }
 
     private advanceToNextCombatTurn(): void {
-        this.isBlueTurn = !this.isBlueTurn;
+        this.currentTeamIndex = (this.currentTeamIndex + 1) % this.gameSettings.numTeams;
         const squad = this.getActiveSquad();
         for (const character of squad) {
             character.resetTurnState();
@@ -452,7 +452,7 @@ export class GameManager implements GameModeManager {
             Duration.LONG);
 
         if (this.matchType === MatchType.PLAYER_VS_AI) {
-            if (this.isBlueTurn !== this.ai.isBlue) {
+            if (this.currentTeamIndex !== this.ai.teamIndex) {
                 return;
             }
             this.ai.onNextTurn({
@@ -474,7 +474,7 @@ export class GameManager implements GameModeManager {
             blueSquad: this.blueSquad.filter((character) => character.isAlive()),
             redSquad: this.redSquad.filter((character) => character.isAlive()),
             gamePhase: this.gamePhase,
-            isBlueTurn: this.isBlueTurn,
+            currentTeamIndex: this.currentTeamIndex,
             obstacles: this.obstacles,
             selectableTiles: this.selectableTiles,
             selectedCharacter: this.selectedCharacter,
@@ -491,7 +491,7 @@ export class GameManager implements GameModeManager {
         const targetsPath = getProjectileTargetsPath({
             ray,
             startingTileCoords: shotInfo.fromTileCoords,
-            isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
+            fromTeamIndex: shotInfo.fromTeamIndex,
             numRicochets,
             characters: this.getAliveCharacters(),
             obstacles: this.obstacles,
@@ -500,7 +500,7 @@ export class GameManager implements GameModeManager {
             context: this.context,
             projectileDetails: shotInfo.projectileDetails,
             targets: targetsPath,
-            isFromBlueTeam: shotInfo.isShotFromBlueTeam,
+            fromTeamIndex: shotInfo.fromTeamIndex,
         }));
     }
 
@@ -518,7 +518,7 @@ export class GameManager implements GameModeManager {
             maxDistance: targetCanvasCoords.distanceTo(fromCanvasCoords),
         };
         const shotInfo: ShotInfo = {
-            isShotFromBlueTeam: this.selectedCharacter!.isBlueTeam,
+            fromTeamIndex: this.selectedCharacter!.teamIndex,
             fromCanvasCoords,
             fromTileCoords: fromTile,
             aimAngleRadiansClockwise: direction.getPointRotationRadians(),
@@ -528,7 +528,7 @@ export class GameManager implements GameModeManager {
             context: this.context,
             projectileDetails: shotInfo.projectileDetails,
             targets: [target],
-            isFromBlueTeam: shotInfo.isShotFromBlueTeam,
+            fromTeamIndex: shotInfo.fromTeamIndex,
         });
         this.projectiles.push(proj);
     }
@@ -908,7 +908,9 @@ export class GameManager implements GameModeManager {
         this.projectiles = [];
         this.particleSystems = [];
         if (this.matchType === MatchType.PLAYER_VS_AI) {
-            this.ai = new Ai({ isBlue: false });
+            for (let i = 1; i < this.gameSettings.numTeams; i++) {
+                this.ai = new Ai({ teamIndex: i });
+            }
         }
         this.controlMap = new ControlMap();
         this.addDefaultControls();
@@ -916,8 +918,8 @@ export class GameManager implements GameModeManager {
         this.hud = new Hud(this.context);
         this.hud.setControlMap(this.controlMap);
 
-        // Blue is always assumed to go first...
-        this.isBlueTurn = true;
+        // 0th team goes first...
+        this.currentTeamIndex = 0;
         this.initCharacterPlacementTurn();
     }
 
@@ -1027,15 +1029,24 @@ export class GameManager implements GameModeManager {
     }
 
     private getActiveTeamName(): string {
-        return this.isBlueTurn ? `Blue` : `Red`;
+        switch (this.currentTeamIndex) {
+            case 0:
+                return 'Blue';
+            case 1:
+                return 'Red';
+            case 2:
+                return 'Purple';
+            default:
+                throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
+        }
     }
 
     private getActiveSquad(): Character[] {
-        return this.isBlueTurn ? this.blueSquad : this.redSquad;
+        return this.currentTeamIndex === 0 ? this.blueSquad : this.redSquad;
     }
 
     private getActiveTeamFlag(): Flag {
-        return this.isBlueTurn ? this.blueFlag : this.redFlag;
+        return this.currentTeamIndex === 0 ? this.blueFlag : this.redFlag;
     }
 
     private tileHasObstacle(tile: Point): boolean {

@@ -19,12 +19,12 @@ export function getRayForShot(shotInfo: ShotInfo): Ray {
 export function getProjectileTargetsPath(params: {
     ray: Ray;
     startingTileCoords: Point;
-    isShotFromBlueTeam: boolean;
+    fromTeamIndex: number;
     numRicochets: number;
     characters: Character[];
     obstacles: Obstacle[];
 }): Target[] {
-    const { ray, isShotFromBlueTeam, startingTileCoords, numRicochets, characters, obstacles } = params;
+    const { ray, fromTeamIndex, startingTileCoords, numRicochets, characters, obstacles } = params;
     const targets: Target[] = [];
     let pathsLeft = numRicochets + 1;
     let currentTileCoords = startingTileCoords;
@@ -37,7 +37,7 @@ export function getProjectileTargetsPath(params: {
         const target = getProjectileTarget({
             ray: currentRay,
             startTile: currentTileCoords,
-            isShotFromBlueTeam,
+            fromTeamIndex,
             obstacles,
             characters,
         });
@@ -58,9 +58,9 @@ export function getProjectileTarget(params: {
     startTile: Point;
     obstacles: Obstacle[];
     characters: Character[];
-    isShotFromBlueTeam: boolean;
+    fromTeamIndex: number;
 }): Target {
-    const { ray, isShotFromBlueTeam, startTile } = params;
+    const { ray, fromTeamIndex, startTile } = params;
     const gridBorderTarget: Target = getGridBorderTarget(ray);
     const tileTarget = getTileTarget({
         startTile,
@@ -68,7 +68,7 @@ export function getProjectileTarget(params: {
         obstacles: params.obstacles,
         characters: params.characters,
         maxDistance: ray.startPt.distanceTo(gridBorderTarget.canvasCoords),
-        isShotFromBlueTeam,
+        fromTeamIndex,
     });
     const target = tileTarget != null ? tileTarget : gridBorderTarget;
     return target;
@@ -119,7 +119,7 @@ function getTileTarget(
         obstacles: Obstacle[];
         characters: Character[];
         maxDistance: number;
-        isShotFromBlueTeam: boolean;
+        fromTeamIndex: number;
     }): Target | null {
 
     const stepSize = 3 * Grid.TILE_SIZE / 4;
@@ -171,7 +171,7 @@ function getTileTarget(
                 if (!character) {
                     throw new Error(`Tile is occupied but no obstacle or character...`);
                 }
-                if (character.isBlueTeam === params.isShotFromBlueTeam) {
+                if (character.teamIndex === params.fromTeamIndex) {
                     // TODO - allow friendly fire?
                     continue;
                 }

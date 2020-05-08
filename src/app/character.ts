@@ -21,7 +21,7 @@ interface GameInfo {
 
 /** Represents one squad member on a team. */
 export class Character {
-    readonly isBlueTeam: boolean;
+    readonly teamIndex: number;
     readonly settings: CharacterSettings;
     readonly index: number;
 
@@ -43,7 +43,13 @@ export class Character {
     animationState: AnimationState;
     gameInfo: { characters: Character[]; obstacles: Obstacle[] };
 
-    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number; settings: CharacterSettings; gameInfo: GameInfo; }) {
+    constructor(params: {
+        startCoords: Point;
+        teamIndex: number;
+        index: number;
+        settings: CharacterSettings;
+        gameInfo: GameInfo;
+    }) {
         this.gameInfo = params.gameInfo;
         this.tileCoords = params.startCoords;
         this.animationState = {
@@ -52,7 +58,7 @@ export class Character {
             remainingTargets: [],
             currentCenterCanvas: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
         }
-        this.isBlueTeam = params.isBlueTeam;
+        this.teamIndex = params.teamIndex;
         this.index = params.index;
 
         this.settings = params.settings;
@@ -344,7 +350,7 @@ export class Character {
         this.aimPath = getProjectileTargetsPath({
             ray: getRayForShot(this.getCurrentShotInfo()[0]),
             startingTileCoords: this.tileCoords,
-            isShotFromBlueTeam: this.isBlueTeam,
+            fromTeamIndex: this.teamIndex,
             numRicochets: 5,
             characters: this.gameInfo.characters,
             obstacles: this.gameInfo.obstacles,
@@ -368,7 +374,7 @@ export class Character {
     // TODO - shouldn't be public
     getCurrentShotInfo(): ShotInfo[] {
         const straightShotInfo: ShotInfo = {
-            isShotFromBlueTeam: this.isBlueTeam,
+            fromTeamIndex: this.teamIndex,
             fromTileCoords: this.tileCoords,
             // Shoot from center of tile.
             fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
@@ -382,7 +388,7 @@ export class Character {
                 const offsetDirection = shotInfos.length % 2 === 0 ? 1 : -1;
                 const aimAngle = this.aimAngleRadiansClockwise + spray.offsetAngleRadians * offsetDirection;
                 shotInfos.push({
-                    isShotFromBlueTeam: this.isBlueTeam,
+                    fromTeamIndex: this.teamIndex,
                     fromTileCoords: this.tileCoords,
                     // Shoot from center of tile.
                     fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
@@ -500,9 +506,9 @@ export class Character {
 
     private getCharacterColor(): string {
         if (this.isFinishedWithTurn) {
-            return this.isBlueTeam ? THEME.blueCharacterDoneColor : THEME.redCharacterDoneColor;
+            return this.teamIndex === 0 ? THEME.blueCharacterDoneColor : THEME.redCharacterDoneColor;
         }
-        return this.isBlueTeam ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
+        return this.teamIndex === 0 ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
     }
 
     canShoot(): boolean {

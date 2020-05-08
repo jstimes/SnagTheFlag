@@ -15,9 +15,10 @@ const POST_ANIMATION_DELAY = 500;
 
 export class Ai {
 
-    isBlue: boolean;
-    constructor({ isBlue }: { isBlue: boolean; }) {
-        this.isBlue = isBlue;
+    readonly teamIndex: number;
+
+    constructor({ teamIndex }: { teamIndex: number; }) {
+        this.teamIndex = teamIndex;
     }
 
     async onNextTurn(delegate: Delegate) {
@@ -28,7 +29,7 @@ export class Ai {
         }
         const checkTurnAndTakeAction = () => {
             gameState = delegate.getGameState();
-            if (gameState.isBlueTurn !== this.isBlue) {
+            if (gameState.currentTeamIndex !== this.teamIndex) {
                 return;
             }
             if (delegate.isAnimating()) {
@@ -83,7 +84,7 @@ export class Ai {
                     ray: getRayForShot(selectedCharacter.getCurrentShotInfo()[0]),
                     characters: gameState.blueSquad.concat(gameState.redSquad),
                     obstacles: gameState.obstacles,
-                    isShotFromBlueTeam: this.isBlue,
+                    fromTeamIndex: this.teamIndex,
                     startTile: selectedCharacter.tileCoords,
                 });
                 if (target.tile.equals(enemy.tileCoords)) {
@@ -101,12 +102,12 @@ export class Ai {
     }
 
     private getEnemyFlagCoords(gameState: GameState): Point {
-        const flag = this.isBlue ? gameState.redFlag : gameState.blueFlag;
+        const flag = this.teamIndex === 0 ? gameState.redFlag : gameState.blueFlag;
         return flag.tileCoords;
     }
 
     private getEnemyCharacters(gameState: GameState): Character[] {
-        return this.isBlue ? gameState.redSquad : gameState.blueSquad;
+        return this.teamIndex === 0 ? gameState.redSquad : gameState.blueSquad;
     }
 }
 

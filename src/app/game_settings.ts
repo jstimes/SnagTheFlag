@@ -5,9 +5,11 @@ export interface GameSettings {
      * can be spawned upon game start. 
      */
     maxSpawnDistanceFromFlag: number;
+    numTeams: number;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
     squadSize: 4,
     maxSpawnDistanceFromFlag: 8,
+    numTeams: 2,
 }

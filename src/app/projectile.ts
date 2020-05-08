@@ -38,7 +38,7 @@ export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
     readonly projectileDetails: ProjectileDetails;
-    readonly isFromBlueTeam: boolean;
+    readonly fromTeamIndex: number;
 
     private timesRicocheted: number;
     private trails: Trail[];
@@ -50,7 +50,7 @@ export class Projectile {
         context: CanvasRenderingContext2D;
         projectileDetails: ProjectileDetails;
         targets: Target[];
-        isFromBlueTeam: boolean;
+        fromTeamIndex: number;
     }) {
         this.context = params.context;
         this.projectileDetails = params.projectileDetails;
@@ -63,7 +63,7 @@ export class Projectile {
             distance: 0,
             maxDistance: this.animationState.currentTarget!.maxDistance,
         }];
-        this.isFromBlueTeam = params.isFromBlueTeam;
+        this.fromTeamIndex = params.fromTeamIndex;
         this.timesRicocheted = 0;
         this.isDead = false;
     }

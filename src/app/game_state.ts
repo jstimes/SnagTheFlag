@@ -24,7 +24,7 @@ export interface GameState {
     readonly redSquad: Character[];
     readonly redFlag: Flag;
     readonly blueFlag: Flag;
-    readonly isBlueTurn: boolean;
+    readonly currentTeamIndex: number;
     readonly selectableTiles: Point[];
     readonly selectedCharacter?: Character;
     readonly selectedCharacterState?: SelectedCharacterState;
