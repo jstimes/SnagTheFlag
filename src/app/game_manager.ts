@@ -119,13 +119,6 @@ export class GameManager implements GameModeManager {
         this.resetGame();
     }
 
-    getGameInfo(): { characters: Character[]; obstacles: Obstacle[] } {
-        return {
-            characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
-            obstacles: this.obstacles,
-        }
-    }
-
     isAnimating(): boolean {
         const animatables: { animationState: AnimationState }[] = [
             ...this.blueSquad,
@@ -162,7 +155,7 @@ export class GameManager implements GameModeManager {
                 this.clickHandler.onClick(mouseTileCoords);
             }
         }
-        for (const character of this.redSquad.concat(this.blueSquad)) {
+        for (const character of this.getAliveCharacters()) {
             character.update(elapsedMs, this.getGameInfo());
         }
         this.hud.update(elapsedMs);
@@ -190,8 +183,7 @@ export class GameManager implements GameModeManager {
                 },
             });
             for (const hitTile of hitTiles) {
-                const targetCharacter = this.redSquad.concat(this.blueSquad)
-                    .filter((character) => character.isAlive())
+                const targetCharacter = this.getAliveCharacters()
                     .find((character) => character.tileCoords.equals(hitTile));
                 if (targetCharacter) {
                     const manhattanDistance = targetCharacter.tileCoords
@@ -201,8 +193,7 @@ export class GameManager implements GameModeManager {
                 }
             }
         } else {
-            const targetCharacter = this.redSquad.concat(this.blueSquad)
-                .filter((character) => character.isAlive())
+            const targetCharacter = this.getAliveCharacters()
                 .find((character) => character.tileCoords.equals(finalTarget.tile));
             if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
                 // Assumes friendly fire check occurred in 'fire'.
@@ -221,7 +212,7 @@ export class GameManager implements GameModeManager {
                 startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
                 isShotFromBlueTeam: projectile.isFromBlueTeam,
                 numRicochets: projectile.getNumRicochetsLeft(),
-                characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
+                characters: this.getAliveCharacters(),
                 obstacles: this.obstacles,
             });
             projectile.setNewTargets(newTargets);
@@ -287,7 +278,7 @@ export class GameManager implements GameModeManager {
     }
 
     onAction(action: Action): void {
-        const activeSquad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const activeSquad = this.getActiveSquad();
         switch (action.type) {
             case ActionType.PLACE_CHARACTER:
                 if (this.gamePhase !== GamePhase.CHARACTER_PLACEMENT) {
@@ -406,7 +397,7 @@ export class GameManager implements GameModeManager {
 
     /** Checks if there's another squad member still active, or advances turn if not. */
     private onCharacterTurnOver(): void {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         const activeSquadMember = squad.find((character: Character) => {
             return !character.isTurnOver() && character.isAlive();
         });
@@ -433,7 +424,7 @@ export class GameManager implements GameModeManager {
 
     private initCharacterPlacementTurn(): void {
         this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
-        const teamName = this.isBlueTurn ? 'Blue' : 'Red';
+        const teamName = this.getActiveTeamName();
         this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
         this.hud.setText(
             `Place squad members(${this.gameSettings.squadSize} remaining) `,
@@ -448,11 +439,11 @@ export class GameManager implements GameModeManager {
 
     private advanceToNextCombatTurn(): void {
         this.isBlueTurn = !this.isBlueTurn;
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         for (const character of squad) {
             character.resetTurnState();
         }
-        const teamName = this.isBlueTurn ? `Blue` : `Red`;
+        const teamName = this.getActiveTeamName();
         this.setSelectedCharacter(this.getFirstCharacterIndex());
         this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
         this.hud.setText(
@@ -502,7 +493,7 @@ export class GameManager implements GameModeManager {
             startingTileCoords: shotInfo.fromTileCoords,
             isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
             numRicochets,
-            characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
+            characters: this.getAliveCharacters(),
             obstacles: this.obstacles,
         });
         this.projectiles.push(new Projectile({
@@ -569,7 +560,7 @@ export class GameManager implements GameModeManager {
     }
 
     private trySelectingCharacter(tileCoords: Point): void {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         const squadMemeberAtTile =
             squad.find((character) => character.tileCoords.equals(tileCoords));
         if (squadMemeberAtTile) {
@@ -594,7 +585,7 @@ export class GameManager implements GameModeManager {
     }
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
-        const flagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
+        const flagCoords = this.getActiveTeamFlag().tileCoords;
         const maxDistFromFlag = this.gameSettings.maxSpawnDistanceFromFlag;
         const availableTiles = bfs({
             startTile: flagCoords,
@@ -615,7 +606,7 @@ export class GameManager implements GameModeManager {
         if (this.selectedCharacter == null) {
             throw new Error(`No character selected in getAvailableTilesForCharacterMovement`);
         }
-        const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
+        const ownFlagCoords = this.getActiveTeamFlag().tileCoords;
         const currentCoords = this.selectedCharacter.tileCoords;
         const maxMoves = this.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
@@ -652,7 +643,7 @@ export class GameManager implements GameModeManager {
         if (this.selectedCharacter == null) {
             throw new Error(`No character selected in getAvailableTilesForCharacterMovement`);
         }
-        const ownFlagCoords = this.isBlueTurn ? this.blueFlag.tileCoords : this.redFlag.tileCoords;
+        const ownFlagCoords = this.getActiveTeamFlag();
         const currentCoords = this.selectedCharacter.tileCoords;
         const maxDist = this.selectedCharacter.getGrenadeAbility().maxManhattanDistance;
         const isAvailable = (tile: Point): boolean => {
@@ -674,7 +665,7 @@ export class GameManager implements GameModeManager {
     }
 
     private setSelectedCharacter(index: number): void {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         const character = squad[index];
         if (character.isTurnOver()) {
             this.hud.setText(
@@ -966,8 +957,27 @@ export class GameManager implements GameModeManager {
         });
     }
 
+    private addCharacterClassControls(): void {
+        for (const key of keysToCharacterClassType.keys()) {
+            const characterClassType = keysToCharacterClassType.get(key)!;
+            this.controlMap.add({
+                key,
+                name: characterClassType,
+                func: () => {
+                    const newClass = CHARACTER_CLASSES.find((settings) => {
+                        return settings.type === characterClassType;
+                    })!;
+                    this.selectedCharacterSettings = newClass;
+                    return true;
+                },
+                eventType: EventType.KeyPress,
+            });
+        }
+
+    }
+
     private addSwitchSquadMemberControls(): void {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         this.clickHandler = {
             onClick: (tile: Point) => {
                 this.trySelectingCharacter(tile);
@@ -996,7 +1006,7 @@ export class GameManager implements GameModeManager {
     }
 
     private getFirstCharacterIndex(): number {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         for (let index = 0; index < squad.length; index++) {
             if (squad[index].isAlive()) {
                 return index;
@@ -1005,36 +1015,40 @@ export class GameManager implements GameModeManager {
         throw new Error(`No more characters alive - should be game over?`);
     }
 
+    private getGameInfo(): { characters: Character[]; obstacles: Obstacle[] } {
+        return {
+            characters: this.getAliveCharacters(),
+            obstacles: this.obstacles,
+        }
+    }
+
+    private getAliveCharacters(): Character[] {
+        return this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive());
+    }
+
+    private getActiveTeamName(): string {
+        return this.isBlueTurn ? `Blue` : `Red`;
+    }
+
+    private getActiveSquad(): Character[] {
+        return this.isBlueTurn ? this.blueSquad : this.redSquad;
+    }
+
+    private getActiveTeamFlag(): Flag {
+        return this.isBlueTurn ? this.blueFlag : this.redFlag;
+    }
+
     private tileHasObstacle(tile: Point): boolean {
         return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
     }
 
     private isSquadMemberAtTile(tile: Point): boolean {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const squad = this.getActiveSquad();
         return squad.find((squadMember: Character) => {
             return squadMember.isAlive()
                 && squadMember.tileCoords.equals(tile)
                 && squadMember !== this.selectedCharacter;
         }) != null;
-    }
-
-    private addCharacterClassControls(): void {
-        for (const key of keysToCharacterClassType.keys()) {
-            const characterClassType = keysToCharacterClassType.get(key)!;
-            this.controlMap.add({
-                key,
-                name: characterClassType,
-                func: () => {
-                    const newClass = CHARACTER_CLASSES.find((settings) => {
-                        return settings.type === characterClassType;
-                    })!;
-                    this.selectedCharacterSettings = newClass;
-                    return true;
-                },
-                eventType: EventType.KeyPress,
-            });
-        }
-
     }
 }
 
