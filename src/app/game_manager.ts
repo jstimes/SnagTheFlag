@@ -19,6 +19,7 @@ import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, 
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
+import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
 
 
 const MOVE_KEY = Key.M;
@@ -112,6 +113,13 @@ export class GameManager implements GameModeManager {
         this.resetGame();
     }
 
+    getGameInfo(): { characters: Character[]; obstacles: Obstacle[] } {
+        return {
+            characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
+            obstacles: this.obstacles,
+        }
+    }
+
     update(elapsedMs: number): void {
         for (const particleSystem of this.particleSystems) {
             particleSystem.update(elapsedMs);
@@ -152,7 +160,7 @@ export class GameManager implements GameModeManager {
             }
         }
         for (const character of this.redSquad.concat(this.blueSquad)) {
-            character.update(elapsedMs);
+            character.update(elapsedMs, this.getGameInfo());
         }
         this.hud.update(elapsedMs);
     }
@@ -205,11 +213,13 @@ export class GameManager implements GameModeManager {
         // now destroyed character or obstacle.
         for (const projectile of this.projectiles.filter((projectile) => !projectile.isDead)) {
             const canvasCoords = projectile.animationState.currentCenterCanvas;
-            const newTargets = this.getProjectileTargetsPath({
+            const newTargets = getProjectileTargetsPath({
                 ray: projectile.getCurrentTarget().ray,
                 startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
                 isShotFromBlueTeam: projectile.isFromBlueTeam,
                 numRicochets: projectile.getNumRicochetsLeft(),
+                characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
+                obstacles: this.obstacles,
             });
             projectile.setNewTargets(newTargets);
         }
@@ -297,6 +307,7 @@ export class GameManager implements GameModeManager {
                     isBlueTeam: this.isBlueTurn,
                     index: squadIndex,
                     settings: this.selectedCharacterSettings,
+                    gameInfo: this.getGameInfo(),
                 }));
                 if (squad.length === this.gameSettings.squadSize) {
                     // Placed all characters, end turn.
@@ -432,11 +443,13 @@ export class GameManager implements GameModeManager {
         const numRicochets = shotInfo.projectileDetails.type === ProjectileDetailsType.BULLET
             ? shotInfo.projectileDetails.numRicochets
             : 0;
-        const targetsPath = this.getProjectileTargetsPath({
+        const targetsPath = getProjectileTargetsPath({
             ray,
             startingTileCoords: shotInfo.fromTileCoords,
             isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
             numRicochets,
+            characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
+            obstacles: this.obstacles,
         });
         this.projectiles.push(new Projectile({
             context: this.context,
@@ -444,61 +457,6 @@ export class GameManager implements GameModeManager {
             targets: targetsPath,
             isFromBlueTeam: shotInfo.isShotFromBlueTeam,
         }));
-    }
-
-    getProjectileTargetsPath(params: {
-        ray: Ray;
-        startingTileCoords: Point;
-        isShotFromBlueTeam: boolean;
-        numRicochets: number;
-    }): Target[] {
-        const { ray, isShotFromBlueTeam, startingTileCoords, numRicochets } = params;
-        const targets: Target[] = [];
-        let pathsLeft = numRicochets + 1;
-        let currentTileCoords = startingTileCoords;
-        let currentRay = ray;
-        let hasHitCharacter = false;
-        const isTargetACharacter = (target: Target) => {
-            return this.redSquad.concat(this.blueSquad)
-                .find((character) =>
-                    character.tileCoords.equals(target.tile)) != null;
-        };
-
-        while (pathsLeft > 0 && !hasHitCharacter) {
-            const target = this.getProjectileTarget({
-                ray: currentRay,
-                startingTileCoords: currentTileCoords,
-                isShotFromBlueTeam,
-            });
-            targets.push(target);
-            hasHitCharacter = isTargetACharacter(target);
-            pathsLeft -= 1;
-            const newDirection = currentRay.direction
-                .reflect(target.normal!);
-            currentRay = new Ray(target.canvasCoords, newDirection);
-            currentTileCoords = target.tile;
-        }
-
-        return targets;
-    }
-
-    private getProjectileTarget(params: {
-        ray: Ray;
-        startingTileCoords: Point;
-        isShotFromBlueTeam: boolean;
-    }): Target {
-        const { ray, isShotFromBlueTeam, startingTileCoords } = params;
-        const gridBorderTarget: Target = getGridBorderTarget(ray);
-        const tileTarget = getTileTarget({
-            startTile: startingTileCoords,
-            ray,
-            obstacles: this.obstacles,
-            characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
-            maxDistance: ray.startPt.distanceTo(gridBorderTarget.canvasCoords),
-            isShotFromBlueTeam,
-        });
-        const target = tileTarget != null ? tileTarget : gridBorderTarget;
-        return target;
     }
 
     private throwGrenade(action: ThrowGrenadeAction): void {
@@ -971,147 +929,4 @@ export class GameManager implements GameModeManager {
         }
 
     }
-}
-
-function getRayForShot(shotInfo: ShotInfo): Ray {
-    const ray = new Ray(
-        shotInfo.fromCanvasCoords,
-        new Point(
-            Math.cos(shotInfo.aimAngleRadiansClockwise),
-            Math.sin(shotInfo.aimAngleRadiansClockwise)));
-    return ray;
-}
-
-function getGridBorderTarget(ray: Ray): Target {
-    // Find which game border the ray intersects.
-    const topLeftCanvas = new Point(0, 0);
-    const topRightCanvas = topLeftCanvas.add(new Point(RENDER_SETTINGS.canvasWidth, 0));
-    const bottomLeftCanvas = topLeftCanvas.add(new Point(0, RENDER_SETTINGS.canvasHeight));
-    const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
-    const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
-    const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, 1));
-    const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas, new Point(-1, 0));
-    const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, -1));
-    const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
-    let gridBorderCollisionPt: Point | null = null;
-    let gridBorderCollisionTile: Point | null = null;
-    let borderNormal: Point | null = null;
-    for (const border of borders) {
-        const collisionResult = detectRayLineSegmentCollision(ray, border);
-        if (collisionResult.isCollision) {
-            borderNormal = border.normal;
-            // Move out from edge a little to accurately get tile.
-            const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .1);
-            gridBorderCollisionPt = collisionResult.collisionPt!.add(offset);
-            gridBorderCollisionTile = Grid.getTileFromCanvasCoords(gridBorderCollisionPt);
-            break;
-        }
-    }
-    if (gridBorderCollisionPt == null) {
-        throw new Error(`Shot ray does not intersect with any Grid`);
-    }
-    const target: Target = {
-        normal: borderNormal!,
-        ray,
-        canvasCoords: gridBorderCollisionPt!,
-        tile: gridBorderCollisionTile!,
-        maxDistance: ray.startPt.distanceTo(gridBorderCollisionPt!),
-    };
-    return target;
-}
-
-export function getTileTarget(
-    params: {
-        startTile: Point;
-        ray: Ray;
-        obstacles: Obstacle[];
-        characters: Character[];
-        maxDistance: number;
-        isShotFromBlueTeam: boolean;
-    }): Target | null {
-
-    const stepSize = 3 * Grid.TILE_SIZE / 4;
-    let curDistance = stepSize;
-    const currentTileString = params.startTile.toString();
-    const checkedTilesStringSet: Set<string> = new Set([currentTileString]);
-    let closestCollisionPt: Point | null = null;
-    let closestCollisionTile: Point | null = null;
-    let closestCollisionDistance = params.maxDistance;
-    let closestTargetNormal: Point | null = null;
-    const ray = params.ray;
-    const potentialTargetLocations =
-        params.obstacles
-            .map((obstacle) => obstacle.tileCoords)
-            .concat(params.characters.map((character) => character.tileCoords));
-    while (curDistance < params.maxDistance) {
-        const curTile = Grid.getTileFromCanvasCoords(params.ray.pointAtDistance(curDistance));
-        const tilesToCheck =
-            [curTile]
-                .concat(Grid.getAdjacentTiles(curTile))
-                .filter((tile: Point) => !checkedTilesStringSet.has(tile.toString()));
-
-        for (const tile of tilesToCheck) {
-            checkedTilesStringSet.add(tile.toString());
-            if (!containsPoint(tile, potentialTargetLocations)) {
-                continue;
-            }
-            // Either an obstacle or player in tile.
-            const obstacle = params.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile));
-            if (obstacle) {
-                // Omit edges on opposite side of obstacle.
-                const edges = obstacle.getEdges().filter((edge) => edge.normal.dot(ray.direction) <= 0);
-                for (const edge of edges) {
-                    const collisionResult = detectRayLineSegmentCollision(ray, edge);
-                    if (collisionResult.isCollision) {
-                        const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
-                        if (distance < closestCollisionDistance) {
-                            closestCollisionDistance = distance;
-                            closestCollisionTile = tile;
-                            closestCollisionPt = collisionResult.collisionPt!;
-                            closestTargetNormal = edge.normal;
-                        }
-                    }
-                }
-            } else {
-                const character = params.characters
-                    .filter((character) => character.isAlive())
-                    .find((character) => character.tileCoords.equals(tile));
-                if (!character) {
-                    throw new Error(`Tile is occupied but no obstacle or character...`);
-                }
-                if (character.isBlueTeam === params.isShotFromBlueTeam) {
-                    // TODO - allow friendly fire?
-                    continue;
-                }
-                // Approximate with bounding box for now.
-                for (const edge of character.getEdges()) {
-                    const collisionResult = detectRayLineSegmentCollision(ray, edge);
-                    if (collisionResult.isCollision) {
-                        const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
-                        if (distance < closestCollisionDistance) {
-                            closestCollisionDistance = distance;
-                            closestCollisionTile = tile;
-                            closestCollisionPt = collisionResult.collisionPt!;
-                            closestTargetNormal = edge.normal;
-                        }
-                    }
-                }
-            }
-        }
-        if (closestCollisionPt != null) {
-            break;
-        }
-        curDistance += stepSize;
-    }
-    if (closestCollisionTile != null) {
-        const target: Target = {
-            normal: closestTargetNormal!,
-            ray,
-            tile: closestCollisionTile!,
-            canvasCoords: closestCollisionPt!,
-            maxDistance: closestCollisionDistance,
-        };
-        return target;
-    }
-    return null;
 }

@@ -112,10 +112,10 @@ const SHOTGUN: Gun = {
         numRicochets: 1,
         damage: 2,
     },
-    aimIndicatorLength: .35 * Grid.TILE_SIZE,
+    aimIndicatorLength: .75 * Grid.TILE_SIZE,
     spray: {
         projectiles: 3,
-        offsetAngleRadians: Math.PI / 12,
+        offsetAngleRadians: Math.PI / 16,
     }
 };
 const ASSAULT_RIFLE: Gun = {
@@ -131,10 +131,10 @@ const SNIPER_RIFLE: Gun = {
     canFireAfterMoving: false,
     projectileDetails: {
         type: ProjectileDetailsType.BULLET,
-        numRicochets: 3,
+        numRicochets: 5,
         damage: 8,
     },
-    aimIndicatorLength: 3 * Grid.TILE_SIZE,
+    aimIndicatorLength: 12 * Grid.TILE_SIZE,
 };
 const MISSILE_LAUNCHER: Gun = {
     canFireAfterMoving: true,
@@ -144,7 +144,7 @@ const MISSILE_LAUNCHER: Gun = {
         damageManhattanDistanceRadius: 2,
         tilesAwayDamageReduction: .6,
     },
-    aimIndicatorLength: .5 * Grid.TILE_SIZE,
+    aimIndicatorLength: .75 * Grid.TILE_SIZE,
 };
 
 export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {

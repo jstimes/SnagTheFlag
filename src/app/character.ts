@@ -6,11 +6,19 @@ import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
 import { AnimationState } from 'src/app/animation_state';
+import { Target } from 'src/app/projectile';
+import { getProjectileTargetsPath, getRayForShot } from 'src/app/target_finder';
+import { Obstacle } from 'src/app/obstacle';
 
 const TWO_PI = Math.PI * 2;
 
 const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
+
+interface GameInfo {
+    readonly characters: Character[];
+    readonly obstacles: Obstacle[];
+}
 
 /** Represents one squad member on a team. */
 export class Character {
@@ -26,6 +34,7 @@ export class Character {
 
     private isAiming: boolean;
     private aimAngleRadiansClockwise: number;
+    private aimPath: Target[];
 
     // Game-state.
     hasFlag: boolean;
@@ -33,8 +42,10 @@ export class Character {
     tileCoords: Point;
     characterActionTypeToAbilityState: Map<ActionType, CharacterAbilityState>;
     animationState: AnimationState;
+    gameInfo: { characters: Character[]; obstacles: Obstacle[] };
 
-    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number; settings: CharacterSettings; }) {
+    constructor(params: { startCoords: Point; isBlueTeam: boolean; index: number; settings: CharacterSettings; gameInfo: GameInfo; }) {
+        this.gameInfo = params.gameInfo;
         this.tileCoords = params.startCoords;
         this.animationState = {
             movementSpeedMs: Grid.TILE_SIZE * .005,
@@ -62,6 +73,7 @@ export class Character {
         }
         this.isAiming = false;
         this.aimAngleRadiansClockwise = 0;
+        this.calculateTargetPath();
 
         this.resetTurnState();
     }
@@ -234,18 +246,30 @@ export class Character {
         if (!this.isAiming) {
             return;
         }
-        context.strokeStyle = '#000000';
+
+        context.strokeStyle = '#80585fbb';
         const aimLength = this.settings.gun.aimIndicatorLength;
-        const aimIndicatorEnd =
-            tileCenterCanvas
-                .add(new Point(
-                    Math.cos(this.aimAngleRadiansClockwise),
-                    Math.sin(this.aimAngleRadiansClockwise))
-                    .multiplyScaler(aimLength));
+        let startPt = tileCenterCanvas;
+        let distance = 0;
         context.beginPath();
-        context.moveTo(tileCenterCanvas.x, tileCenterCanvas.y);
-        context.lineTo(aimIndicatorEnd.x, aimIndicatorEnd.y);
-        context.closePath();
+        context.moveTo(startPt.x, startPt.y);
+        for (const target of this.aimPath) {
+            let endPt = target.canvasCoords;
+            const newDistance = startPt.distanceTo(endPt);
+            const isMaxLength = newDistance + distance > aimLength;
+            if (isMaxLength) {
+                const offset = endPt.subtract(startPt)
+                    .normalize()
+                    .multiplyScaler(aimLength - distance);
+                endPt = startPt.add(offset);
+            }
+            context.lineTo(endPt.x, endPt.y);
+            startPt = endPt;
+            distance += newDistance;
+            if (isMaxLength) {
+                break;
+            }
+        }
         context.stroke();
     }
 
@@ -263,7 +287,11 @@ export class Character {
     }
 
     // TODO - extract common animation state logic.
-    update(elapsedMs: number): void {
+    update(elapsedMs: number, gameInfo: GameInfo): void {
+        this.gameInfo = gameInfo;
+        if (this.isAiming) {
+            this.calculateTargetPath();
+        }
         if (!this.animationState.isAnimating || this.animationState.targetCoords == null) {
             return;
         }
@@ -310,6 +338,17 @@ export class Character {
         this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
     }
 
+    private calculateTargetPath(): void {
+        this.aimPath = getProjectileTargetsPath({
+            ray: getRayForShot(this.getCurrentShotInfo()[0]),
+            startingTileCoords: this.tileCoords,
+            isShotFromBlueTeam: this.isBlueTeam,
+            numRicochets: 5,
+            characters: this.gameInfo.characters,
+            obstacles: this.gameInfo.obstacles,
+        });
+    }
+
     shoot(): ShotInfo[] {
         if (!this.canShoot()) {
             throw new Error(`Already shot or used non - free action.`);
@@ -320,6 +359,11 @@ export class Character {
             return ability.isFree;
         });
         this.checkAndSetTurnOver();
+
+        return this.getCurrentShotInfo();
+    }
+
+    private getCurrentShotInfo(): ShotInfo[] {
         const straightShotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
             fromTileCoords: this.tileCoords,
