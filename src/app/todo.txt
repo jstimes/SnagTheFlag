@@ -17,13 +17,6 @@ MVP
     - Make select character, character state into Actions?
 
 
-        const isTargetACharacter = (target: Target) => {
-            return this.redSquad.concat(this.blueSquad)
-                .find((character) =>
-                    character.tileCoords.equals(target.tile)) != null;
-        };
-
-
 Make every render size in terms of Grid.TILE_SIZE
 so it's easy to resize.
 

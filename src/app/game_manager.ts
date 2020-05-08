@@ -13,7 +13,7 @@ import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile, Target } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
-import { ShotInfo, ProjectileDetailsType, Bullet } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
 import { Ai } from 'src/app/ai';
@@ -122,7 +122,7 @@ export class GameManager implements GameModeManager {
         let hasFiringProjectiles = false;
         for (const projectile of this.projectiles) {
             this.updateProjectile(elapsedMs, projectile);
-            if (!projectile.isAtTarget()) {
+            if (!projectile.isDead) {
                 hasFiringProjectiles = true;
             }
         }
@@ -159,18 +159,17 @@ export class GameManager implements GameModeManager {
 
     private updateProjectile(elapsedMs: number, projectile: Projectile): void {
         projectile.update(elapsedMs);
-        if (projectile.isDead || !projectile.isAtTarget()) {
+        if (projectile.isDead || !projectile.isAtFinalTarget()) {
             return;
         }
         let particleSystemParams: ParticleSystemParams;
-        const target = projectile.getTarget();
-        const hitPositionCanvas = projectile.ray
-            .pointAtDistance(target.maxDistance);
+        const finalTarget = projectile.getCurrentTarget();
+        const hitPositionCanvas = finalTarget.canvasCoords;
         if (projectile.projectileDetails.type === ProjectileDetailsType.SPLASH) {
             const splashDamage = projectile.projectileDetails;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
-                startTile: target.tile,
+                startTile: finalTarget.tile,
                 maxDepth: splashDamage.damageManhattanDistanceRadius,
                 isAvailable: (tile: Point) => {
                     return true;
@@ -185,7 +184,7 @@ export class GameManager implements GameModeManager {
                     .find((character) => character.tileCoords.equals(hitTile));
                 if (targetCharacter) {
                     const manhattanDistance = targetCharacter.tileCoords
-                        .manhattanDistanceTo(target.tile);
+                        .manhattanDistanceTo(finalTarget.tile);
                     const damage = splashDamage.damage * Math.pow(splashDamage.tilesAwayDamageReduction, manhattanDistance);
                     targetCharacter.health -= damage;
                 }
@@ -193,46 +192,26 @@ export class GameManager implements GameModeManager {
         } else {
             const targetCharacter = this.redSquad.concat(this.blueSquad)
                 .filter((character) => character.isAlive())
-                .find((character) => character.tileCoords.equals(target.tile));
+                .find((character) => character.tileCoords.equals(finalTarget.tile));
             if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
                 // Assumes friendly fire check occurred in 'fire'.
                 targetCharacter.health -= projectile.projectileDetails.damage;
-                projectile.setIsDead();
-            }
-            const ricochetsLeft = projectile.projectileDetails.numRicochets;
-            if (!projectile.isDead && ricochetsLeft > 0) {
-
-                const newDirection = projectile.ray.direction
-                    .reflect(target.normal);
-                const newDamage: Bullet = {
-                    type: ProjectileDetailsType.BULLET,
-                    damage: projectile.projectileDetails.damage,
-                    numRicochets: ricochetsLeft - 1,
-                };
-                const newShotInfo: ShotInfo = {
-                    projectileDetails: newDamage,
-                    isShotFromBlueTeam: projectile.isFromBlueTeam,
-                    fromTileCoords: target.tile,
-                    fromCanvasCoords: target.canvasCoords,
-                    aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
-                };
-                this.fireShot(newShotInfo);
-                projectile.setIsDead();
-                return;
             }
             particleSystemParams = getBulletParticleSystemParams(hitPositionCanvas);
         }
         projectile.setIsDead();
+
         // Recalculate other projectile targets as they may have been going towards a
         // now destroyed character or obstacle.
         for (const projectile of this.projectiles.filter((projectile) => !projectile.isDead)) {
-            const canvasCoords = projectile.getCanvasCoords();
-            const newTarget = this.getProjectileTarget({
-                ray: projectile.ray,
+            const canvasCoords = projectile.animationState.currentCenterCanvas;
+            const newTargets = this.getProjectileTargetsPath({
+                ray: projectile.getCurrentTarget().ray,
                 startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
                 isShotFromBlueTeam: projectile.isFromBlueTeam,
+                numRicochets: projectile.getNumRicochetsLeft(),
             });
-            projectile.setNewTarget(newTarget);
+            projectile.setNewTargets(newTargets);
         }
         if (this.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
@@ -450,18 +429,57 @@ export class GameManager implements GameModeManager {
 
     private fireShot(shotInfo: ShotInfo): void {
         const ray = getRayForShot(shotInfo);
-        const target = this.getProjectileTarget({
+        const numRicochets = shotInfo.projectileDetails.type === ProjectileDetailsType.BULLET
+            ? shotInfo.projectileDetails.numRicochets
+            : 0;
+        const targetsPath = this.getProjectileTargetsPath({
             ray,
             startingTileCoords: shotInfo.fromTileCoords,
             isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
+            numRicochets,
         });
         this.projectiles.push(new Projectile({
             context: this.context,
-            ray,
             projectileDetails: shotInfo.projectileDetails,
-            target,
+            targets: targetsPath,
             isFromBlueTeam: shotInfo.isShotFromBlueTeam,
         }));
+    }
+
+    getProjectileTargetsPath(params: {
+        ray: Ray;
+        startingTileCoords: Point;
+        isShotFromBlueTeam: boolean;
+        numRicochets: number;
+    }): Target[] {
+        const { ray, isShotFromBlueTeam, startingTileCoords, numRicochets } = params;
+        const targets: Target[] = [];
+        let pathsLeft = numRicochets + 1;
+        let currentTileCoords = startingTileCoords;
+        let currentRay = ray;
+        let hasHitCharacter = false;
+        const isTargetACharacter = (target: Target) => {
+            return this.redSquad.concat(this.blueSquad)
+                .find((character) =>
+                    character.tileCoords.equals(target.tile)) != null;
+        };
+
+        while (pathsLeft > 0 && !hasHitCharacter) {
+            const target = this.getProjectileTarget({
+                ray: currentRay,
+                startingTileCoords: currentTileCoords,
+                isShotFromBlueTeam,
+            });
+            targets.push(target);
+            hasHitCharacter = isTargetACharacter(target);
+            pathsLeft -= 1;
+            const newDirection = currentRay.direction
+                .reflect(target.normal!);
+            currentRay = new Ray(target.canvasCoords, newDirection);
+            currentTileCoords = target.tile;
+        }
+
+        return targets;
     }
 
     private getProjectileTarget(params: {
@@ -488,14 +506,14 @@ export class GameManager implements GameModeManager {
         const fromCanvasCoords = Grid.getCanvasFromTileCoords(fromTile).add(Grid.HALF_TILE);
         const targetTile = action.targetTile;
         const targetCanvasCoords = Grid.getCanvasFromTileCoords(targetTile).add(Grid.HALF_TILE);
+        const direction = targetCanvasCoords.subtract(fromCanvasCoords).normalize();
+        const ray = new Ray(fromCanvasCoords, direction);
         const target: Target = {
-            normal: new Point(-1, -1),
             canvasCoords: targetCanvasCoords,
+            ray,
             tile: targetTile,
             maxDistance: targetCanvasCoords.distanceTo(fromCanvasCoords),
         };
-        const direction = targetCanvasCoords.subtract(fromCanvasCoords).normalize();
-        const ray = new Ray(fromCanvasCoords, direction);
         const shotInfo: ShotInfo = {
             isShotFromBlueTeam: this.selectedCharacter!.isBlueTeam,
             fromCanvasCoords,
@@ -505,9 +523,8 @@ export class GameManager implements GameModeManager {
         };
         const proj = new Projectile({
             context: this.context,
-            ray,
             projectileDetails: shotInfo.projectileDetails,
-            target,
+            targets: [target],
             isFromBlueTeam: shotInfo.isShotFromBlueTeam,
         });
         this.projectiles.push(proj);
@@ -995,6 +1012,7 @@ function getGridBorderTarget(ray: Ray): Target {
     }
     const target: Target = {
         normal: borderNormal!,
+        ray,
         canvasCoords: gridBorderCollisionPt!,
         tile: gridBorderCollisionTile!,
         maxDistance: ray.startPt.distanceTo(gridBorderCollisionPt!),
@@ -1088,6 +1106,7 @@ export function getTileTarget(
     if (closestCollisionTile != null) {
         const target: Target = {
             normal: closestTargetNormal!,
+            ray,
             tile: closestCollisionTile!,
             canvasCoords: closestCollisionPt!,
             maxDistance: closestCollisionDistance,

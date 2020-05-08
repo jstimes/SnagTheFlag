@@ -234,6 +234,7 @@ export class Character {
         if (!this.isAiming) {
             return;
         }
+        context.strokeStyle = '#000000';
         const aimLength = this.settings.gun.aimIndicatorLength;
         const aimIndicatorEnd =
             tileCenterCanvas
@@ -332,12 +333,13 @@ export class Character {
             const spray = this.settings.gun.spray;
             while (shotInfos.length < spray.projectiles) {
                 const offsetDirection = shotInfos.length % 2 === 0 ? 1 : -1;
+                const aimAngle = this.aimAngleRadiansClockwise + spray.offsetAngleRadians * offsetDirection;
                 shotInfos.push({
                     isShotFromBlueTeam: this.isBlueTeam,
                     fromTileCoords: this.tileCoords,
                     // Shoot from center of tile.
                     fromCanvasCoords: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
-                    aimAngleRadiansClockwise: this.aimAngleRadiansClockwise + spray.offsetAngleRadians * offsetDirection,
+                    aimAngleRadiansClockwise: aimAngle,
                     projectileDetails: this.settings.gun.projectileDetails,
                 });
             }

@@ -11,7 +11,9 @@ const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
 const TWO_PI = Math.PI * 2;
 
 export interface Target {
-    readonly normal: Point;
+    /** Only needed to be set when object hitting target is expected to be reflected. */
+    readonly normal?: Point;
+    readonly ray: Ray;
     readonly tile: Point;
     readonly canvasCoords: Point;
     readonly maxDistance: number;
@@ -32,83 +34,149 @@ const colors: Map<ProjectileDetailsType, string> = new Map([
     [ProjectileDetailsType.SPLASH, THEME.grenadeColor],
 ]);
 
+// TODO - merge with other one.
+interface AnimationState {
+    readonly movementSpeedMs: number;
+    isAnimating: boolean;
+    currentCenterCanvas: Point;
+    currentTarget: Target;
+    remainingTargets: Target[];
+}
+
+// TODO - this is hack-E.
+interface Trail {
+    ray: Ray;
+    distance: number;
+    maxDistance: number;
+}
+
 export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
-    readonly ray: Ray;
     readonly projectileDetails: ProjectileDetails;
-    private target: Target;
     readonly isFromBlueTeam: boolean;
 
+    private timesRicocheted: number;
+    private trails: Trail[];
+
+    animationState: AnimationState;
     isDead: boolean;
-    distance: number;
 
     constructor(params: {
         context: CanvasRenderingContext2D;
-        ray: Ray;
         projectileDetails: ProjectileDetails;
-        target: Target;
+        targets: Target[];
         isFromBlueTeam: boolean;
     }) {
         this.context = params.context;
-        this.ray = params.ray;
         this.projectileDetails = params.projectileDetails;
-        this.distance = 0;
-        this.target = params.target;
+        if (params.targets.length === 0) {
+            throw new Error(`Created a projectile with no targets`);
+        }
+        this.setNewTargets(params.targets);
+        this.trails = [{
+            ray: this.animationState.currentTarget.ray,
+            distance: 0,
+            maxDistance: this.animationState.currentTarget.maxDistance,
+        }];
         this.isFromBlueTeam = params.isFromBlueTeam;
+        this.timesRicocheted = 0;
         this.isDead = false;
     }
 
     update(elapsedMs: number): void {
-        const speed = speeds.get(this.projectileDetails.type)!
-        this.distance = this.distance + speed * elapsedMs;
+        const currentTarget = this.animationState.currentTarget;
+        const direction = currentTarget.ray.direction;
+        const positionUpdate = direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs);
+        const distanceUpdate = positionUpdate.getMagnitude();
+        for (const trail of this.trails) {
+            trail.distance += distanceUpdate;
+        }
+
+        if (!this.animationState.isAnimating) {
+            return;
+        }
+        this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
+            .add(positionUpdate);
+        const totalDistanceTravelled = currentTarget.ray.startPt
+            .distanceTo(this.animationState.currentCenterCanvas);
+        if (totalDistanceTravelled < currentTarget.maxDistance) {
+            return;
+        }
+        // Ensure end state is centered in destination tile.
+        this.animationState.currentCenterCanvas =
+            this.animationState.currentTarget.canvasCoords;
+        if (this.animationState.remainingTargets.length === 0) {
+            this.animationState.isAnimating = false;
+            return;
+        }
+
+        this.animationState.currentTarget = this.animationState.remainingTargets.shift()!;
+        this.trails.push({
+            ray: this.animationState.currentTarget.ray,
+            distance: 0,
+            maxDistance: this.animationState.currentTarget.maxDistance,
+        });
+        this.timesRicocheted += 1;
     }
 
-    isAtTarget(): boolean {
-        return !this.isDead && this.distance >= this.target.maxDistance;
+    isAtFinalTarget(): boolean {
+        return !this.isDead && !this.animationState.isAnimating;
     }
 
-    getTarget(): Target {
-        return this.target;
+    setNewTargets(targets: Target[]): void {
+        const firstTarget = targets.shift()!;
+        const remainingTargets = targets;
+        const currentCenterCanvas = this.animationState != null ? this.animationState.currentCenterCanvas : firstTarget.ray.startPt;
+        this.animationState = {
+            movementSpeedMs: speeds.get(this.projectileDetails.type)!,
+            currentCenterCanvas,
+            isAnimating: true,
+            currentTarget: firstTarget,
+            remainingTargets,
+        };
     }
 
-    setNewTarget(target: Target): void {
-        this.target = target;
+    getCurrentTarget(): Target {
+        return this.animationState.currentTarget;
     }
 
-    isTrailGone(): boolean {
-        return this.distance - this.target.maxDistance > MAX_TRAIL_DISTANCE;
+    getNumRicochetsLeft(): number {
+        return this.projectileDetails.type === ProjectileDetailsType.BULLET ? this.projectileDetails.numRicochets - this.timesRicocheted : 0;
     }
 
     setIsDead(): void {
         this.isDead = true;
     }
 
-    getCanvasCoords(): Point {
-        return this.ray.pointAtDistance(this.distance);
+    isTrailGone(): boolean {
+        return this.trails.every((trail) => trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE);
     }
 
     render(): void {
         const context = this.context;
-        const currentPointCanvas = this.getCanvasCoords();
-
         const radius = radii.get(this.projectileDetails.type)!;
-        if (this.distance > radius && !this.isTrailGone()) {
-            const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
+
+        for (const trail of this.trails) {
+            if (trail.distance < radius || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
+                continue;
+            }
+            const bacwardsDirection = trail.ray.direction.multiplyScaler(-1);
             let overshotDistance = 0;
-            let trailStartPointCanvas = currentPointCanvas;
-            if (this.distance > this.target.maxDistance) {
-                overshotDistance = MAX_TRAIL_DISTANCE - (this.distance - this.target.maxDistance);
-                trailStartPointCanvas = this.ray.pointAtDistance(this.target.maxDistance);
+            const trailGradientStartPointCanvas = trail.ray.pointAtDistance(trail.distance);
+            let trailRenderStartPointCanvas = trailGradientStartPointCanvas;
+            if (trail.distance > trail.maxDistance) {
+                overshotDistance = MAX_TRAIL_DISTANCE - (trail.distance - trail.maxDistance);
+                trailRenderStartPointCanvas = trail.ray.pointAtDistance(trail.maxDistance);
             }
             let trailDistance = Math.min(
                 MAX_TRAIL_DISTANCE,
-                this.distance,
-                this.distance + overshotDistance);
-            const trailFadePointCanvas = currentPointCanvas.add(
+                trail.distance,
+                trail.distance + overshotDistance);
+            const trailFadePointCanvas = trailGradientStartPointCanvas.add(
                 bacwardsDirection.multiplyScaler(trailDistance));
             const gradient = context.createLinearGradient(
-                currentPointCanvas.x, currentPointCanvas.y,
+                trailGradientStartPointCanvas.x, trailGradientStartPointCanvas.y,
                 trailFadePointCanvas.x, trailFadePointCanvas.y);
             const fullColor = THEME.projectileTrailColor;
             const fadedColor = `${THEME.projectileTrailColor}00`;
@@ -118,7 +186,7 @@ export class Projectile {
             // Draw trail.
             context.strokeStyle = gradient;
             context.beginPath();
-            context.moveTo(trailStartPointCanvas.x, trailStartPointCanvas.y);
+            context.moveTo(trailRenderStartPointCanvas.x, trailRenderStartPointCanvas.y);
             context.lineTo(trailFadePointCanvas.x, trailFadePointCanvas.y);
             context.closePath();
             context.stroke();
@@ -128,6 +196,7 @@ export class Projectile {
             return;
         }
 
+        const currentPointCanvas = this.animationState.currentCenterCanvas;
         context.fillStyle = colors.get(this.projectileDetails.type)!;
         context.beginPath();
         context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
