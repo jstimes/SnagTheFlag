@@ -85,7 +85,7 @@ export class AppComponent {
       this.context,
       {
         // TODO - level selector, match type selector
-        matchType: MatchType.PLAYER_VS_PLAYER_LOCAL,
+        matchType: MatchType.PLAYER_VS_AI,
         levelIndex,
         onExitGameCallback: () => {
           this.tearDownCurrentGameState();

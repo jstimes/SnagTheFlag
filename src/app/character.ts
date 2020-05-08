@@ -330,6 +330,10 @@ export class Character {
         this.isAiming = false;
     }
 
+    setAim(angle: number): void {
+        this.aimAngleRadiansClockwise = angle;
+    }
+
     aimCounterClockwise(): void {
         this.aimAngleRadiansClockwise -= AIM_ANGLE_RADIANS_DELTA;
     }
@@ -363,7 +367,8 @@ export class Character {
         return this.getCurrentShotInfo();
     }
 
-    private getCurrentShotInfo(): ShotInfo[] {
+    // TODO - shouldn't be public
+    getCurrentShotInfo(): ShotInfo[] {
         const straightShotInfo: ShotInfo = {
             isShotFromBlueTeam: this.isBlueTeam,
             fromTileCoords: this.tileCoords,

@@ -434,8 +434,37 @@ export class GameManager implements GameModeManager {
             Duration.LONG);
 
         if (this.matchType === MatchType.PLAYER_VS_AI) {
-            // this.ai...
+            if (this.isBlueTurn !== this.ai.isBlue) {
+                return;
+            }
+            this.ai.onNextTurn({
+                getGameState: () => {
+                    return this.getGameState();
+                },
+                onAction: (action: Action) => {
+                    this.onAction(action);
+                },
+                setSelectedCharacterState: (state: SelectedCharacterState) => {
+                    this.setSelectedCharacterState(state);
+                },
+            });
         }
+    }
+
+    private getGameState(): GameState {
+        const state: GameState = {
+            blueFlag: this.blueFlag,
+            redFlag: this.redFlag,
+            blueSquad: this.blueSquad.filter((character) => character.isAlive()),
+            redSquad: this.redSquad.filter((character) => character.isAlive()),
+            gamePhase: this.gamePhase,
+            isBlueTurn: this.isBlueTurn,
+            obstacles: this.obstacles,
+            selectableTiles: this.selectableTiles,
+            selectedCharacter: this.selectedCharacter,
+            selectedCharacterState: this.selectedCharacterState,
+        };
+        return state;
     }
 
     private fireShot(shotInfo: ShotInfo): void {
@@ -817,7 +846,7 @@ export class GameManager implements GameModeManager {
         this.projectiles = [];
         this.particleSystems = [];
         if (this.matchType === MatchType.PLAYER_VS_AI) {
-            this.ai = new Ai();
+            this.ai = new Ai({ isBlue: false });
         }
         // Blue is always assumed to go first...
         this.isBlueTurn = true;
