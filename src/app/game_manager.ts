@@ -13,9 +13,9 @@ import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
-import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction, SelectCharacterStateAction, AimAction } from 'src/app/actions';
-import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
+import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails, SplashDamage } from 'src/app/shot_info';
+import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction } from 'src/app/actions';
+import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES, CharacterAbilityType } from 'src/app/character_settings';
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
@@ -323,31 +323,6 @@ export class GameManager implements GameModeManager {
                         .filter((availableTile) => !availableTile.equals(action.tileCoords));
                 }
                 break;
-            case ActionType.MOVE_CHARACTER:
-                if (this.gamePhase !== GamePhase.COMBAT) {
-                    throw new Error(
-                        `MOVE_CHARACTER action only allowed in combat phase`);
-                }
-                if (!this.selectableTiles
-                    .find((tile) => tile.equals(action.tileCoords))) {
-
-                    throw new Error(
-                        `Invalid character movement location: ${action.tileCoords.toString()}`);
-                }
-                if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null on MOVE action`);
-                }
-                const character = this.selectedCharacter!;
-                const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tileCoords);
-                if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
-                    throw new Error(`Invalid character movement location (too far): ` +
-                        `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`);
-                }
-                const tilePath = this.getPath({ from: character.tileCoords, to: action.tileCoords });
-                const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
-                character.moveTo(action.tileCoords, targets);
-                this.checkCharacterTurnOver();
-                break;
             case ActionType.SHOOT:
                 if (this.selectedCharacter == null) {
                     throw new Error(`Selected character is null on FIRE action`);
@@ -363,15 +338,8 @@ export class GameManager implements GameModeManager {
                     throw new Error(`Selected character is null on HEAL action`);
                 }
                 this.selectedCharacter.regenHealth(action.healAmount);
-                this.selectedCharacter.useAbility(action.type);
+                this.selectedCharacter.useAbility(CharacterAbilityType.HEAL);
                 this.checkCharacterTurnOver();
-                break;
-            case ActionType.THROW_GRENADE:
-                if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null on THROW GRENADE action`);
-                }
-                this.selectedCharacter.useAbility(action.type);
-                this.throwGrenade(action);
                 break;
             case ActionType.END_CHARACTER_TURN:
                 if (this.selectedCharacter == null) {
@@ -385,7 +353,40 @@ export class GameManager implements GameModeManager {
                     throw new Error();
                 }
                 this.selectedCharacter.setAim(action.aimAngleClockwiseRadians);
+                break;
             case ActionType.SELECT_TILE:
+                if (!this.selectableTiles.find((tile) => tile.equals(action.tile))) {
+                    throw new Error(
+                        `Invalid tile selection: ${action.tile.toString()}`);
+                }
+                this.selectableTiles = [];
+                if (this.gamePhase === GamePhase.COMBAT) {
+                    if (this.selectedCharacter == null) {
+                        throw new Error(`Selected character is null on SELECT_TILE action in combat phase`);
+                    }
+
+                    if (this.selectedCharacterState === SelectedCharacterState.MOVING) {
+                        const character = this.selectedCharacter!;
+                        const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tile);
+                        if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
+                            throw new Error(`Invalid character movement location (too far): ` +
+                                `start: ${character.tileCoords.toString()}, end: ${action.tile.toString()}`);
+                        }
+                        const tilePath = this.getPath({ from: character.tileCoords, to: action.tile });
+                        const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
+                        character.moveTo(action.tile, targets);
+                        this.checkCharacterTurnOver();
+                    } else if (this.selectedCharacterState === SelectedCharacterState.THROWING_GRENADE) {
+                        const grenadeDetails = {
+                            splashDamage: this.selectedCharacter.getGrenadeAbility().splashDamage,
+                            tile: action.tile,
+                        };
+                        this.selectedCharacter.useAbility(CharacterAbilityType.THROW_GRENADE);
+                        this.throwGrenade(grenadeDetails);
+                    }
+                } else {
+                    // TODO.
+                }
                 break;
             case ActionType.SELECT_CHARACTER:
                 break;
@@ -504,10 +505,10 @@ export class GameManager implements GameModeManager {
         }));
     }
 
-    private throwGrenade(action: ThrowGrenadeAction): void {
+    private throwGrenade(details: { tile: Point; splashDamage: SplashDamage }): void {
         const fromTile = this.selectedCharacter!.tileCoords;
         const fromCanvasCoords = Grid.getCanvasFromTileCoords(fromTile).add(Grid.HALF_TILE);
-        const targetTile = action.targetTile;
+        const targetTile = details.tile;
         const targetCanvasCoords = Grid.getCanvasFromTileCoords(targetTile).add(Grid.HALF_TILE);
         const direction = targetCanvasCoords.subtract(fromCanvasCoords).normalize();
         const ray = new Ray(fromCanvasCoords, direction);
@@ -522,7 +523,7 @@ export class GameManager implements GameModeManager {
             fromCanvasCoords,
             fromTileCoords: fromTile,
             aimAngleRadiansClockwise: direction.getPointRotationRadians(),
-            projectileDetails: action.splashDamage,
+            projectileDetails: details.splashDamage,
         };
         const proj = new Projectile({
             context: this.context,
@@ -552,11 +553,11 @@ export class GameManager implements GameModeManager {
             return;
         }
 
-        const moveCharacterAction: MoveCharacterAction = {
-            type: ActionType.MOVE_CHARACTER,
-            tileCoords,
+        const selectTileAction: SelectTileAction = {
+            type: ActionType.SELECT_TILE,
+            tile: tileCoords,
         };
-        this.onAction(moveCharacterAction);
+        this.onAction(selectTileAction);
     }
 
     private trySelectingCharacter(tileCoords: Point): void {
@@ -573,13 +574,11 @@ export class GameManager implements GameModeManager {
             this.hud.setText(`Can't throw grenade here`, TextType.TOAST, Duration.SHORT);
             return;
         }
-        this.selectableTiles = [];
-        const grenadeAction: ThrowGrenadeAction = {
-            type: ActionType.THROW_GRENADE,
-            splashDamage: this.selectedCharacter!.getGrenadeAbility().splashDamage,
-            targetTile: tileCoords,
+        const action: SelectTileAction = {
+            type: ActionType.SELECT_TILE,
+            tile: tileCoords,
         };
-        this.onAction(grenadeAction);
+        this.onAction(action);
     }
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
@@ -732,23 +731,23 @@ export class GameManager implements GameModeManager {
                         eventType: EventType.KeyPress,
                     });
                 }
-                for (const extraAction of this.selectedCharacter.extraAbilities) {
-                    switch (extraAction.actionType) {
-                        case ActionType.HEAL:
+                for (const extraAbility of this.selectedCharacter.extraAbilities) {
+                    switch (extraAbility.abilityType) {
+                        case CharacterAbilityType.HEAL:
                             this.controlMap.add({
                                 key: HEAL_KEY,
                                 name: 'Heal',
                                 func: () => {
                                     const healAction: HealAction = {
                                         type: ActionType.HEAL,
-                                        healAmount: extraAction.healAmount,
+                                        healAmount: extraAbility.healAmount,
                                     };
                                     this.onAction(healAction);
                                 },
                                 eventType: EventType.KeyPress,
                             });
                             break;
-                        case ActionType.THROW_GRENADE:
+                        case CharacterAbilityType.THROW_GRENADE:
                             this.controlMap.add({
                                 key: TOGGLE_THROW_GRENADE_KEY,
                                 name: 'Throw grenade',

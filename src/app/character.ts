@@ -4,7 +4,7 @@ import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
 import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
-import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
+import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType, CharacterAbilityType } from 'src/app/character_settings';
 import { AnimationState } from 'src/app/animation_state';
 import { getProjectileTargetsPath, getRayForShot } from 'src/app/target_finder';
 import { Obstacle } from 'src/app/obstacle';
@@ -39,7 +39,7 @@ export class Character {
     hasFlag: boolean;
     health: number;
     tileCoords: Point;
-    characterActionTypeToAbilityState: Map<ActionType, CharacterAbilityState>;
+    characterAbilityTypeToAbilityState: Map<CharacterAbilityType, CharacterAbilityState>;
     animationState: AnimationState;
     gameInfo: { characters: Character[]; obstacles: Obstacle[] };
 
@@ -60,7 +60,7 @@ export class Character {
         this.health = this.settings.maxHealth;
         this.hasFlag = false;
         this.hasMoved = false;
-        this.characterActionTypeToAbilityState = new Map();
+        this.characterAbilityTypeToAbilityState = new Map();
         for (const extraAction of this.settings.extraActions) {
             const actionState: CharacterAbilityState = {
                 cooldownTurnsLeft: 0,
@@ -68,7 +68,7 @@ export class Character {
             if (extraAction.maxUses !== 0) {
                 actionState.usesLeft = extraAction.maxUses;
             }
-            this.characterActionTypeToAbilityState.set(extraAction.actionType, actionState);
+            this.characterAbilityTypeToAbilityState.set(extraAction.abilityType, actionState);
         }
         this.isAiming = false;
         this.aimAngleRadiansClockwise = 0;
@@ -396,28 +396,28 @@ export class Character {
 
     getGrenadeAbility(): ThrowGrenadeAbility {
         const grenadeAbility = this.extraAbilities
-            .find((ability) => ability.actionType === ActionType.THROW_GRENADE);
+            .find((ability) => ability.abilityType === CharacterAbilityType.THROW_GRENADE);
         if (grenadeAbility == null) {
             throw new Error(`Trying to getGrenadeAction but character does not have that action`);
         }
         return grenadeAbility as ThrowGrenadeAbility;
     }
 
-    useAbility(actionType: ActionType): void {
+    useAbility(abilityType: CharacterAbilityType): void {
         const action = this.extraAbilities
-            .find((extraAbility) => extraAbility.actionType === actionType);
+            .find((extraAbility) => extraAbility.abilityType === abilityType);
         if (action == null) {
-            throw new Error(`Character doesn't have ability for ActionType: ${actionType}`);
+            throw new Error(`Character doesn't have ability for ActionType: ${abilityType}`);
         }
         this.extraAbilities = this.extraAbilities
-            .filter((extraAbility) => extraAbility.actionType !== actionType);
-        const actionState = this.characterActionTypeToAbilityState.get(actionType)!;
+            .filter((extraAbility) => extraAbility.abilityType !== abilityType);
+        const actionState = this.characterAbilityTypeToAbilityState.get(abilityType)!;
         if (actionState.usesLeft) {
             actionState.usesLeft -= 1;
         }
         actionState.cooldownTurnsLeft =
             [...this.settings.extraActions]
-                .find((extraAction) => extraAction.actionType === action.actionType)!.cooldownTurns;
+                .find((extraAction) => extraAction.abilityType === action.abilityType)!.cooldownTurns;
         if (!action.isFree) {
             // Character can't shoot and use non-free actions in same turn.
             this.hasShot = true;
@@ -468,9 +468,9 @@ export class Character {
         this.hasShot = false;
         this.extraAbilities = [];
         for (const extraAbility of this.settings.extraActions) {
-            const state = this.characterActionTypeToAbilityState.get(extraAbility.actionType);
+            const state = this.characterAbilityTypeToAbilityState.get(extraAbility.abilityType);
             if (!state) {
-                throw new Error(`Didn't initialize characterActionsToState for ${extraAbility.actionType}`);
+                throw new Error(`Didn't initialize characterActionsToState for ${extraAbility.abilityType}`);
             }
             if (state.usesLeft !== 0 && state.cooldownTurnsLeft <= 0) {
                 this.extraAbilities.push(extraAbility);

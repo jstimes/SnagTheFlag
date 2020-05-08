@@ -1,4 +1,4 @@
-import { Action, MoveCharacterAction, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction } from 'src/app/actions';
+import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction } from 'src/app/actions';
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
 import { Character } from 'src/app/character';
@@ -59,11 +59,11 @@ export class Ai {
                 return action;
             }
             const goToFlag = getTileClosestTo(gameState.selectableTiles, this.getEnemyFlagCoords(gameState));
-            const moveAction: MoveCharacterAction = {
-                type: ActionType.MOVE_CHARACTER,
-                tileCoords: goToFlag,
+            const selectTileAction: SelectTileAction = {
+                type: ActionType.SELECT_TILE,
+                tile: goToFlag,
             };
-            return moveAction;
+            return selectTileAction;
         }
         if (!selectedCharacter.hasShot) {
             if (selectedCharacterState !== SelectedCharacterState.AIMING) {

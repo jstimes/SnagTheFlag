@@ -7,11 +7,9 @@ export enum ActionType {
     SELECT_TILE,
     SELECT_CHARACTER,
     SELECT_CHARACTER_STATE,
-    MOVE_CHARACTER,
     AIM,
     SHOOT,
     HEAL,
-    THROW_GRENADE,
     END_CHARACTER_TURN,
 }
 
@@ -35,11 +33,6 @@ export interface SelectCharacterStateAction {
     readonly state: SelectedCharacterState;
 }
 
-export interface MoveCharacterAction {
-    readonly type: ActionType.MOVE_CHARACTER;
-    readonly tileCoords: Point;
-}
-
 export interface EndCharacterTurnAction {
     readonly type: ActionType.END_CHARACTER_TURN;
 }
@@ -58,16 +51,10 @@ export interface HealAction {
     readonly healAmount: number;
 }
 
-export interface ThrowGrenadeAction {
-    readonly type: ActionType.THROW_GRENADE;
-    readonly splashDamage: SplashDamage;
-    readonly targetTile: Point;
-}
-
-export type Action = PlaceCharacterAction | MoveCharacterAction |
-    EndCharacterTurnAction | ShootAction | HealAction | ThrowGrenadeAction |
-    SelectTileAction | SelectCharacterAction | SelectCharacterStateAction |
-    AimAction;
+export type Action = PlaceCharacterAction |
+    EndCharacterTurnAction | ShootAction | HealAction |
+    SelectTileAction | SelectCharacterAction |
+    SelectCharacterStateAction | AimAction;
 
 /** Used for exhaustive Action checking. */
 export function throwBadAction(action: never): never {

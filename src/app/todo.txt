@@ -1,3 +1,12 @@
+GO!
+    - Actions for everything
+    - Mouse handler
+    - action type to available action types, control abstractions
+    - serialize game state, keep track
+    - use gameState only?
+        - use animations on top of gameState?
+    - AI - getActionSEQUENCE
+
 MVP
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
@@ -10,7 +19,6 @@ MVP
 
 - AI
     - Freeze projectiles before animations
-        - use AnimationState in characters AND projectiles.
     - Need flag logic
     - Projectile target prediction (figure ricochets ahead of time).
     - Start using GameState struct.

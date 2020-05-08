@@ -15,13 +15,18 @@ export interface BaseCharacterAbility {
     readonly isFree: boolean;
 }
 
+export enum CharacterAbilityType {
+    HEAL,
+    THROW_GRENADE,
+}
+
 export interface HealAbility extends BaseCharacterAbility {
-    readonly actionType: ActionType.HEAL;
+    readonly abilityType: CharacterAbilityType.HEAL;
     readonly healAmount: number;
 }
 
 export interface ThrowGrenadeAbility extends BaseCharacterAbility {
-    readonly actionType: ActionType.THROW_GRENADE;
+    readonly abilityType: CharacterAbilityType.THROW_GRENADE;
     readonly splashDamage: SplashDamage;
     readonly maxManhattanDistance: number;
 }
@@ -57,21 +62,21 @@ export interface CharacterSettings {
 }
 
 const LIGHT_HEAL: HealAbility = {
-    actionType: ActionType.HEAL,
+    abilityType: CharacterAbilityType.HEAL,
     healAmount: 3,
     maxUses: 2,
     cooldownTurns: 2,
     isFree: true,
 };
 const MEDIUM_HEAL: HealAbility = {
-    actionType: ActionType.HEAL,
+    abilityType: CharacterAbilityType.HEAL,
     healAmount: 5,
     maxUses: 2,
     cooldownTurns: 3,
     isFree: false,
 };
 const FULL_HEAL: HealAbility = {
-    actionType: ActionType.HEAL,
+    abilityType: CharacterAbilityType.HEAL,
     healAmount: 15,
     maxUses: 1,
     cooldownTurns: 0,
@@ -79,7 +84,7 @@ const FULL_HEAL: HealAbility = {
 };
 
 const LIGHT_GRENADE: ThrowGrenadeAbility = {
-    actionType: ActionType.THROW_GRENADE,
+    abilityType: CharacterAbilityType.THROW_GRENADE,
     splashDamage: {
         type: ProjectileDetailsType.SPLASH,
         damage: 5,
@@ -92,7 +97,7 @@ const LIGHT_GRENADE: ThrowGrenadeAbility = {
     isFree: false,
 };
 const MEDIUM_GRENADE: ThrowGrenadeAbility = {
-    actionType: ActionType.THROW_GRENADE,
+    abilityType: CharacterAbilityType.THROW_GRENADE,
     splashDamage: {
         type: ProjectileDetailsType.SPLASH,
         damage: 8,
