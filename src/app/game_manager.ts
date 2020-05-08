@@ -14,7 +14,7 @@ import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/co
 import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails, SplashDamage } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction } from 'src/app/actions';
+import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES, CharacterAbilityType } from 'src/app/character_settings';
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
@@ -22,7 +22,6 @@ import { GameModeManager } from 'src/app/game_mode_manager';
 import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
 import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
-
 
 const MOVE_KEY = Key.M;
 /** Used to start and cancel shooting, but doesn't fire the shot.  */
@@ -294,7 +293,7 @@ export class GameManager implements GameModeManager {
     }
 
     onAction(action: Action): void {
-        const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        const activeSquad = this.isBlueTurn ? this.blueSquad : this.redSquad;
         switch (action.type) {
             case ActionType.PLACE_CHARACTER:
                 if (this.gamePhase !== GamePhase.CHARACTER_PLACEMENT) {
@@ -307,15 +306,15 @@ export class GameManager implements GameModeManager {
                     throw new Error(
                         `Invalid character placement location: ${action.tileCoords.toString()}`);
                 }
-                const squadIndex = squad.length;
-                squad.push(new Character({
+                const squadIndex = activeSquad.length;
+                activeSquad.push(new Character({
                     startCoords: action.tileCoords,
                     isBlueTeam: this.isBlueTurn,
                     index: squadIndex,
                     settings: this.selectedCharacterSettings,
                     gameInfo: this.getGameInfo(),
                 }));
-                if (squad.length === this.gameSettings.squadSize) {
+                if (activeSquad.length === this.gameSettings.squadSize) {
                     // Placed all characters, end turn.
                     this.nextTurn();
                 } else {
@@ -385,10 +384,15 @@ export class GameManager implements GameModeManager {
                         this.throwGrenade(grenadeDetails);
                     }
                 } else {
-                    // TODO.
+                    // TODO - use for game phase character placement
                 }
                 break;
             case ActionType.SELECT_CHARACTER:
+                const character = activeSquad[action.characterIndex];
+                if (character.isTurnOver() || !character.isAlive()) {
+                    throw new Error(`Selected character is dead or turn is over.`);
+                }
+                this.setSelectedCharacter(action.characterIndex);
                 break;
             case ActionType.SELECT_CHARACTER_STATE:
                 this.setSelectedCharacterState(action.state);
@@ -565,7 +569,11 @@ export class GameManager implements GameModeManager {
         const squadMemeberAtTile =
             squad.find((character) => character.tileCoords.equals(tileCoords));
         if (squadMemeberAtTile) {
-            this.setSelectedCharacter(squadMemeberAtTile.index);
+            const selectCharacterAction: SelectCharacterAction = {
+                type: ActionType.SELECT_CHARACTER,
+                characterIndex: squadMemeberAtTile.index,
+            };
+            this.onAction(selectCharacterAction);
         }
     }
 
@@ -959,7 +967,13 @@ export class GameManager implements GameModeManager {
             this.controlMap.add({
                 key,
                 name: `Select ${numberToOrdinal.get(characterNumber)} character`,
-                func: () => { this.setSelectedCharacter(character.index); },
+                func: () => {
+                    const selectCharacterAction: SelectCharacterAction = {
+                        type: ActionType.SELECT_CHARACTER,
+                        characterIndex: character.index,
+                    };
+                    this.onAction(selectCharacterAction);
+                },
                 eventType: EventType.KeyPress,
             });
         }
