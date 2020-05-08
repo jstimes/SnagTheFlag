@@ -12,7 +12,6 @@ import { Target } from 'src/app/math/target';
 
 const TWO_PI = Math.PI * 2;
 
-const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
 
 interface GameInfo {
@@ -337,12 +336,8 @@ export class Character {
         this.aimAngleRadiansClockwise = angle;
     }
 
-    aimCounterClockwise(): void {
-        this.aimAngleRadiansClockwise -= AIM_ANGLE_RADIANS_DELTA;
-    }
-
-    aimClockwise(): void {
-        this.aimAngleRadiansClockwise += AIM_ANGLE_RADIANS_DELTA;
+    getAim(): number {
+        return this.aimAngleRadiansClockwise;
     }
 
     private calculateTargetPath(): void {

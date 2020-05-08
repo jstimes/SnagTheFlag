@@ -1,4 +1,4 @@
-import { Action, MoveCharacterAction, ActionType, EndCharacterTurnAction, ShootAction } from 'src/app/actions';
+import { Action, MoveCharacterAction, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction } from 'src/app/actions';
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
 import { Character } from 'src/app/character';
@@ -8,7 +8,6 @@ import { getProjectileTarget, getRayForShot } from 'src/app/target_finder';
 interface Delegate {
     getGameState: () => GameState;
     onAction: (action: Action) => void;
-    setSelectedCharacterState: (state: SelectedCharacterState) => void;
     isAnimating: () => boolean;
 }
 
@@ -46,14 +45,19 @@ export class Ai {
     }
 
     private getActionForGameState(gameState: GameState, delegate: Delegate): Action {
-        if (gameState.selectedCharacter == null) {
-            throw new Error('Expected a selected character');
+        if (gameState.selectedCharacter == null || gameState.selectedCharacterState == null) {
+            throw new Error('Expected a selected character and state');
         }
         const selectedCharacter = gameState.selectedCharacter;
+        const selectedCharacterState = gameState.selectedCharacterState;
         if (!selectedCharacter.hasMoved) {
-            delegate.setSelectedCharacterState(SelectedCharacterState.MOVING);
-            gameState = delegate.getGameState();
-
+            if (selectedCharacterState !== SelectedCharacterState.MOVING) {
+                const action: SelectCharacterStateAction = {
+                    type: ActionType.SELECT_CHARACTER_STATE,
+                    state: SelectedCharacterState.MOVING,
+                };
+                return action;
+            }
             const goToFlag = getTileClosestTo(gameState.selectableTiles, this.getEnemyFlagCoords(gameState));
             const moveAction: MoveCharacterAction = {
                 type: ActionType.MOVE_CHARACTER,
@@ -62,11 +66,15 @@ export class Ai {
             return moveAction;
         }
         if (!selectedCharacter.hasShot) {
-            delegate.setSelectedCharacterState(SelectedCharacterState.AIMING);
-            gameState = delegate.getGameState();
+            if (selectedCharacterState !== SelectedCharacterState.AIMING) {
+                const action: SelectCharacterStateAction = {
+                    type: ActionType.SELECT_CHARACTER_STATE,
+                    state: SelectedCharacterState.AIMING,
+                };
+                return action;
+            }
 
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
-            selectedCharacter.startAiming();
             for (const enemy of this.getEnemyCharacters(gameState)) {
                 const enemyCenter = getCharacterCanvasCenter(enemy);
                 const direction = enemyCenter.subtract(characterCenter).normalize();
@@ -85,7 +93,6 @@ export class Ai {
                     return shootAction;
                 }
             }
-            selectedCharacter.cancelAiming();
         }
         const endTurnAction: EndCharacterTurnAction = {
             type: ActionType.END_CHARACTER_TURN,

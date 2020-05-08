@@ -29,6 +29,7 @@ Things to experiment with:
 - To respawn, or not to respawn.
 - Teleport pads
 - classic explosive barrels
+- engineers that can turn on turrets
 
 Level creation:
 - Symmetry option (horizontally, vertically, diagonally)

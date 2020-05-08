@@ -14,7 +14,7 @@ import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/co
 import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
+import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction, SelectCharacterStateAction, AimAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES } from 'src/app/character_settings';
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
@@ -233,11 +233,7 @@ export class GameManager implements GameModeManager {
             });
             projectile.setNewTargets(newTargets);
         }
-        if (this.selectedCharacter!.isTurnOver()) {
-            this.onCharacterTurnOver();
-        } else {
-            this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
-        }
+        this.checkCharacterTurnOver();
         const particleSystem = new ParticleSystem(particleSystemParams);
         this.particleSystems.push(particleSystem);
     }
@@ -350,11 +346,7 @@ export class GameManager implements GameModeManager {
                 const tilePath = this.getPath({ from: character.tileCoords, to: action.tileCoords });
                 const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
                 character.moveTo(action.tileCoords, targets);
-                if (character.isTurnOver()) {
-                    this.onCharacterTurnOver();
-                } else {
-                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
-                }
+                this.checkCharacterTurnOver();
                 break;
             case ActionType.SHOOT:
                 if (this.selectedCharacter == null) {
@@ -372,15 +364,11 @@ export class GameManager implements GameModeManager {
                 }
                 this.selectedCharacter.regenHealth(action.healAmount);
                 this.selectedCharacter.useAbility(action.type);
-                if (this.selectedCharacter.isTurnOver()) {
-                    this.onCharacterTurnOver();
-                } else {
-                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
-                }
+                this.checkCharacterTurnOver();
                 break;
             case ActionType.THROW_GRENADE:
                 if (this.selectedCharacter == null) {
-                    throw new Error(`Selected character is null on HEAL action`);
+                    throw new Error(`Selected character is null on THROW GRENADE action`);
                 }
                 this.selectedCharacter.useAbility(action.type);
                 this.throwGrenade(action);
@@ -389,11 +377,31 @@ export class GameManager implements GameModeManager {
                 if (this.selectedCharacter == null) {
                     throw new Error(`Selected character is null on END_CHARACTER_TURN action`);
                 }
-                this.selectedCharacter!.setTurnOver();
+                this.selectedCharacter.setTurnOver();
                 this.onCharacterTurnOver();
+                break;
+            case ActionType.AIM:
+                if (this.selectedCharacter == null) {
+                    throw new Error();
+                }
+                this.selectedCharacter.setAim(action.aimAngleClockwiseRadians);
+            case ActionType.SELECT_TILE:
+                break;
+            case ActionType.SELECT_CHARACTER:
+                break;
+            case ActionType.SELECT_CHARACTER_STATE:
+                this.setSelectedCharacterState(action.state);
                 break;
             default:
                 throwBadAction(action);
+        }
+    }
+
+    private checkCharacterTurnOver(): void {
+        if (this.selectedCharacter!.isTurnOver()) {
+            this.onCharacterTurnOver();
+        } else {
+            this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
         }
     }
 
@@ -453,9 +461,6 @@ export class GameManager implements GameModeManager {
                 },
                 onAction: (action: Action) => {
                     this.onAction(action);
-                },
-                setSelectedCharacterState: (state: SelectedCharacterState) => {
-                    this.setSelectedCharacterState(state);
                 },
                 isAnimating: () => this.isAnimating(),
             });
@@ -698,12 +703,17 @@ export class GameManager implements GameModeManager {
         switch (state) {
             case SelectedCharacterState.AWAITING:
                 this.selectableTiles = [];
+                this.selectedCharacter.cancelAiming();
                 if (!this.selectedCharacter.hasMoved) {
                     this.controlMap.add({
                         key: MOVE_KEY,
                         name: 'Move',
                         func: () => {
-                            this.setSelectedCharacterState(SelectedCharacterState.MOVING);
+                            const action: SelectCharacterStateAction = {
+                                type: ActionType.SELECT_CHARACTER_STATE,
+                                state: SelectedCharacterState.MOVING,
+                            };
+                            this.onAction(action);
                         },
                         eventType: EventType.KeyPress,
                     });
@@ -713,7 +723,11 @@ export class GameManager implements GameModeManager {
                         key: TOGGLE_AIM_KEY,
                         name: 'Aim',
                         func: () => {
-                            this.setSelectedCharacterState(SelectedCharacterState.AIMING);
+                            const action: SelectCharacterStateAction = {
+                                type: ActionType.SELECT_CHARACTER_STATE,
+                                state: SelectedCharacterState.AIMING,
+                            };
+                            this.onAction(action);
                         },
                         eventType: EventType.KeyPress,
                     });
@@ -739,7 +753,11 @@ export class GameManager implements GameModeManager {
                                 key: TOGGLE_THROW_GRENADE_KEY,
                                 name: 'Throw grenade',
                                 func: () => {
-                                    this.setSelectedCharacterState(SelectedCharacterState.THROWING_GRENADE);
+                                    const action: SelectCharacterStateAction = {
+                                        type: ActionType.SELECT_CHARACTER_STATE,
+                                        state: SelectedCharacterState.THROWING_GRENADE,
+                                    };
+                                    this.onAction(action);
                                 },
                                 eventType: EventType.KeyPress,
                             });
@@ -753,7 +771,11 @@ export class GameManager implements GameModeManager {
                     key: MOVE_KEY,
                     name: 'Cancel Move',
                     func: () => {
-                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                        const action: SelectCharacterStateAction = {
+                            type: ActionType.SELECT_CHARACTER_STATE,
+                            state: SelectedCharacterState.AWAITING,
+                        };
+                        this.onAction(action);
                     },
                     eventType: EventType.KeyPress,
                 });
@@ -768,11 +790,15 @@ export class GameManager implements GameModeManager {
                             throw new Error(
                                 `There's no selected character when canceling shooting.`);
                         }
-                        this.selectedCharacter.cancelAiming();
-                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                        const action: SelectCharacterStateAction = {
+                            type: ActionType.SELECT_CHARACTER_STATE,
+                            state: SelectedCharacterState.AWAITING,
+                        };
+                        this.onAction(action);
                     },
                     eventType: EventType.KeyPress,
                 });
+                const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
                 this.controlMap.add({
                     key: AIM_COUNTERCLOCKWISE_KEY,
                     name: 'Aim counterclockwise',
@@ -781,7 +807,11 @@ export class GameManager implements GameModeManager {
                             throw new Error(
                                 `There's no selected character when aiming CCW.`);
                         }
-                        this.selectedCharacter.aimCounterClockwise();
+                        const aimAction: AimAction = {
+                            type: ActionType.AIM,
+                            aimAngleClockwiseRadians: this.selectedCharacter.getAim() - AIM_ANGLE_RADIANS_DELTA,
+                        }
+                        this.onAction(aimAction);
                     },
                     eventType: EventType.KeyDown,
                 });
@@ -793,7 +823,11 @@ export class GameManager implements GameModeManager {
                             throw new Error(
                                 `There's no selected character when aiming CC.`);
                         }
-                        this.selectedCharacter.aimClockwise();
+                        const aimAction: AimAction = {
+                            type: ActionType.AIM,
+                            aimAngleClockwiseRadians: this.selectedCharacter.getAim() + AIM_ANGLE_RADIANS_DELTA,
+                        }
+                        this.onAction(aimAction);
                     },
                     eventType: EventType.KeyDown,
                 });
@@ -820,7 +854,11 @@ export class GameManager implements GameModeManager {
                     key: TOGGLE_THROW_GRENADE_KEY,
                     name: 'Cancel throwing grenade',
                     func: () => {
-                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+                        const action: SelectCharacterStateAction = {
+                            type: ActionType.SELECT_CHARACTER_STATE,
+                            state: SelectedCharacterState.AWAITING,
+                        };
+                        this.onAction(action);
                     },
                     eventType: EventType.KeyPress,
                 });
