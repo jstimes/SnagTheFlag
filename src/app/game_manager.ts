@@ -11,7 +11,7 @@ import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
 import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
-import { Projectile, Target } from 'src/app/projectile';
+import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, MoveCharacterAction, EndCharacterTurnAction, ShootAction, ThrowGrenadeAction } from 'src/app/actions';
@@ -20,6 +20,7 @@ import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
+import { Target } from 'src/app/math/target';
 
 
 const MOVE_KEY = Key.M;
@@ -338,8 +339,8 @@ export class GameManager implements GameModeManager {
                         `start: ${character.tileCoords.toString()}, end: ${action.tileCoords.toString()}`);
                 }
                 const tilePath = this.getPath({ from: character.tileCoords, to: action.tileCoords });
-                const canvasPath = tilePath.map((tile: Point) => Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE));
-                character.moveTo(action.tileCoords, canvasPath);
+                const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
+                character.moveTo(action.tileCoords, targets);
                 if (character.isTurnOver()) {
                     this.onCharacterTurnOver();
                 } else {
@@ -958,4 +959,26 @@ export class GameManager implements GameModeManager {
         }
 
     }
+}
+
+function mapTilePathToTargetsPath(startTile: Point, tilePath: Point[]): Target[] {
+    const targets: Target[] = [];
+    let curTile = startTile;
+    const tileToCanvas = (tile: Point) => Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
+    let curCanvas = tileToCanvas(curTile);
+    for (const nextTile of tilePath) {
+        const nextCanvas = tileToCanvas(nextTile);
+        const direction = nextCanvas.subtract(curCanvas).normalize();
+        const target: Target = {
+            ray: new Ray(curCanvas, direction),
+            canvasCoords: nextCanvas,
+            tile: nextTile,
+            maxDistance: curCanvas.distanceTo(nextCanvas),
+        };
+        curTile = nextTile;
+        curCanvas = nextCanvas;
+        targets.push(target);
+        console.log(`Next tile: ${nextTile}, nextCanvas: ${nextCanvas}`);
+    }
+    return targets;
 }

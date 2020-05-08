@@ -6,9 +6,9 @@ import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType } from 'src/app/character_settings';
 import { AnimationState } from 'src/app/animation_state';
-import { Target } from 'src/app/projectile';
 import { getProjectileTargetsPath, getRayForShot } from 'src/app/target_finder';
 import { Obstacle } from 'src/app/obstacle';
+import { Target } from 'src/app/math/target';
 
 const TWO_PI = Math.PI * 2;
 
@@ -50,7 +50,7 @@ export class Character {
         this.animationState = {
             movementSpeedMs: Grid.TILE_SIZE * .005,
             isAnimating: false,
-            remainingTargetCoords: [],
+            remainingTargets: [],
             currentCenterCanvas: Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE),
         }
         this.isBlueTeam = params.isBlueTeam;
@@ -273,46 +273,49 @@ export class Character {
         context.stroke();
     }
 
-    moveTo(tileCoords: Point, canvasCoordsPath: Point[]): void {
+    moveTo(tileCoords: Point, targetsPath: Target[]): void {
         if (this.isFinishedWithTurn || this.hasMoved) {
             throw new Error(`Already moved.`);
         }
         this.animationState.currentCenterCanvas = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
         this.tileCoords = tileCoords;
-        this.animationState.targetCoords = canvasCoordsPath.shift()!;
-        this.animationState.remainingTargetCoords = canvasCoordsPath;
+        this.animationState.currentTarget = targetsPath.shift()!;
+        this.animationState.remainingTargets = targetsPath;
         this.animationState.isAnimating = true;
         this.hasMoved = true;
         this.checkAndSetTurnOver();
     }
 
-    // TODO - extract common animation state logic.
+    // TODO - look into sharing the animation update logic.
     update(elapsedMs: number, gameInfo: GameInfo): void {
         this.gameInfo = gameInfo;
         if (this.isAiming) {
             this.calculateTargetPath();
         }
-        if (!this.animationState.isAnimating || this.animationState.targetCoords == null) {
+        if (!this.animationState.isAnimating) {
             return;
         }
-        const direction = this.animationState.targetCoords
-            .subtract(this.animationState.currentCenterCanvas).normalize();
-        this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
-            .add(direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs));
+        const currentTarget = this.animationState.currentTarget!;
+        const direction = currentTarget.ray.direction;
+        const positionUpdate = direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs);
+        const distanceUpdate = positionUpdate.getMagnitude();
 
-        const distanceAway = this.animationState.currentCenterCanvas
-            .distanceTo(this.animationState.targetCoords);
-        if (distanceAway > Grid.TILE_SIZE * .1) {
+        this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
+            .add(positionUpdate);
+        const totalDistanceTravelled = currentTarget.ray.startPt
+            .distanceTo(this.animationState.currentCenterCanvas);
+        if (totalDistanceTravelled < currentTarget.maxDistance) {
             return;
         }
-        if (this.animationState.remainingTargetCoords.length === 0) {
-            // Ensure end state is centered in destination tile.
-            this.animationState.currentCenterCanvas =
-                Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
+        // Ensure end state is centered in destination tile.
+        this.animationState.currentCenterCanvas =
+            this.animationState.currentTarget!.canvasCoords;
+        if (this.animationState.remainingTargets.length === 0) {
             this.animationState.isAnimating = false;
             return;
         }
-        this.animationState.targetCoords = this.animationState.remainingTargetCoords.shift()!;
+
+        this.animationState.currentTarget = this.animationState.remainingTargets.shift()!;
     }
 
     isAlive(): boolean {

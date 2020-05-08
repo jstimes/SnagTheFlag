@@ -3,7 +3,7 @@ import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/co
 import { Point, containsPoint } from 'src/app/math/point';
 import { Character } from 'src/app/character';
 import { Obstacle } from 'src/app/obstacle';
-import { Target } from 'src/app/projectile';
+import { Target } from 'src/app/math/target';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 

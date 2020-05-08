@@ -4,20 +4,13 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { ShotInfo, ProjectileDetailsType, ProjectileDetails } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
+import { Target } from 'src/app/math/target';
+import { AnimationState } from 'src/app/animation_state';
 
 const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
 
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
-
-export interface Target {
-    /** Only needed to be set when object hitting target is expected to be reflected. */
-    readonly normal?: Point;
-    readonly ray: Ray;
-    readonly tile: Point;
-    readonly canvasCoords: Point;
-    readonly maxDistance: number;
-}
 
 const speeds: Map<ProjectileDetailsType, number> = new Map([
     [ProjectileDetailsType.BULLET, Grid.TILE_SIZE / 80],
@@ -33,15 +26,6 @@ const colors: Map<ProjectileDetailsType, string> = new Map([
     [ProjectileDetailsType.BULLET, THEME.bulletColor],
     [ProjectileDetailsType.SPLASH, THEME.grenadeColor],
 ]);
-
-// TODO - merge with other one.
-interface AnimationState {
-    readonly movementSpeedMs: number;
-    isAnimating: boolean;
-    currentCenterCanvas: Point;
-    currentTarget: Target;
-    remainingTargets: Target[];
-}
 
 // TODO - this is hack-E.
 interface Trail {
@@ -75,9 +59,9 @@ export class Projectile {
         }
         this.setNewTargets(params.targets);
         this.trails = [{
-            ray: this.animationState.currentTarget.ray,
+            ray: this.animationState.currentTarget!.ray,
             distance: 0,
-            maxDistance: this.animationState.currentTarget.maxDistance,
+            maxDistance: this.animationState.currentTarget!.maxDistance,
         }];
         this.isFromBlueTeam = params.isFromBlueTeam;
         this.timesRicocheted = 0;
@@ -85,7 +69,7 @@ export class Projectile {
     }
 
     update(elapsedMs: number): void {
-        const currentTarget = this.animationState.currentTarget;
+        const currentTarget = this.animationState.currentTarget!;
         const direction = currentTarget.ray.direction;
         const positionUpdate = direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs);
         const distanceUpdate = positionUpdate.getMagnitude();
@@ -105,7 +89,7 @@ export class Projectile {
         }
         // Ensure end state is centered in destination tile.
         this.animationState.currentCenterCanvas =
-            this.animationState.currentTarget.canvasCoords;
+            this.animationState.currentTarget!.canvasCoords;
         if (this.animationState.remainingTargets.length === 0) {
             this.animationState.isAnimating = false;
             return;
@@ -138,7 +122,7 @@ export class Projectile {
     }
 
     getCurrentTarget(): Target {
-        return this.animationState.currentTarget;
+        return this.animationState.currentTarget!;
     }
 
     getNumRicochetsLeft(): number {
