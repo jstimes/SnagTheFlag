@@ -1,5 +1,4 @@
 GO!
-    - Mouse handler
     - action type to available action types, control abstractions
     - serialize game state, keep track
     - use gameState only?

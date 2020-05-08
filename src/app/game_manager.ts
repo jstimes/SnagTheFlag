@@ -23,6 +23,10 @@ import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
 import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
 
+interface ClickHandler {
+    onClick: (tile: Point) => void;
+}
+
 const MOVE_KEY = Key.M;
 /** Used to start and cancel shooting, but doesn't fire the shot.  */
 const TOGGLE_AIM_KEY = Key.A;
@@ -86,6 +90,7 @@ export class GameManager implements GameModeManager {
     private gamePhase: GamePhase;
     private isBlueTurn: boolean;
 
+    private clickHandler: ClickHandler | null = null;
     private controlMap: ControlMap;
     private selectableTiles: Point[];
     private selectedCharacter?: Character;
@@ -151,21 +156,10 @@ export class GameManager implements GameModeManager {
         }
 
         this.controlMap.check();
-        if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT && CONTROLS.hasClick()) {
+        if (CONTROLS.hasClick()) {
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
-            this.tryPlacingCharacter(mouseTileCoords);
-        } else if (this.gamePhase === GamePhase.COMBAT && CONTROLS.hasClick()) {
-            const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
-            switch (this.selectedCharacterState) {
-                case SelectedCharacterState.AWAITING:
-                    this.trySelectingCharacter(mouseTileCoords);
-                    break;
-                case (SelectedCharacterState.MOVING):
-                    this.tryMovingSelectedCharacter(mouseTileCoords);
-                    break;
-                case (SelectedCharacterState.THROWING_GRENADE):
-                    this.tryThrowingGrenade(mouseTileCoords);
-                    break;
+            if (this.clickHandler != null) {
+                this.clickHandler.onClick(mouseTileCoords);
             }
         }
         for (const character of this.redSquad.concat(this.blueSquad)) {
@@ -427,12 +421,7 @@ export class GameManager implements GameModeManager {
         if (this.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             if (this.isBlueTurn) {
                 this.isBlueTurn = false;
-                this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
-                this.hud.setText('Red team turn', TextType.TITLE, Duration.LONG);
-                this.hud.setText(
-                    `Place squad members (${this.gameSettings.squadSize} remaining)`,
-                    TextType.SUBTITLE,
-                    Duration.LONG);
+                this.initCharacterPlacementTurn();
             } else {
                 this.gamePhase = GamePhase.COMBAT;
                 this.advanceToNextCombatTurn();
@@ -440,6 +429,21 @@ export class GameManager implements GameModeManager {
             return;
         }
         this.advanceToNextCombatTurn();
+    }
+
+    private initCharacterPlacementTurn(): void {
+        this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
+        const teamName = this.isBlueTurn ? 'Blue' : 'Red';
+        this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
+        this.hud.setText(
+            `Place squad members(${this.gameSettings.squadSize} remaining) `,
+            TextType.SUBTITLE,
+            Duration.LONG);
+        this.clickHandler = {
+            onClick: (tile: Point) => {
+                this.tryPlacingCharacter(tile);
+            }
+        };
     }
 
     private advanceToNextCombatTurn(): void {
@@ -688,6 +692,7 @@ export class GameManager implements GameModeManager {
         }
         this.selectedCharacterState = state;
         this.controlMap.clear();
+        this.clickHandler = null;
         this.addDefaultControls();
         this.addSwitchSquadMemberControls();
 
@@ -774,6 +779,11 @@ export class GameManager implements GameModeManager {
                 break;
             case SelectedCharacterState.MOVING:
                 this.selectableTiles = this.getAvailableTilesForCharacterMovement();
+                this.clickHandler = {
+                    onClick: (tile: Point) => {
+                        this.tryMovingSelectedCharacter(tile);
+                    },
+                };
                 this.controlMap.add({
                     key: MOVE_KEY,
                     name: 'Cancel Move',
@@ -857,6 +867,11 @@ export class GameManager implements GameModeManager {
                 break;
             case SelectedCharacterState.THROWING_GRENADE:
                 this.selectableTiles = this.getAvailableTilesForThrowingGrenade();
+                this.clickHandler = {
+                    onClick: (tile: Point) => {
+                        this.tryThrowingGrenade(tile);
+                    },
+                };
                 this.controlMap.add({
                     key: TOGGLE_THROW_GRENADE_KEY,
                     name: 'Cancel throwing grenade',
@@ -904,19 +919,15 @@ export class GameManager implements GameModeManager {
         if (this.matchType === MatchType.PLAYER_VS_AI) {
             this.ai = new Ai({ isBlue: false });
         }
-        // Blue is always assumed to go first...
-        this.isBlueTurn = true;
-        this.selectableTiles = this.getAvailableTilesForCharacterPlacement();
         this.controlMap = new ControlMap();
         this.addDefaultControls();
         this.addCharacterClassControls();
         this.hud = new Hud(this.context);
         this.hud.setControlMap(this.controlMap);
-        this.hud.setText('Blue team turn', TextType.TITLE, Duration.LONG);
-        this.hud.setText(
-            `Place squad members (${this.gameSettings.squadSize} remaining)`,
-            TextType.SUBTITLE,
-            Duration.LONG);
+
+        // Blue is always assumed to go first...
+        this.isBlueTurn = true;
+        this.initCharacterPlacementTurn();
     }
 
     private loadLevel(): void {
@@ -957,6 +968,11 @@ export class GameManager implements GameModeManager {
 
     private addSwitchSquadMemberControls(): void {
         const squad = this.isBlueTurn ? this.blueSquad : this.redSquad;
+        this.clickHandler = {
+            onClick: (tile: Point) => {
+                this.trySelectingCharacter(tile);
+            },
+        };
         for (const character of squad) {
             // Use 1-based numbers for UI.
             const characterNumber = character.index + 1;
