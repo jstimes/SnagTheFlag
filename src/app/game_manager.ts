@@ -166,8 +166,8 @@ export class GameManager implements GameModeManager {
         const target = projectile.getTarget();
         const hitPositionCanvas = projectile.ray
             .pointAtDistance(target.maxDistance);
-        if (projectile.shotInfo.projectileDetails.type === ProjectileDetailsType.SPLASH) {
-            const splashDamage = projectile.shotInfo.projectileDetails;
+        if (projectile.projectileDetails.type === ProjectileDetailsType.SPLASH) {
+            const splashDamage = projectile.projectileDetails;
             particleSystemParams = getGrenadeParticleSystemParams(hitPositionCanvas);
             const hitTiles = bfs({
                 startTile: target.tile,
@@ -196,22 +196,22 @@ export class GameManager implements GameModeManager {
                 .find((character) => character.tileCoords.equals(target.tile));
             if (targetCharacter && targetCharacter !== this.selectedCharacter!) {
                 // Assumes friendly fire check occurred in 'fire'.
-                targetCharacter.health -= projectile.shotInfo.projectileDetails.damage;
+                targetCharacter.health -= projectile.projectileDetails.damage;
                 projectile.setIsDead();
             }
-            const ricochetsLeft = projectile.shotInfo.projectileDetails.numRicochets;
+            const ricochetsLeft = projectile.projectileDetails.numRicochets;
             if (!projectile.isDead && ricochetsLeft > 0) {
 
                 const newDirection = projectile.ray.direction
                     .reflect(target.normal);
                 const newDamage: Bullet = {
                     type: ProjectileDetailsType.BULLET,
-                    damage: projectile.shotInfo.projectileDetails.damage,
+                    damage: projectile.projectileDetails.damage,
                     numRicochets: ricochetsLeft - 1,
                 };
                 const newShotInfo: ShotInfo = {
                     projectileDetails: newDamage,
-                    isShotFromBlueTeam: projectile.shotInfo.isShotFromBlueTeam,
+                    isShotFromBlueTeam: projectile.isFromBlueTeam,
                     fromTileCoords: target.tile,
                     fromCanvasCoords: target.canvasCoords,
                     aimAngleRadiansClockwise: newDirection.getPointRotationRadians(),
@@ -226,7 +226,12 @@ export class GameManager implements GameModeManager {
         // Recalculate other projectile targets as they may have been going towards a
         // now destroyed character or obstacle.
         for (const projectile of this.projectiles.filter((projectile) => !projectile.isDead)) {
-            const newTarget = this.getProjectileTarget(projectile.ray, projectile.shotInfo);
+            const canvasCoords = projectile.getCanvasCoords();
+            const newTarget = this.getProjectileTarget({
+                ray: projectile.ray,
+                startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
+                isShotFromBlueTeam: projectile.isFromBlueTeam,
+            });
             projectile.setNewTarget(newTarget);
         }
         if (this.selectedCharacter!.isTurnOver()) {
@@ -445,24 +450,34 @@ export class GameManager implements GameModeManager {
 
     private fireShot(shotInfo: ShotInfo): void {
         const ray = getRayForShot(shotInfo);
-        const target = this.getProjectileTarget(ray, shotInfo);
+        const target = this.getProjectileTarget({
+            ray,
+            startingTileCoords: shotInfo.fromTileCoords,
+            isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
+        });
         this.projectiles.push(new Projectile({
             context: this.context,
             ray,
-            shotInfo,
+            projectileDetails: shotInfo.projectileDetails,
             target,
+            isFromBlueTeam: shotInfo.isShotFromBlueTeam,
         }));
     }
 
-    private getProjectileTarget(ray: Ray, shotInfo: ShotInfo): Target {
+    private getProjectileTarget(params: {
+        ray: Ray;
+        startingTileCoords: Point;
+        isShotFromBlueTeam: boolean;
+    }): Target {
+        const { ray, isShotFromBlueTeam, startingTileCoords } = params;
         const gridBorderTarget: Target = getGridBorderTarget(ray);
         const tileTarget = getTileTarget({
-            startTile: shotInfo.fromTileCoords,
+            startTile: startingTileCoords,
             ray,
             obstacles: this.obstacles,
             characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
             maxDistance: ray.startPt.distanceTo(gridBorderTarget.canvasCoords),
-            isShotFromBlueTeam: shotInfo.isShotFromBlueTeam,
+            isShotFromBlueTeam,
         });
         const target = tileTarget != null ? tileTarget : gridBorderTarget;
         return target;
@@ -491,8 +506,9 @@ export class GameManager implements GameModeManager {
         const proj = new Projectile({
             context: this.context,
             ray,
-            shotInfo,
+            projectileDetails: shotInfo.projectileDetails,
             target,
+            isFromBlueTeam: shotInfo.isShotFromBlueTeam,
         });
         this.projectiles.push(proj);
     }

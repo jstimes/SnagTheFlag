@@ -2,7 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
-import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType, ProjectileDetails } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
 
 const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
@@ -36,8 +36,9 @@ export class Projectile {
 
     private readonly context: CanvasRenderingContext2D;
     readonly ray: Ray;
-    readonly shotInfo: ShotInfo;
+    readonly projectileDetails: ProjectileDetails;
     private target: Target;
+    readonly isFromBlueTeam: boolean;
 
     isDead: boolean;
     distance: number;
@@ -45,19 +46,21 @@ export class Projectile {
     constructor(params: {
         context: CanvasRenderingContext2D;
         ray: Ray;
-        shotInfo: ShotInfo;
+        projectileDetails: ProjectileDetails;
         target: Target;
+        isFromBlueTeam: boolean;
     }) {
         this.context = params.context;
         this.ray = params.ray;
-        this.shotInfo = params.shotInfo;
+        this.projectileDetails = params.projectileDetails;
         this.distance = 0;
         this.target = params.target;
+        this.isFromBlueTeam = params.isFromBlueTeam;
         this.isDead = false;
     }
 
     update(elapsedMs: number): void {
-        const speed = speeds.get(this.shotInfo.projectileDetails.type)!
+        const speed = speeds.get(this.projectileDetails.type)!
         this.distance = this.distance + speed * elapsedMs;
     }
 
@@ -81,11 +84,15 @@ export class Projectile {
         this.isDead = true;
     }
 
+    getCanvasCoords(): Point {
+        return this.ray.pointAtDistance(this.distance);
+    }
+
     render(): void {
         const context = this.context;
-        const currentPointCanvas = this.ray.pointAtDistance(this.distance);
+        const currentPointCanvas = this.getCanvasCoords();
 
-        const radius = radii.get(this.shotInfo.projectileDetails.type)!;
+        const radius = radii.get(this.projectileDetails.type)!;
         if (this.distance > radius && !this.isTrailGone()) {
             const bacwardsDirection = this.ray.startPt.subtract(currentPointCanvas).normalize();
             let overshotDistance = 0;
@@ -121,7 +128,7 @@ export class Projectile {
             return;
         }
 
-        context.fillStyle = colors.get(this.shotInfo.projectileDetails.type)!;
+        context.fillStyle = colors.get(this.projectileDetails.type)!;
         context.beginPath();
         context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
         context.closePath();
