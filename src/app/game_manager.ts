@@ -21,6 +21,7 @@ import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
 import { Target } from 'src/app/math/target';
+import { AnimationState } from 'src/app/animation_state';
 
 
 const MOVE_KEY = Key.M;
@@ -119,6 +120,14 @@ export class GameManager implements GameModeManager {
             characters: this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive()),
             obstacles: this.obstacles,
         }
+    }
+
+    isAnimating(): boolean {
+        const animatables: { animationState: AnimationState }[] = [
+            ...this.blueSquad,
+            ...this.redSquad,
+            ...this.projectiles];
+        return animatables.some((animatable) => animatable.animationState.isAnimating);
     }
 
     update(elapsedMs: number): void {
@@ -448,6 +457,7 @@ export class GameManager implements GameModeManager {
                 setSelectedCharacterState: (state: SelectedCharacterState) => {
                     this.setSelectedCharacterState(state);
                 },
+                isAnimating: () => this.isAnimating(),
             });
         }
     }
@@ -978,7 +988,6 @@ function mapTilePathToTargetsPath(startTile: Point, tilePath: Point[]): Target[]
         curTile = nextTile;
         curCanvas = nextCanvas;
         targets.push(target);
-        console.log(`Next tile: ${nextTile}, nextCanvas: ${nextCanvas}`);
     }
     return targets;
 }

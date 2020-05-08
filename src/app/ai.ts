@@ -9,7 +9,10 @@ interface Delegate {
     getGameState: () => GameState;
     onAction: (action: Action) => void;
     setSelectedCharacterState: (state: SelectedCharacterState) => void;
+    isAnimating: () => boolean;
 }
+
+const POST_ANIMATION_DELAY = 500;
 
 export class Ai {
 
@@ -29,13 +32,15 @@ export class Ai {
             if (gameState.isBlueTurn !== this.isBlue) {
                 return;
             }
+            if (delegate.isAnimating()) {
+                setTimeout(() => {
+                    checkTurnAndTakeAction();
+                }, POST_ANIMATION_DELAY);
+                return;
+            }
             const action = this.getActionForGameState(gameState, delegate);
             delegate.onAction(action);
-
-            // TODO - checkAnimationsOver.
-            setTimeout(() => {
-                checkTurnAndTakeAction();
-            }, 2500);
+            checkTurnAndTakeAction();
         };
         checkTurnAndTakeAction();
     }
@@ -62,7 +67,6 @@ export class Ai {
 
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
             selectedCharacter.startAiming();
-            // debugger;
             for (const enemy of this.getEnemyCharacters(gameState)) {
                 const enemyCenter = getCharacterCanvasCenter(enemy);
                 const direction = enemyCenter.subtract(characterCenter).normalize();
@@ -79,8 +83,6 @@ export class Ai {
                         type: ActionType.SHOOT,
                     };
                     return shootAction;
-                } else {
-                    console.log(`Failed - enemy: ${enemy.tileCoords}, target: ${target.tile}`);
                 }
             }
             selectedCharacter.cancelAiming();

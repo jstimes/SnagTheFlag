@@ -8,6 +8,6 @@ export interface GameSettings {
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
-    squadSize: 2,
+    squadSize: 4,
     maxSpawnDistanceFromFlag: 8,
 }
