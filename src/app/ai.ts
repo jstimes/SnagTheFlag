@@ -71,61 +71,17 @@ export class Ai {
         }
         const selectedCharacter = gameState.selectedCharacter;
         const selectedCharacterState = gameState.selectedCharacterState;
+        if (!selectedCharacter.hasMoved && !selectedCharacter.hasShot) {
+            return this.getHasntMovedOrShot(selectedCharacter, gameState);
+        }
         if (!selectedCharacter.hasMoved) {
-            const startMoving = (gameState) => {
-                const startMovingAction: SelectCharacterStateAction = {
-                    type: ActionType.SELECT_CHARACTER_STATE,
-                    state: SelectedCharacterState.MOVING,
-                };
-                return startMovingAction;
-            };
-            const thenMove = (gameState) => {
-                let shortestPath = 10000;
-                let bestTile = gameState.selectableTiles[0];
-                for (const selectableTile of gameState.selectableTiles) {
-                    const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
-                    if (pathToFlag.length < shortestPath) {
-                        shortestPath = pathToFlag.length;
-                        bestTile = selectableTile;
-                    }
-                }
-                const selectTileAction: SelectTileAction = {
-                    type: ActionType.SELECT_TILE,
-                    tile: bestTile,
-                };
-                return selectTileAction;
-            };
-            return [startMoving, thenMove];
+            this.getSafeMoveTowardsEnemyFlag(selectedCharacter, gameState);
         }
         if (!selectedCharacter.hasShot) {
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
             const shotDetails = this.getFirstEnemyInPlainSight(characterCenter, gameState);
             if (shotDetails != null) {
-                const startAiming = (gameState) => {
-                    const startAimingAction: SelectCharacterStateAction = {
-                        type: ActionType.SELECT_CHARACTER_STATE,
-                        state: SelectedCharacterState.AIMING,
-                    };
-                    return startAimingAction;
-                };
-                const thenAim = (gameState) => {
-                    const takeAimAction: AimAction = {
-                        type: ActionType.AIM,
-                        aimAngleClockwiseRadians: shotDetails.aimAngleClockwiseRadians,
-                    };
-                    return takeAimAction;
-                };
-                const thenShoot = (gameState) => {
-                    const shootAction: ShootAction = {
-                        type: ActionType.SHOOT,
-                    };
-                    return shootAction;
-                };
-                return [
-                    startAiming,
-                    thenAim,
-                    thenShoot,
-                ];
+                const shoot = this.getShootSequence(shotDetails);
             }
         }
         const endTurn = (gameState) => {
@@ -153,6 +109,76 @@ export class Ai {
             type: ActionType.SELECT_TILE,
             tile: gameState.selectableTiles[0],
         };
+    }
+
+    private getHasntMovedOrShot(character: Character, gameState: GameState): ActionSequenceItem[] {
+        const shootFirst = this.getFirstEnemyInPlainSight(getCharacterCanvasCenter(character), gameState);
+        if (shootFirst != null) {
+            const shoot = this.getShootSequence(shootFirst);
+            const safeMove = this.getSafeMoveTowardsEnemyFlag(character, gameState);
+            return shoot.concat(safeMove);
+        } else {
+            return this.getSafeMoveTowardsEnemyFlag(character, gameState);
+        }
+    }
+
+    private getSafeMoveTowardsEnemyFlag(
+        character: Character, gameState: GameState): ActionSequenceItem[] {
+        const startMoving = (gameState) => {
+            const startMovingAction: SelectCharacterStateAction = {
+                type: ActionType.SELECT_CHARACTER_STATE,
+                state: SelectedCharacterState.MOVING,
+            };
+            return startMovingAction;
+        };
+        const thenMove = (gameState) => {
+            let bestTile = {
+                tile: gameState.selectableTiles[0],
+                distance: 10000,
+                directHits: 10,
+            };
+            for (const selectableTile of gameState.selectableTiles) {
+                const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
+                if (pathToFlag.length < bestTile.distance) {
+                    bestTile.tile = selectableTile;
+                    bestTile.distance = pathToFlag.length;
+                }
+            }
+            const selectTileAction: SelectTileAction = {
+                type: ActionType.SELECT_TILE,
+                tile: bestTile.tile,
+            };
+            return selectTileAction;
+        };
+        return [startMoving, thenMove];
+    }
+
+    private getShootSequence(shotDetails: ShotDetails): ActionSequenceItem[] {
+        const startAiming = (gameState) => {
+            const startAimingAction: SelectCharacterStateAction = {
+                type: ActionType.SELECT_CHARACTER_STATE,
+                state: SelectedCharacterState.AIMING,
+            };
+            return startAimingAction;
+        };
+        const thenAim = (gameState) => {
+            const takeAimAction: AimAction = {
+                type: ActionType.AIM,
+                aimAngleClockwiseRadians: shotDetails.aimAngleClockwiseRadians,
+            };
+            return takeAimAction;
+        };
+        const thenShoot = (gameState) => {
+            const shootAction: ShootAction = {
+                type: ActionType.SHOOT,
+            };
+            return shootAction;
+        };
+        return [
+            startAiming,
+            thenAim,
+            thenShoot,
+        ];
     }
 
     private getFirstEnemyInPlainSight(fromCanvas: Point, gameState: GameState): ShotDetails | null {
