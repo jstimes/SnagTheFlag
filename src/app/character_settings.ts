@@ -139,7 +139,7 @@ const SNIPER_RIFLE: Gun = {
         numRicochets: 5,
         damage: 8,
     },
-    aimIndicatorLength: 12 * Grid.TILE_SIZE,
+    aimIndicatorLength: 120 * Grid.TILE_SIZE,
 };
 const MISSILE_LAUNCHER: Gun = {
     canFireAfterMoving: true,

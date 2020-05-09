@@ -34,6 +34,7 @@ export function getProjectileTargetsPath(params: {
         .find((character) => character.tileCoords.equals(target.tile)) != null;
 
     while (pathsLeft > 0 && !hasHitCharacter) {
+        console.log(`Paths left: ${pathsLeft}`);
         const target = getProjectileTarget({
             ray: currentRay,
             startTile: currentTileCoords,
@@ -41,6 +42,8 @@ export function getProjectileTargetsPath(params: {
             obstacles,
             characters,
         });
+        console.log(`Ray: ${JSON.stringify(currentRay)}`);
+        console.log(`target: ${JSON.stringify(target)}`);
         targets.push(target);
         hasHitCharacter = isTargetACharacter(target);
         pathsLeft -= 1;
@@ -92,8 +95,10 @@ function getGridBorderTarget(ray: Ray): Target {
         const collisionResult = detectRayLineSegmentCollision(ray, border);
         if (collisionResult.isCollision) {
             borderNormal = border.normal;
+            console.log(`Hit border: ${border}`);
+            console.log(`CP: ${collisionResult.collisionPt!}`);
             // Move out from edge a little to accurately get tile.
-            const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .1);
+            const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .05);
             gridBorderCollisionPt = collisionResult.collisionPt!.add(offset);
             gridBorderCollisionTile = Grid.getTileFromCanvasCoords(gridBorderCollisionPt);
             break;
@@ -101,6 +106,21 @@ function getGridBorderTarget(ray: Ray): Target {
     }
     if (gridBorderCollisionPt == null) {
         throw new Error(`Shot ray does not intersect with any Grid`);
+    }
+    const hitCorner = (corner: Point): boolean => {
+        return Math.abs(corner.x - gridBorderCollisionPt!.x) < Grid.TILE_SIZE * .1
+            && Math.abs(corner.y - gridBorderCollisionPt!.y) < Grid.TILE_SIZE * .1;
+    };
+    // Ensure projectile stays in Grid bounds.
+    const inset = Grid.TILE_SIZE * .05;
+    if (hitCorner(topLeftCanvas)) {
+        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(inset, inset));
+    } else if (hitCorner(topRightCanvas)) {
+        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(-inset, inset));
+    } else if (hitCorner(bottomLeftCanvas)) {
+        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(inset, -inset));
+    } else if (hitCorner(bottomRightCanvas)) {
+        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(-inset, -inset));
     }
     const target: Target = {
         normal: borderNormal!,
