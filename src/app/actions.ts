@@ -3,7 +3,6 @@ import { SplashDamage } from 'src/app/shot_info';
 import { SelectedCharacterState } from 'src/app/game_state';
 
 export enum ActionType {
-    PLACE_CHARACTER,
     SELECT_TILE,
     SELECT_CHARACTER,
     SELECT_CHARACTER_STATE,
@@ -11,11 +10,6 @@ export enum ActionType {
     SHOOT,
     HEAL,
     END_CHARACTER_TURN,
-}
-
-export interface PlaceCharacterAction {
-    readonly type: ActionType.PLACE_CHARACTER;
-    readonly tileCoords: Point;
 }
 
 export interface SelectTileAction {
@@ -51,7 +45,7 @@ export interface HealAction {
     readonly healAmount: number;
 }
 
-export type Action = PlaceCharacterAction |
+export type Action =
     EndCharacterTurnAction | ShootAction | HealAction |
     SelectTileAction | SelectCharacterAction |
     SelectCharacterStateAction | AimAction;

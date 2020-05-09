@@ -16,6 +16,14 @@ export function getRayForShot(shotInfo: ShotInfo): Ray {
     return ray;
 }
 
+export function getRayForShot2(fromCanvasCoords: Point, aimAngleRadiansClockwise: number): Ray {
+    return new Ray(
+        fromCanvasCoords,
+        new Point(
+            Math.cos(aimAngleRadiansClockwise),
+            Math.sin(aimAngleRadiansClockwise)));
+}
+
 export function getProjectileTargetsPath(params: {
     ray: Ray;
     startingTileCoords: Point;

@@ -14,7 +14,7 @@ import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/co
 import { Projectile } from 'src/app/projectile';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/particle_system';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails, SplashDamage } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, HealAction, PlaceCharacterAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction } from 'src/app/actions';
+import { Action, ActionType, throwBadAction, HealAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES, CharacterAbilityType } from 'src/app/character_settings';
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
@@ -266,34 +266,6 @@ export class GameManager implements GameModeManager {
     onAction(action: Action): void {
         const activeSquad = this.gameState.getActiveSquad();
         switch (action.type) {
-            case ActionType.PLACE_CHARACTER:
-                if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT) {
-                    throw new Error(
-                        `PLACE_CHARACTER action only allowed in character placement phase`);
-                }
-                if (!this.gameState.selectableTiles
-                    .find((tile) => tile.equals(action.tileCoords))) {
-
-                    throw new Error(
-                        `Invalid character placement location: ${action.tileCoords.toString()}`);
-                }
-                const squadIndex = activeSquad.length;
-                this.gameState.characters.push(new Character({
-                    startCoords: action.tileCoords,
-                    teamIndex: this.gameState.currentTeamIndex,
-                    index: squadIndex,
-                    settings: this.selectedCharacterSettings,
-                    gameInfo: this.gameState.getGameInfo(),
-                }));
-                if (activeSquad.length + 1 === this.gameSettings.squadSize) {
-                    // Placed all characters, end turn.
-                    this.nextTurn();
-                } else {
-                    // MUTATE
-                    this.gameState.selectableTiles = this.gameState.selectableTiles
-                        .filter((availableTile) => !availableTile.equals(action.tileCoords));
-                }
-                break;
             case ActionType.SHOOT:
                 if (this.gameState.selectedCharacter == null) {
                     throw new Error(`Selected character is null on FIRE action`);
@@ -330,12 +302,11 @@ export class GameManager implements GameModeManager {
                     throw new Error(
                         `Invalid tile selection: ${action.tile.toString()}`);
                 }
-                this.gameState.selectableTiles = [];
                 if (this.gameState.gamePhase === GamePhase.COMBAT) {
                     if (this.gameState.selectedCharacter == null) {
                         throw new Error(`Selected character is null on SELECT_TILE action in combat phase`);
                     }
-
+                    this.gameState.selectableTiles = [];
                     if (this.gameState.selectedCharacterState === SelectedCharacterState.MOVING) {
                         const character = this.gameState.selectedCharacter!;
                         const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tile);
@@ -356,7 +327,22 @@ export class GameManager implements GameModeManager {
                         this.throwGrenade(grenadeDetails);
                     }
                 } else {
-                    // TODO - use for game phase character placement
+                    const squadIndex = activeSquad.length;
+                    this.gameState.characters.push(new Character({
+                        startCoords: action.tile,
+                        teamIndex: this.gameState.currentTeamIndex,
+                        index: squadIndex,
+                        settings: this.selectedCharacterSettings,
+                        gameInfo: this.gameState.getGameInfo(),
+                    }));
+                    if (activeSquad.length + 1 === this.gameSettings.squadSize) {
+                        // Placed all characters, end turn.
+                        this.nextTurn();
+                    } else {
+                        // MUTATE
+                        this.gameState.selectableTiles = this.gameState.selectableTiles
+                            .filter((availableTile) => !availableTile.equals(action.tile));
+                    }
                 }
                 break;
             case ActionType.SELECT_CHARACTER:
@@ -405,9 +391,24 @@ export class GameManager implements GameModeManager {
                 this.gameState.gamePhase = GamePhase.COMBAT;
                 this.advanceToNextCombatTurn();
             }
+        } else {
+            this.advanceToNextCombatTurn();
+        }
+
+        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
+        if (!isAi) {
+            this.initControlsForGameState();
             return;
         }
-        this.advanceToNextCombatTurn();
+        this.getCurrentTurnAi().onNextTurn({
+            getGameState: () => {
+                return this.getGameState();
+            },
+            onAction: (action: Action) => {
+                this.onAction(action);
+            },
+            isAnimating: () => this.isAnimating(),
+        });
     }
 
     private initCharacterPlacementTurn(): void {
@@ -418,11 +419,21 @@ export class GameManager implements GameModeManager {
             `Place squad members(${this.gameSettings.squadSize} remaining) `,
             TextType.SUBTITLE,
             Duration.LONG);
-        this.clickHandler = {
-            onClick: (tile: Point) => {
-                this.tryPlacingCharacter(tile);
-            }
-        };
+    }
+
+    private initControlsForGameState(): void {
+        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
+        if (isAi) {
+            return;
+        }
+        if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
+            this.clickHandler = {
+                onClick: (tile: Point) => {
+                    this.tryPlacingCharacter(tile);
+                }
+            };
+            return;
+        }
     }
 
     private advanceToNextCombatTurn(): void {
@@ -438,20 +449,6 @@ export class GameManager implements GameModeManager {
             `Move squad members`,
             TextType.SUBTITLE,
             Duration.LONG);
-
-        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
-        if (!isAi) {
-            return;
-        }
-        this.getCurrentTurnAi().onNextTurn({
-            getGameState: () => {
-                return this.getGameState();
-            },
-            onAction: (action: Action) => {
-                this.onAction(action);
-            },
-            isAnimating: () => this.isAnimating(),
-        });
     }
 
     private getCurrentTurnAi(): Ai {
@@ -519,9 +516,9 @@ export class GameManager implements GameModeManager {
             return;
         }
 
-        const placeCharacterAction: PlaceCharacterAction = {
-            type: ActionType.PLACE_CHARACTER,
-            tileCoords,
+        const placeCharacterAction: SelectTileAction = {
+            type: ActionType.SELECT_TILE,
+            tile: tileCoords,
         };
         this.onAction(placeCharacterAction);
     }
@@ -907,8 +904,8 @@ export class GameManager implements GameModeManager {
         this.hud.setControlMap(this.controlMap);
 
         // 0th team goes first...
-        this.gameState.currentTeamIndex = 0;
-        this.initCharacterPlacementTurn();
+        this.gameState.currentTeamIndex = -1;
+        this.nextTurn();
     }
 
     private loadLevel(): void {
