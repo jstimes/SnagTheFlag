@@ -126,15 +126,20 @@ export class GameManager implements GameModeManager {
         let hasFiringProjectiles = false;
         for (const projectile of this.projectiles) {
             this.updateProjectile(elapsedMs, projectile);
-            if (!projectile.isDead) {
-                hasFiringProjectiles = true;
-            }
         }
         this.projectiles = this.projectiles
             .filter((projectile) => !projectile.isDead || !projectile.isTrailGone());
-        if (hasFiringProjectiles) {
-            // No moves until shot is done.
+        for (const character of this.gameState.getAliveCharacters()) {
+            character.update(elapsedMs, this.gameState.getGameInfo());
+        }
+        this.hud.update(elapsedMs);
+
+        if (this.isAnimating()) {
             return;
+        }
+        if (this.isAiTurn()) {
+            const nextAction = this.getCurrentTurnAi().getNextAction(this.getGameState());
+            this.onAction(nextAction);
         }
 
         this.controlMap.check();
@@ -144,10 +149,6 @@ export class GameManager implements GameModeManager {
                 this.clickHandler.onClick(mouseTileCoords);
             }
         }
-        for (const character of this.gameState.getAliveCharacters()) {
-            character.update(elapsedMs, this.gameState.getGameInfo());
-        }
-        this.hud.update(elapsedMs);
     }
 
     private updateProjectile(elapsedMs: number, projectile: Projectile): void {
@@ -395,20 +396,14 @@ export class GameManager implements GameModeManager {
             this.advanceToNextCombatTurn();
         }
 
-        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
-        if (!isAi) {
+        if (!this.isAiTurn()) {
             this.initControlsForGameState();
             return;
         }
-        this.getCurrentTurnAi().onNextTurn({
-            getGameState: () => {
-                return this.getGameState();
-            },
-            onAction: (action: Action) => {
-                this.onAction(action);
-            },
-            isAnimating: () => this.isAnimating(),
-        });
+    }
+
+    private isAiTurn(): boolean {
+        return this.teamIndexToIsAi[this.gameState.currentTeamIndex];
     }
 
     private initCharacterPlacementTurn(): void {

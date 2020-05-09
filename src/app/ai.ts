@@ -6,12 +6,6 @@ import { Grid, pathTo } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
 import { Target } from './math/target';
 
-interface Delegate {
-    getGameState: () => GameState;
-    onAction: (action: Action) => void;
-    isAnimating: () => boolean;
-}
-
 interface ShotDetails {
     readonly aimAngleClockwiseRadians: number;
     readonly target: Target;
@@ -32,35 +26,20 @@ export class Ai {
         this.actionQueue = [];
     }
 
-    async onNextTurn(delegate: Delegate) {
-        let gameState = delegate.getGameState();
-        const checkTurnAndTakeAction = () => {
-            gameState = delegate.getGameState();
-            if (gameState.currentTeamIndex !== this.teamIndex) {
-                return;
-            }
-            if (delegate.isAnimating()) {
-                setTimeout(() => {
-                    checkTurnAndTakeAction();
-                }, POST_ANIMATION_DELAY);
-                return;
-            }
-            if (this.actionQueue.length === 0) {
-                this.actionQueue = this.getActionsForGameState(gameState);
-            }
-            const nextActionProducer = this.actionQueue.shift();
-            if (nextActionProducer == null) {
-                throw new Error(`AI couldn't get action to perform`);
-            }
-            const nextAction = nextActionProducer(gameState);
-            if (gameState.selectedCharacter != null) {
-                this.log(`selected character index - ${gameState.selectedCharacter!.index}`);
-            }
-            this.log(`AI: Taking action: ${JSON.stringify(nextAction)}`);
-            delegate.onAction(nextAction);
-            checkTurnAndTakeAction();
-        };
-        checkTurnAndTakeAction();
+    getNextAction(gameState: GameState): Action {
+        if (this.actionQueue.length === 0) {
+            this.actionQueue = this.getActionsForGameState(gameState);
+        }
+        const nextActionProducer = this.actionQueue.shift();
+        if (nextActionProducer == null) {
+            throw new Error(`AI couldn't get action to perform`);
+        }
+        const nextAction = nextActionProducer(gameState);
+        if (gameState.selectedCharacter != null) {
+            this.log(`selected character index - ${gameState.selectedCharacter!.index}`);
+        }
+        this.log(`AI: Taking action: ${JSON.stringify(nextAction)}`);
+        return nextAction;
     }
 
     private getActionsForGameState(gameState: GameState): ActionSequenceItem[] {
