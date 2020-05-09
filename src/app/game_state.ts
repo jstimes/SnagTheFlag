@@ -38,13 +38,11 @@ export class GameState {
     }
 
     getFirstCharacterIndex(): number {
-        const squad = this.getActiveSquad();
-        for (let index = 0; index < squad.length; index++) {
-            if (squad[index].isAlive()) {
-                return index;
-            }
+        const squad = this.getActiveSquad().filter((character) => !character.isTurnOver());
+        if (squad.length === 0) {
+            throw new Error(`No more characters alive - should be game over?`);
         }
-        throw new Error(`No more characters alive - should be game over?`);
+        return squad[0].index;
     }
 
     getGameInfo(): { characters: Character[]; obstacles: Obstacle[] } {

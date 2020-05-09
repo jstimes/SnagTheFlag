@@ -630,8 +630,8 @@ export class GameManager implements GameModeManager {
 
     // MUTATE
     private setSelectedCharacter(index: number): void {
-        const squad = this.gameState.getActiveSquad();
-        const character = squad[index];
+        const character = this.gameState.getActiveSquad()
+            .find((character) => character.index === index)!;
         if (character.isTurnOver()) {
             this.hud.setText(
                 `Unit ${index + 1}'s turn is over.`, TextType.TOAST, Duration.SHORT);

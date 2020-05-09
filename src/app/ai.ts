@@ -53,6 +53,9 @@ export class Ai {
                 throw new Error(`AI couldn't get action to perform`);
             }
             const nextAction = nextActionProducer(gameState);
+            if (gameState.selectedCharacter != null) {
+                this.log(`selected character index - ${gameState.selectedCharacter!.index}`);
+            }
             this.log(`AI: Taking action: ${JSON.stringify(nextAction)}`);
             delegate.onAction(nextAction);
             checkTurnAndTakeAction();
@@ -63,7 +66,7 @@ export class Ai {
     private getActionsForGameState(gameState: GameState): ActionSequenceItem[] {
         if (gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             return [(gs) => {
-                return this.placeCharacter(gameState);
+                return this.placeCharacter(gs);
             }];
         }
         if (gameState.selectedCharacter == null || gameState.selectedCharacterState == null) {
@@ -75,7 +78,7 @@ export class Ai {
             return this.getHasntMovedNorShot(selectedCharacter, gameState);
         }
         if (!selectedCharacter.hasMoved) {
-            this.getSafeMoveTowardsEnemyFlag(selectedCharacter, gameState);
+            return this.getSafeMoveTowardsEnemyFlag(selectedCharacter);
         }
         if (!selectedCharacter.hasShot) {
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
@@ -118,7 +121,7 @@ export class Ai {
         if (potentialShots.length > 0) {
             // TODO - pick best.
             const shoot = this.getShootSequence(potentialShots[0]);
-            const safeMove = this.getSafeMoveTowardsEnemyFlag(character, gameState);
+            const safeMove = this.getSafeMoveTowardsEnemyFlag(character);
             return shoot.concat(safeMove);
         } else {
             const startMoving = (gameState) => {
@@ -155,8 +158,7 @@ export class Ai {
         }
     }
 
-    private getSafeMoveTowardsEnemyFlag(
-        character: Character, gameState: GameState): ActionSequenceItem[] {
+    private getSafeMoveTowardsEnemyFlag(character: Character): ActionSequenceItem[] {
         const startMoving = (gameState) => {
             const startMovingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
