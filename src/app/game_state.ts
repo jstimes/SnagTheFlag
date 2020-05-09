@@ -70,11 +70,11 @@ export class GameState {
     }
 
     getActiveSquad(): Character[] {
-        return this.characters.filter((character) => character.teamIndex === this.currentTeamIndex)
+        return this.getAliveCharacters().filter((character) => character.teamIndex === this.currentTeamIndex)
     }
 
     getEnemyCharacters(): Character[] {
-        return this.characters.filter((character) => character.teamIndex !== this.currentTeamIndex);
+        return this.getAliveCharacters().filter((character) => character.teamIndex !== this.currentTeamIndex);
     }
 
     getActiveTeamFlag(): Flag {
