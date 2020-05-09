@@ -72,7 +72,7 @@ export class Ai {
         const selectedCharacter = gameState.selectedCharacter;
         const selectedCharacterState = gameState.selectedCharacterState;
         if (!selectedCharacter.hasMoved && !selectedCharacter.hasShot) {
-            return this.getHasntMovedOrShot(selectedCharacter, gameState);
+            return this.getHasntMovedNorShot(selectedCharacter, gameState);
         }
         if (!selectedCharacter.hasMoved) {
             this.getSafeMoveTowardsEnemyFlag(selectedCharacter, gameState);
@@ -112,15 +112,46 @@ export class Ai {
         };
     }
 
-    private getHasntMovedOrShot(character: Character, gameState: GameState): ActionSequenceItem[] {
-        const potentialShots = this.getEnemyTargetsInDirectSight(getCharacterCanvasCenter(character), gameState);
+    private getHasntMovedNorShot(character: Character, gameState: GameState): ActionSequenceItem[] {
+        const characterCenter = getCharacterCanvasCenter(character);
+        const potentialShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
         if (potentialShots.length > 0) {
             // TODO - pick best.
             const shoot = this.getShootSequence(potentialShots[0]);
             const safeMove = this.getSafeMoveTowardsEnemyFlag(character, gameState);
             return shoot.concat(safeMove);
         } else {
-            return this.getSafeMoveTowardsEnemyFlag(character, gameState);
+            const startMoving = (gameState) => {
+                const startMovingAction: SelectCharacterStateAction = {
+                    type: ActionType.SELECT_CHARACTER_STATE,
+                    state: SelectedCharacterState.MOVING,
+                };
+                return startMovingAction;
+            };
+            const thenMove = (gameState) => {
+                const tileStringToDirectHits = new Map<string, ShotDetails[]>();
+                for (const selectableTile of gameState.selectableTiles) {
+                    const directHits = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
+                    tileStringToDirectHits.set(JSON.stringify(selectableTile), directHits);
+                }
+                let bestTile;
+                for (const key of tileStringToDirectHits.keys()) {
+                    const hits = tileStringToDirectHits.get(key)!;
+                    // Prefer square where character can shoot enemy and is in sight of no others.
+                    if (hits.length === 1) {
+                        bestTile = JSON.parse(key) as Point;
+                    }
+                }
+                if (bestTile == null) {
+                    bestTile = this.getClosestSelectableTileToEnemyFlagWithFewestDirectHits(gameState);
+                }
+                const selectTileAction: SelectTileAction = {
+                    type: ActionType.SELECT_TILE,
+                    tile: bestTile,
+                };
+                return selectTileAction;
+            };
+            return [startMoving, thenMove];
         }
     }
 
@@ -134,25 +165,33 @@ export class Ai {
             return startMovingAction;
         };
         const thenMove = (gameState) => {
-            let bestTile = {
-                tile: gameState.selectableTiles[0],
-                distance: 10000,
-                directHits: 10,
-            };
-            for (const selectableTile of gameState.selectableTiles) {
-                const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
-                if (pathToFlag.length < bestTile.distance) {
-                    bestTile.tile = selectableTile;
-                    bestTile.distance = pathToFlag.length;
-                }
-            }
+            const bestTile = this.getClosestSelectableTileToEnemyFlagWithFewestDirectHits(gameState);
             const selectTileAction: SelectTileAction = {
                 type: ActionType.SELECT_TILE,
-                tile: bestTile.tile,
+                tile: bestTile,
             };
             return selectTileAction;
         };
         return [startMoving, thenMove];
+    }
+
+    private getClosestSelectableTileToEnemyFlagWithFewestDirectHits(gameState: GameState): Point {
+        let bestTile = {
+            tile: gameState.selectableTiles[0],
+            distance: 10000,
+            directHits: 100,
+        };
+        for (const selectableTile of gameState.selectableTiles) {
+            const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
+            const directHits = this.getEnemyTargetsInDirectSight(selectableTile, gameState).length;
+            if (directHits < bestTile.directHits
+                || (directHits === bestTile.directHits && pathToFlag.length < bestTile.distance)) {
+                bestTile.tile = selectableTile;
+                bestTile.distance = pathToFlag.length;
+                bestTile.directHits = directHits;
+            }
+        }
+        return bestTile.tile;
     }
 
     private getShootSequence(shotDetails: ShotDetails): ActionSequenceItem[] {
