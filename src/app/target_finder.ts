@@ -34,7 +34,6 @@ export function getProjectileTargetsPath(params: {
         .find((character) => character.tileCoords.equals(target.tile)) != null;
 
     while (pathsLeft > 0 && !hasHitCharacter) {
-        console.log(`Paths left: ${pathsLeft}`);
         const target = getProjectileTarget({
             ray: currentRay,
             startTile: currentTileCoords,
@@ -42,8 +41,6 @@ export function getProjectileTargetsPath(params: {
             obstacles,
             characters,
         });
-        console.log(`Ray: ${JSON.stringify(currentRay)}`);
-        console.log(`target: ${JSON.stringify(target)}`);
         targets.push(target);
         hasHitCharacter = isTargetACharacter(target);
         pathsLeft -= 1;
@@ -95,8 +92,6 @@ function getGridBorderTarget(ray: Ray): Target {
         const collisionResult = detectRayLineSegmentCollision(ray, border);
         if (collisionResult.isCollision) {
             borderNormal = border.normal;
-            console.log(`Hit border: ${border}`);
-            console.log(`CP: ${collisionResult.collisionPt!}`);
             // Move out from edge a little to accurately get tile.
             const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .05);
             gridBorderCollisionPt = collisionResult.collisionPt!.add(offset);
