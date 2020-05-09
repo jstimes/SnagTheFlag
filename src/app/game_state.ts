@@ -2,6 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Flag } from 'src/app/flag';
 import { Obstacle } from 'src/app/obstacle';
 import { Character } from 'src/app/character';
+import { pathTo } from './grid';
 
 export enum GamePhase {
     // Setup.
@@ -86,6 +87,18 @@ export class GameState {
 
     tileHasObstacle(tile: Point): boolean {
         return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
+    }
+
+    getPath({ from, to }: { from: Point; to: Point }): Point[] {
+        const isObstacleFree = (tile: Point): boolean => {
+            return !this.tileHasObstacle(tile);
+        };
+        return pathTo({
+            startTile: from,
+            endTile: to,
+            isAvailable: isObstacleFree,
+            canGoThrough: isObstacleFree,
+        });
     }
 
     isSquadMemberAtTile(tile: Point): boolean {

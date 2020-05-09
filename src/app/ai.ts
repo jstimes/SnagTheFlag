@@ -2,7 +2,7 @@ import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacte
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
 import { Character } from 'src/app/character';
-import { Grid } from 'src/app/grid';
+import { Grid, pathTo } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
 import { Target } from './math/target';
 
@@ -79,17 +79,23 @@ export class Ai {
                 };
                 return startMovingAction;
             };
-            const thenShoot = (gameState) => {
-                const goToFlag = getTileClosestTo(
-                    gameState.selectableTiles,
-                    gameState.getEnemyFlag().tileCoords);
+            const thenMove = (gameState) => {
+                let shortestPath = 10000;
+                let bestTile = gameState.selectableTiles[0];
+                for (const selectableTile of gameState.selectableTiles) {
+                    const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
+                    if (pathToFlag.length < shortestPath) {
+                        shortestPath = pathToFlag.length;
+                        bestTile = selectableTile;
+                    }
+                }
                 const selectTileAction: SelectTileAction = {
                     type: ActionType.SELECT_TILE,
-                    tile: goToFlag,
+                    tile: bestTile,
                 };
                 return selectTileAction;
             };
-            return [startMoving, thenShoot];
+            return [startMoving, thenMove];
         }
         if (!selectedCharacter.hasShot) {
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
@@ -194,4 +200,11 @@ function getTileClosestTo(tiles: Point[], to: Point): Point {
         }
     }
     return closestTile;
+}
+
+function pathToEnemyFlag(startTile: Point, gameState: GameState): Point[] {
+    return gameState.getPath({
+        from: startTile,
+        to: gameState.getEnemyFlag().tileCoords,
+    });
 }

@@ -314,7 +314,7 @@ export class GameManager implements GameModeManager {
                             throw new Error(`Invalid character movement location (too far): ` +
                                 `start: ${character.tileCoords.toString()}, end: ${action.tile.toString()}`);
                         }
-                        const tilePath = this.getPath({ from: character.tileCoords, to: action.tile });
+                        const tilePath = this.gameState.getPath({ from: character.tileCoords, to: action.tile });
                         const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
                         character.moveTo(action.tile, targets);
                         this.checkCharacterTurnOver();
@@ -601,18 +601,6 @@ export class GameManager implements GameModeManager {
             canGoThrough,
         });
         return availableTiles;
-    }
-
-    private getPath({ from, to }: { from: Point; to: Point }): Point[] {
-        const isObstacleFree = (tile: Point): boolean => {
-            return this.gameState.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) == null;
-        };
-        return pathTo({
-            startTile: from,
-            endTile: to,
-            isAvailable: isObstacleFree,
-            canGoThrough: isObstacleFree,
-        });
     }
 
     private getAvailableTilesForThrowingGrenade(): Point[] {

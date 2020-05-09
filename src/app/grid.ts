@@ -127,12 +127,14 @@ export function pathTo(params: {
             break;
         }
         for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
-            if ([...pathedTiles.values()]
-                .find((tile) => tile.coords.equals(adjacentTile))) continue;
-            queue.push({
-                parent: queuedTile.coords,
-                coords: adjacentTile,
-            });
+            const alreadyVisitedAdjacentTile = pathedTiles.has(adjacentTile.toString());
+            const alreadyQueued = queue.find((pathed) => pathed.coords.equals(adjacentTile)) != null;
+            if (!alreadyVisitedAdjacentTile && !alreadyQueued && isAvailable(adjacentTile)) {
+                queue.push({
+                    parent: queuedTile.coords,
+                    coords: adjacentTile,
+                });
+            }
         }
     }
 
