@@ -3,13 +3,13 @@ import { SplashDamage } from 'src/app/shot_info';
 import { SelectedCharacterState } from 'src/app/game_state';
 
 export enum ActionType {
-    SELECT_TILE,
-    SELECT_CHARACTER,
-    SELECT_CHARACTER_STATE,
-    AIM,
-    SHOOT,
-    HEAL,
-    END_CHARACTER_TURN,
+    SELECT_TILE = 'SELECT_TILE',
+    SELECT_CHARACTER = 'SELECT_CHARACTER',
+    SELECT_CHARACTER_STATE = 'SELECT_CHARACTER_STATE',
+    AIM = 'AIM',
+    SHOOT = 'SHOOT',
+    HEAL = 'HEAL',
+    END_CHARACTER_TURN = 'END_CHARACTER_TURN',
 }
 
 export interface SelectTileAction {

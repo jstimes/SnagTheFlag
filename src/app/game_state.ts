@@ -11,10 +11,10 @@ export enum GamePhase {
 }
 
 export enum SelectedCharacterState {
-    AWAITING,
-    MOVING,
-    AIMING,
-    THROWING_GRENADE,
+    AWAITING = 'AWAITING',
+    MOVING = 'MOVING',
+    AIMING = 'AIMING',
+    THROWING_GRENADE = 'THROWING_GRENADE',
 }
 
 export class GameState {

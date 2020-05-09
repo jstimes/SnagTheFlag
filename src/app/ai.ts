@@ -1,9 +1,10 @@
-import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction } from 'src/app/actions';
+import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction, AimAction } from 'src/app/actions';
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
 import { Character } from 'src/app/character';
 import { Grid } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
+import { Target } from './math/target';
 
 interface Delegate {
     getGameState: () => GameState;
@@ -11,14 +12,24 @@ interface Delegate {
     isAnimating: () => boolean;
 }
 
+interface ShotDetails {
+    readonly aimAngleClockwiseRadians: number;
+    readonly target: Target;
+}
+
+type ActionSequenceItem = (gameState: GameState) => Action;
+
 const POST_ANIMATION_DELAY = 500;
 
 export class Ai {
 
     readonly teamIndex: number;
+    private actionQueue: ActionSequenceItem[];
+    private readonly isLogging = false;
 
     constructor({ teamIndex }: { teamIndex: number; }) {
         this.teamIndex = teamIndex;
+        this.actionQueue = [];
     }
 
     async onNextTurn(delegate: Delegate) {
@@ -34,16 +45,26 @@ export class Ai {
                 }, POST_ANIMATION_DELAY);
                 return;
             }
-            const action = this.getActionForGameState(gameState, delegate);
-            delegate.onAction(action);
+            if (this.actionQueue.length === 0) {
+                this.actionQueue = this.getActionsForGameState(gameState);
+            }
+            const nextActionProducer = this.actionQueue.shift();
+            if (nextActionProducer == null) {
+                throw new Error(`AI couldn't get action to perform`);
+            }
+            const nextAction = nextActionProducer(gameState);
+            this.log(`AI: Taking action: ${JSON.stringify(nextAction)}`);
+            delegate.onAction(nextAction);
             checkTurnAndTakeAction();
         };
         checkTurnAndTakeAction();
     }
 
-    private getActionForGameState(gameState: GameState, delegate: Delegate): Action {
+    private getActionsForGameState(gameState: GameState): ActionSequenceItem[] {
         if (gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            return this.placeCharacter(gameState, delegate);
+            return [(gs) => {
+                return this.placeCharacter(gameState);
+            }];
         }
         if (gameState.selectedCharacter == null || gameState.selectedCharacterState == null) {
             throw new Error('Expected a selected character and state');
@@ -51,44 +72,66 @@ export class Ai {
         const selectedCharacter = gameState.selectedCharacter;
         const selectedCharacterState = gameState.selectedCharacterState;
         if (!selectedCharacter.hasMoved) {
-            if (selectedCharacterState !== SelectedCharacterState.MOVING) {
-                const action: SelectCharacterStateAction = {
+            const startMoving = (gameState) => {
+                const startMovingAction: SelectCharacterStateAction = {
                     type: ActionType.SELECT_CHARACTER_STATE,
                     state: SelectedCharacterState.MOVING,
                 };
-                return action;
-            }
-            const goToFlag = getTileClosestTo(
-                gameState.selectableTiles,
-                gameState.getEnemyFlag().tileCoords);
-            const selectTileAction: SelectTileAction = {
-                type: ActionType.SELECT_TILE,
-                tile: goToFlag,
+                return startMovingAction;
             };
-            return selectTileAction;
+            const thenShoot = (gameState) => {
+                const goToFlag = getTileClosestTo(
+                    gameState.selectableTiles,
+                    gameState.getEnemyFlag().tileCoords);
+                const selectTileAction: SelectTileAction = {
+                    type: ActionType.SELECT_TILE,
+                    tile: goToFlag,
+                };
+                return selectTileAction;
+            };
+            return [startMoving, thenShoot];
         }
         if (!selectedCharacter.hasShot) {
-            if (selectedCharacterState !== SelectedCharacterState.AIMING) {
-                const action: SelectCharacterStateAction = {
-                    type: ActionType.SELECT_CHARACTER_STATE,
-                    state: SelectedCharacterState.AIMING,
-                };
-                return action;
-            }
-
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
-            const shootAction = this.getFirstEnemyInPlainSight(characterCenter, gameState);
-            if (shootAction != null) {
-                return shootAction;
+            const shotDetails = this.getFirstEnemyInPlainSight(characterCenter, gameState);
+            if (shotDetails != null) {
+                const startAiming = (gameState) => {
+                    const startAimingAction: SelectCharacterStateAction = {
+                        type: ActionType.SELECT_CHARACTER_STATE,
+                        state: SelectedCharacterState.AIMING,
+                    };
+                    return startAimingAction;
+                };
+                const thenAim = (gameState) => {
+                    const takeAimAction: AimAction = {
+                        type: ActionType.AIM,
+                        aimAngleClockwiseRadians: shotDetails.aimAngleClockwiseRadians,
+                    };
+                    return takeAimAction;
+                };
+                const thenShoot = (gameState) => {
+                    const shootAction: ShootAction = {
+                        type: ActionType.SHOOT,
+                    };
+                    return shootAction;
+                };
+                return [
+                    startAiming,
+                    thenAim,
+                    thenShoot,
+                ];
             }
         }
-        const endTurnAction: EndCharacterTurnAction = {
-            type: ActionType.END_CHARACTER_TURN,
-        }
-        return endTurnAction;
+        const endTurn = (gameState) => {
+            const endTurnAction: EndCharacterTurnAction = {
+                type: ActionType.END_CHARACTER_TURN,
+            }
+            return endTurnAction;
+        };
+        return [endTurn];
     }
 
-    private placeCharacter(gameState: GameState, delegate: Delegate): Action {
+    private placeCharacter(gameState: GameState): Action {
         for (const tile of gameState.selectableTiles) {
             const tileCenter = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
             if (this.getFirstEnemyInPlainSight(tileCenter, gameState) == null) {
@@ -99,33 +142,40 @@ export class Ai {
             }
         }
 
-        console.log("AI: No unexposed tiles");
+        this.log("AI: No unexposed tiles");
         return {
             type: ActionType.SELECT_TILE,
             tile: gameState.selectableTiles[0],
         };
     }
 
-    private getFirstEnemyInPlainSight(fromCanvas: Point, gameState: GameState): ShootAction | null {
+    private getFirstEnemyInPlainSight(fromCanvas: Point, gameState: GameState): ShotDetails | null {
         const fromTile = Grid.getTileFromCanvasCoords(fromCanvas);
         for (const enemy of gameState.getEnemyCharacters()) {
             const enemyCenter = getCharacterCanvasCenter(enemy);
             const direction = enemyCenter.subtract(fromCanvas).normalize();
+            const aimAngleClockwiseRadians = direction.getPointRotationRadians();
             const target = getProjectileTarget({
-                ray: getRayForShot2(fromCanvas, direction.getPointRotationRadians()),
+                ray: getRayForShot2(fromCanvas, aimAngleClockwiseRadians),
                 characters: gameState.getAliveCharacters(),
                 obstacles: gameState.obstacles,
                 fromTeamIndex: this.teamIndex,
                 startTile: fromTile,
             });
             if (target.tile.equals(enemy.tileCoords)) {
-                const shootAction: ShootAction = {
-                    type: ActionType.SHOOT,
+                return {
+                    aimAngleClockwiseRadians,
+                    target,
                 };
-                return shootAction;
             }
         }
         return null;
+    }
+
+    private log(message: string) {
+        if (this.isLogging) {
+            console.log(message);
+        }
     }
 }
 
