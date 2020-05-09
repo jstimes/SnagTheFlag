@@ -59,7 +59,9 @@ export class Ai {
                 };
                 return action;
             }
-            const goToFlag = getTileClosestTo(gameState.selectableTiles, this.getEnemyFlagCoords(gameState));
+            const goToFlag = getTileClosestTo(
+                gameState.selectableTiles,
+                gameState.getEnemyFlag().tileCoords);
             const selectTileAction: SelectTileAction = {
                 type: ActionType.SELECT_TILE,
                 tile: goToFlag,
@@ -76,13 +78,13 @@ export class Ai {
             }
 
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
-            for (const enemy of this.getEnemyCharacters(gameState)) {
+            for (const enemy of gameState.getEnemyCharacters()) {
                 const enemyCenter = getCharacterCanvasCenter(enemy);
                 const direction = enemyCenter.subtract(characterCenter).normalize();
                 selectedCharacter.setAim(direction.getPointRotationRadians());
                 const target = getProjectileTarget({
                     ray: getRayForShot(selectedCharacter.getCurrentShotInfo()[0]),
-                    characters: gameState.characters,
+                    characters: gameState.getAliveCharacters(),
                     obstacles: gameState.obstacles,
                     fromTeamIndex: this.teamIndex,
                     startTile: selectedCharacter.tileCoords,
@@ -100,20 +102,12 @@ export class Ai {
         }
         return endTurnAction;
     }
-
-    private getEnemyFlagCoords(gameState: GameState): Point {
-        const flag = gameState.flags.find((flag) => flag.teamIndex !== this.teamIndex)!;
-        return flag.tileCoords;
-    }
-
-    private getEnemyCharacters(gameState: GameState): Character[] {
-        return gameState.characters.filter((character) => character.teamIndex !== this.teamIndex);
-    }
 }
 
 function getCharacterCanvasCenter(character: Character): Point {
     return Grid.getCanvasFromTileCoords(character.tileCoords).add(Grid.HALF_TILE)
 }
+
 function getTileClosestTo(tiles: Point[], to: Point): Point {
     let closestDistance = 10000;
     let closestTile = tiles[0];

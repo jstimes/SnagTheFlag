@@ -72,8 +72,16 @@ export class GameState {
         return this.characters.filter((character) => character.teamIndex === this.currentTeamIndex)
     }
 
+    getEnemyCharacters(): Character[] {
+        return this.characters.filter((character) => character.teamIndex !== this.currentTeamIndex);
+    }
+
     getActiveTeamFlag(): Flag {
         return this.flags.find((flag) => flag.teamIndex === this.currentTeamIndex)!;
+    }
+
+    getEnemyFlag(): Flag {
+        return this.flags.filter((flag) => flag.teamIndex !== this.currentTeamIndex)[0];
     }
 
     tileHasObstacle(tile: Point): boolean {
