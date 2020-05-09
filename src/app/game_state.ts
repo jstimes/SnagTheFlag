@@ -17,13 +17,75 @@ export enum SelectedCharacterState {
     THROWING_GRENADE,
 }
 
-export interface GameState {
-    readonly gamePhase: GamePhase;
-    readonly obstacles: Obstacle[];
-    readonly characters: Character[];
-    readonly flags: Flag[];
-    readonly currentTeamIndex: number;
-    readonly selectableTiles: Point[];
-    readonly selectedCharacter?: Character;
-    readonly selectedCharacterState?: SelectedCharacterState;
+export class GameState {
+    gamePhase: GamePhase;
+    obstacles: Obstacle[];
+    characters: Character[];
+    flags: Flag[];
+    currentTeamIndex: number;
+    selectableTiles: Point[];
+    selectedCharacter?: Character;
+    selectedCharacterState?: SelectedCharacterState;
+
+    constructor() {
+        this.gamePhase = GamePhase.CHARACTER_PLACEMENT;
+        this.obstacles = [];
+        this.characters = [];
+        this.flags = [];
+        this.currentTeamIndex = 0;
+        this.selectableTiles = [];
+    }
+
+    getFirstCharacterIndex(): number {
+        const squad = this.getActiveSquad();
+        for (let index = 0; index < squad.length; index++) {
+            if (squad[index].isAlive()) {
+                return index;
+            }
+        }
+        throw new Error(`No more characters alive - should be game over?`);
+    }
+
+    getGameInfo(): { characters: Character[]; obstacles: Obstacle[] } {
+        return {
+            characters: this.getAliveCharacters(),
+            obstacles: this.obstacles,
+        }
+    }
+
+    getAliveCharacters(): Character[] {
+        return this.characters.filter((character) => character.isAlive());
+    }
+
+    getActiveTeamName(): string {
+        switch (this.currentTeamIndex) {
+            case 0:
+                return 'Blue';
+            case 1:
+                return 'Red';
+            default:
+                throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
+        }
+    }
+
+    getActiveSquad(): Character[] {
+        return this.characters.filter((character) => character.teamIndex === this.currentTeamIndex)
+    }
+
+    getActiveTeamFlag(): Flag {
+        return this.flags.find((flag) => flag.teamIndex === this.currentTeamIndex)!;
+    }
+
+    tileHasObstacle(tile: Point): boolean {
+        return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
+    }
+
+    isSquadMemberAtTile(tile: Point): boolean {
+        const squad = this.getActiveSquad();
+        return squad.find((squadMember: Character) => {
+            return squadMember.isAlive()
+                && squadMember.tileCoords.equals(tile)
+                && squadMember !== this.selectedCharacter;
+        }) != null;
+    }
 }
