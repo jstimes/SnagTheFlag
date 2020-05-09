@@ -83,22 +83,14 @@ export class GameManager implements GameModeManager {
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
     private controlMap: ControlMap;
-
-    // private obstacles: Obstacle[];
-    // private flags: Flag[];
-    // private characters: Character[];
-    // private gamePhase: GamePhase;
-    // private currentTeamIndex: number;
-    // private selectableTiles: Point[];
-    // private selectedCharacter?: Character;
-    // private selectedCharacterState?: SelectedCharacterState;
     private gameState: GameState;
 
     private selectedCharacterSettings: CharacterSettings = ASSAULT_CHARACTER_SETTINGS;
     private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
 
-    private ai: Ai;
+    private teamIndexToIsAi: boolean[];
+    private ais: Ai[];
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -447,20 +439,24 @@ export class GameManager implements GameModeManager {
             TextType.SUBTITLE,
             Duration.LONG);
 
-        if (this.matchType === MatchType.PLAYER_VS_AI) {
-            if (this.gameState.currentTeamIndex !== this.ai.teamIndex) {
-                return;
-            }
-            this.ai.onNextTurn({
-                getGameState: () => {
-                    return this.getGameState();
-                },
-                onAction: (action: Action) => {
-                    this.onAction(action);
-                },
-                isAnimating: () => this.isAnimating(),
-            });
+        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
+        if (!isAi) {
+            return;
         }
+        this.getCurrentTurnAi().onNextTurn({
+            getGameState: () => {
+                return this.getGameState();
+            },
+            onAction: (action: Action) => {
+                this.onAction(action);
+            },
+            isAnimating: () => this.isAnimating(),
+        });
+    }
+
+    private getCurrentTurnAi(): Ai {
+        return this.ais
+            .find((ai) => ai.teamIndex === this.gameState.currentTeamIndex)!;
     }
 
     private getGameState(): GameState {
@@ -892,10 +888,17 @@ export class GameManager implements GameModeManager {
         this.gameState.characters = [];
         this.projectiles = [];
         this.particleSystems = [];
-        if (this.matchType === MatchType.PLAYER_VS_AI) {
-            for (let i = 1; i < this.gameSettings.numTeams; i++) {
-                this.ai = new Ai({ teamIndex: i });
+        this.ais = [];
+        this.teamIndexToIsAi = [];
+        for (let i = 0; i < this.gameSettings.numTeams; i++) {
+            let isAi = i !== 0;
+            if (this.matchType === MatchType.AI_VS_AI) {
+                isAi = true;
+            } else if (this.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL) {
+                isAi = false;
             }
+            this.teamIndexToIsAi.push(isAi);
+            this.ais.push(new Ai({ teamIndex: i }));
         }
         this.controlMap = new ControlMap();
         this.addDefaultControls();
