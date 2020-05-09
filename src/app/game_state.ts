@@ -20,10 +20,8 @@ export enum SelectedCharacterState {
 export interface GameState {
     readonly gamePhase: GamePhase;
     readonly obstacles: Obstacle[];
-    readonly blueSquad: Character[];
-    readonly redSquad: Character[];
-    readonly redFlag: Flag;
-    readonly blueFlag: Flag;
+    readonly characters: Character[];
+    readonly flags: Flag[];
     readonly currentTeamIndex: number;
     readonly selectableTiles: Point[];
     readonly selectedCharacter?: Character;

@@ -47,10 +47,10 @@ export class LevelCreator {
         if (!this.isTileOccupied(mouseTileCoords)) {
             switch (this.placementMode) {
                 case PlacementMode.BLUE_FLAG:
-                    this.blueFlag = new Flag({ tileCoords: mouseTileCoords, isBlue: true });
+                    this.blueFlag = new Flag({ tileCoords: mouseTileCoords, teamIndex: 0 });
                     break;
                 case PlacementMode.RED_FLAG:
-                    this.redFlag = new Flag({ tileCoords: mouseTileCoords, isBlue: false });
+                    this.redFlag = new Flag({ tileCoords: mouseTileCoords, teamIndex: 1 });
                     break;
                 case PlacementMode.OBSTACLE:
                     const obstacle = new Obstacle(mouseTileCoords);

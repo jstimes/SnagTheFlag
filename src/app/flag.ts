@@ -4,12 +4,12 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 
 export class Flag {
-    readonly isBlue: boolean;
+    readonly teamIndex: number;
     tileCoords: Point;
 
-    constructor({ tileCoords, isBlue }: { tileCoords: Point; isBlue: boolean }) {
+    constructor({ tileCoords, teamIndex }: { tileCoords: Point; teamIndex: number }) {
         this.tileCoords = tileCoords;
-        this.isBlue = isBlue;
+        this.teamIndex = teamIndex;
     }
 
     update(elapsedMs: number) {
@@ -32,7 +32,7 @@ export class Flag {
         // Flag.
         const rightMargin = leftMargin;
         const height = Grid.TILE_SIZE * .36;
-        context.fillStyle = this.isBlue ? THEME.blueFlagColor : THEME.redFlagColor;
+        context.fillStyle = this.teamIndex === 0 ? THEME.blueFlagColor : THEME.redFlagColor;
         context.fillRect(
             tileCanvasTopLeft.x + leftMargin + flagPoleWidth,
             tileCanvasTopLeft.y + topMargin,

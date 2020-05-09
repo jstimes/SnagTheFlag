@@ -81,12 +81,10 @@ export class GameManager implements GameModeManager {
 
     private gameSettings: GameSettings;
     private obstacles: Obstacle[];
-    private redFlag: Flag;
-    private blueFlag: Flag;
+    private flags: Flag[];
     private hud: Hud;
 
-    private blueSquad: Character[];
-    private redSquad: Character[];
+    private characters: Character[];
     private gamePhase: GamePhase;
     private currentTeamIndex: number;
 
@@ -121,8 +119,7 @@ export class GameManager implements GameModeManager {
 
     isAnimating(): boolean {
         const animatables: { animationState: AnimationState }[] = [
-            ...this.blueSquad,
-            ...this.redSquad,
+            ...this.characters,
             ...this.projectiles];
         return animatables.some((animatable) => animatable.animationState.isAnimating);
     }
@@ -250,13 +247,10 @@ export class GameManager implements GameModeManager {
         for (const obstacle of this.obstacles) {
             obstacle.render(context);
         }
-        this.redFlag.render(this.context);
-        this.blueFlag.render(this.context);
-        const remainingCharacters =
-            this.blueSquad
-                .concat(this.redSquad)
-                .filter((character) => character.isAlive());
-        for (const character of remainingCharacters) {
+        for (const flag of this.flags) {
+            flag.render(this.context);
+        }
+        for (const character of this.getAliveCharacters()) {
             character.render(this.context);
         }
         if (this.selectedCharacter != null) {
@@ -292,14 +286,14 @@ export class GameManager implements GameModeManager {
                         `Invalid character placement location: ${action.tileCoords.toString()}`);
                 }
                 const squadIndex = activeSquad.length;
-                activeSquad.push(new Character({
+                this.characters.push(new Character({
                     startCoords: action.tileCoords,
                     teamIndex: this.currentTeamIndex,
                     index: squadIndex,
                     settings: this.selectedCharacterSettings,
                     gameInfo: this.getGameInfo(),
                 }));
-                if (activeSquad.length === this.gameSettings.squadSize) {
+                if (activeSquad.length + 1 === this.gameSettings.squadSize) {
                     // Placed all characters, end turn.
                     this.nextTurn();
                 } else {
@@ -469,10 +463,8 @@ export class GameManager implements GameModeManager {
 
     private getGameState(): GameState {
         const state: GameState = {
-            blueFlag: this.blueFlag,
-            redFlag: this.redFlag,
-            blueSquad: this.blueSquad.filter((character) => character.isAlive()),
-            redSquad: this.redSquad.filter((character) => character.isAlive()),
+            flags: this.flags,
+            characters: this.getAliveCharacters(),
             gamePhase: this.gamePhase,
             currentTeamIndex: this.currentTeamIndex,
             obstacles: this.obstacles,
@@ -889,8 +881,7 @@ export class GameManager implements GameModeManager {
         const potentialObstacle = this.obstacles.find(
             (obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
         const potentialCharacter =
-            this.blueSquad
-                .concat(this.redSquad)
+            this.getAliveCharacters()
                 .find(
                 (character) => {
                     return character.isAlive() && character.tileCoords.equals(tileCoords);
@@ -903,8 +894,7 @@ export class GameManager implements GameModeManager {
         this.loadLevel();
         this.gameSettings = DEFAULT_GAME_SETTINGS;
         this.gamePhase = GamePhase.CHARACTER_PLACEMENT;
-        this.blueSquad = [];
-        this.redSquad = [];
+        this.characters = [];
         this.projectiles = [];
         this.particleSystems = [];
         if (this.matchType === MatchType.PLAYER_VS_AI) {
@@ -925,14 +915,15 @@ export class GameManager implements GameModeManager {
 
     private loadLevel(): void {
         const level = LEVELS[this.levelIndex];
-        this.redFlag = new Flag({
-            tileCoords: pointFromSerialized(level.data.redFlag),
-            isBlue: false,
-        });
-        this.blueFlag = new Flag({
+        const blueFlag = new Flag({
             tileCoords: pointFromSerialized(level.data.blueFlag),
-            isBlue: true,
+            teamIndex: 0,
         });
+        const redFlag = new Flag({
+            tileCoords: pointFromSerialized(level.data.redFlag),
+            teamIndex: 1,
+        });
+        this.flags = [blueFlag, redFlag];
         this.obstacles = level.data.obstacles.map((serializedPt) => {
             return new Obstacle(pointFromSerialized(serializedPt));
         });
@@ -1025,7 +1016,7 @@ export class GameManager implements GameModeManager {
     }
 
     private getAliveCharacters(): Character[] {
-        return this.redSquad.concat(this.blueSquad).filter((character) => character.isAlive());
+        return this.characters.filter((character) => character.isAlive());
     }
 
     private getActiveTeamName(): string {
@@ -1034,19 +1025,17 @@ export class GameManager implements GameModeManager {
                 return 'Blue';
             case 1:
                 return 'Red';
-            case 2:
-                return 'Purple';
             default:
                 throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
         }
     }
 
     private getActiveSquad(): Character[] {
-        return this.currentTeamIndex === 0 ? this.blueSquad : this.redSquad;
+        return this.characters.filter((character) => character.teamIndex === this.currentTeamIndex)
     }
 
     private getActiveTeamFlag(): Flag {
-        return this.currentTeamIndex === 0 ? this.blueFlag : this.redFlag;
+        return this.flags.find((flag) => flag.teamIndex === this.currentTeamIndex)!;
     }
 
     private tileHasObstacle(tile: Point): boolean {

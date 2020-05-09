@@ -82,7 +82,7 @@ export class Ai {
                 selectedCharacter.setAim(direction.getPointRotationRadians());
                 const target = getProjectileTarget({
                     ray: getRayForShot(selectedCharacter.getCurrentShotInfo()[0]),
-                    characters: gameState.blueSquad.concat(gameState.redSquad),
+                    characters: gameState.characters,
                     obstacles: gameState.obstacles,
                     fromTeamIndex: this.teamIndex,
                     startTile: selectedCharacter.tileCoords,
@@ -102,12 +102,12 @@ export class Ai {
     }
 
     private getEnemyFlagCoords(gameState: GameState): Point {
-        const flag = this.teamIndex === 0 ? gameState.redFlag : gameState.blueFlag;
+        const flag = gameState.flags.find((flag) => flag.teamIndex !== this.teamIndex)!;
         return flag.tileCoords;
     }
 
     private getEnemyCharacters(gameState: GameState): Character[] {
-        return this.teamIndex === 0 ? gameState.redSquad : gameState.blueSquad;
+        return gameState.characters.filter((character) => character.teamIndex !== this.teamIndex);
     }
 }
 
