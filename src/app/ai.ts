@@ -25,7 +25,7 @@ export class Ai {
 
     readonly teamIndex: number;
     private actionQueue: ActionSequenceItem[];
-    private readonly isLogging = false;
+    private readonly isLogging = true;
 
     constructor({ teamIndex }: { teamIndex: number; }) {
         this.teamIndex = teamIndex;
@@ -79,9 +79,10 @@ export class Ai {
         }
         if (!selectedCharacter.hasShot) {
             const characterCenter = getCharacterCanvasCenter(selectedCharacter);
-            const shotDetails = this.getFirstEnemyInPlainSight(characterCenter, gameState);
-            if (shotDetails != null) {
-                const shoot = this.getShootSequence(shotDetails);
+            const possibleShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
+            if (possibleShots.length > 0) {
+                // TODO - pick best.
+                return this.getShootSequence(possibleShots[0]);
             }
         }
         const endTurn = (gameState) => {
@@ -96,7 +97,7 @@ export class Ai {
     private placeCharacter(gameState: GameState): Action {
         for (const tile of gameState.selectableTiles) {
             const tileCenter = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
-            if (this.getFirstEnemyInPlainSight(tileCenter, gameState) == null) {
+            if (this.getEnemyTargetsInDirectSight(tileCenter, gameState).length === 0) {
                 return {
                     type: ActionType.SELECT_TILE,
                     tile,
@@ -112,9 +113,10 @@ export class Ai {
     }
 
     private getHasntMovedOrShot(character: Character, gameState: GameState): ActionSequenceItem[] {
-        const shootFirst = this.getFirstEnemyInPlainSight(getCharacterCanvasCenter(character), gameState);
-        if (shootFirst != null) {
-            const shoot = this.getShootSequence(shootFirst);
+        const potentialShots = this.getEnemyTargetsInDirectSight(getCharacterCanvasCenter(character), gameState);
+        if (potentialShots.length > 0) {
+            // TODO - pick best.
+            const shoot = this.getShootSequence(potentialShots[0]);
             const safeMove = this.getSafeMoveTowardsEnemyFlag(character, gameState);
             return shoot.concat(safeMove);
         } else {
@@ -181,8 +183,9 @@ export class Ai {
         ];
     }
 
-    private getFirstEnemyInPlainSight(fromCanvas: Point, gameState: GameState): ShotDetails | null {
+    private getEnemyTargetsInDirectSight(fromCanvas: Point, gameState: GameState): ShotDetails[] {
         const fromTile = Grid.getTileFromCanvasCoords(fromCanvas);
+        const shots: ShotDetails[] = [];
         for (const enemy of gameState.getEnemyCharacters()) {
             const enemyCenter = getCharacterCanvasCenter(enemy);
             const direction = enemyCenter.subtract(fromCanvas).normalize();
@@ -195,13 +198,13 @@ export class Ai {
                 startTile: fromTile,
             });
             if (target.tile.equals(enemy.tileCoords)) {
-                return {
+                shots.push({
                     aimAngleClockwiseRadians,
                     target,
-                };
+                });
             }
         }
-        return null;
+        return shots;
     }
 
     private log(message: string) {
