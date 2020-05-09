@@ -7,19 +7,22 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
  * Where (0, 0) is top left corner of canvas, and [1, 1] is bottom right.
  */
 
-interface ButtonParams {
+export interface ButtonDimensions {
     readonly topLeft: Point;
     readonly size: Point;
-
     readonly text: string;
-    readonly fontSize: number;
+}
 
+export interface ButtonStyle {
+    readonly fontSize: number;
     /** Hex strings */
     readonly color: string;
     readonly hoverColor: string;
     readonly textColor: string;
 
-    readonly onClickCallback: () => void;
+    // Used for groups.
+    readonly selectedColor?: string;
+    readonly selectedBorderColor?: string;
 }
 
 export class Button implements Element {
@@ -36,20 +39,30 @@ export class Button implements Element {
     private readonly hoverColor: string;
     private readonly textColor: string;
 
+    readonly selectedColor?: string;
+    readonly selectedBorderColor?: string;
+
     private readonly onClickCallback: () => void;
 
     /* State */
     private isHovered: boolean;
+    private isSelected: boolean;
 
-    constructor(params: ButtonParams) {
-        this.topLeft = params.topLeft;
-        this.size = params.size;
-        this.text = params.text;
-        this.fontSize = params.fontSize;
-        this.color = params.color;
-        this.textColor = params.textColor;
-        this.hoverColor = params.hoverColor;
-        this.onClickCallback = params.onClickCallback;
+    constructor({ dimensions, style, onClick }: {
+        dimensions: ButtonDimensions;
+        style: ButtonStyle;
+        onClick: () => void;
+    }) {
+        this.topLeft = dimensions.topLeft;
+        this.size = dimensions.size;
+        this.text = dimensions.text;
+        this.fontSize = style.fontSize;
+        this.color = style.color;
+        this.textColor = style.textColor;
+        this.hoverColor = style.hoverColor;
+        this.selectedColor = style.selectedColor;
+        this.selectedBorderColor = style.selectedBorderColor;
+        this.onClickCallback = onClick;
 
         this.isHovered = false;
     }
@@ -57,7 +70,7 @@ export class Button implements Element {
     readonly render = (context: CanvasRenderingContext2D) => {
         const topLeftCanvas = this.getCanvasCoords(this.topLeft);
         const sizeCanvas = this.getCanvasCoords(this.size);
-        context.fillStyle = this.isHovered ? this.hoverColor : this.color;
+        context.fillStyle = this.getFillColor();
         context.fillRect(topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
 
         context.fillStyle = this.textColor;
@@ -69,7 +82,30 @@ export class Button implements Element {
             this.text,
             buttonCenterCanvas.x - textWidth / 2,
             buttonCenterCanvas.y + fontSize / 4);
+
+        if (!this.isSelected) {
+            return;
+        }
+        // Indicate selected.
+        if (this.selectedBorderColor == null) {
+            throw new Error(
+                `Selected border color should be set when button is selected`);
+        }
+        context.strokeStyle = this.selectedBorderColor;
+        context.strokeRect(topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
     };
+
+    private getFillColor(): string {
+        if (this.isSelected) {
+            return this.selectedColor!
+        }
+        return this.isHovered ? this.hoverColor : this.color;
+    }
+
+    /** For use by button group only. */
+    setIsSelected(isSelected: boolean): void {
+        this.isSelected = isSelected;
+    }
 
     readonly onClick = (uiCoords: Point) => {
         if (this.isInButton(uiCoords)) {

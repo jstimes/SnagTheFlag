@@ -78,14 +78,13 @@ export class AppComponent {
       });
   }
 
-  private initGame(levelIndex: number): void {
+  private initGame(levelIndex: number, matchType: MatchType): void {
     this.gameState = GameState.GAME;
     this.gameStateManager = new GameManager(
       this.canvas,
       this.context,
       {
-        // TODO - level selector, match type selector
-        matchType: MatchType.PLAYER_VS_AI,
+        matchType,
         levelIndex,
         onExitGameCallback: () => {
           this.tearDownCurrentGameState();
@@ -97,8 +96,8 @@ export class AppComponent {
   private initLevelMenu(): void {
     this.gameState = GameState.LEVEL_MENU;
     this.gameStateManager = new LevelMenu(this.canvas, this.context, {
-      onSelectLevel: (levelIndex) => {
-        this.initGame(levelIndex);
+      onSelectLevel: (levelIndex: number, matchType: MatchType) => {
+        this.initGame(levelIndex, matchType);
       },
     });
   }

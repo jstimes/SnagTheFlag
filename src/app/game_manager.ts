@@ -876,9 +876,9 @@ export class GameManager implements GameModeManager {
         const potentialCharacter =
             this.gameState.getAliveCharacters()
                 .find(
-                (character) => {
-                    return character.isAlive() && character.tileCoords.equals(tileCoords);
-                });
+                    (character) => {
+                        return character.isAlive() && character.tileCoords.equals(tileCoords);
+                    });
         return potentialObstacle != null || potentialCharacter != null;
     }
 
