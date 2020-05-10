@@ -26,10 +26,6 @@ interface Particle {
 
 const TWO_PI = Math.PI * 2;
 
-// TODO - this should be ParticlesParams when more diversity is supported.
-const MIN_RADIUS = .035 * Grid.TILE_SIZE;
-const MAX_RADIUS = .065 * Grid.TILE_SIZE;
-
 // TODO - add normal direction and max angle deviation.
 export interface ParticleSystemParams {
     readonly startPositionCanvas: Point;
@@ -53,6 +49,8 @@ export interface ParticleSystemParams {
     readonly maxParticleSpeed: number;
     readonly minLifetimeMs: number;
     readonly maxLifetimeMs: number;
+    readonly minRadius: number;
+    readonly maxRadius: number;
 }
 
 /** 
@@ -85,7 +83,7 @@ export class ParticleSystem {
                 hexStringToColor(params.colorA),
                 hexStringToColor(params.colorB),
                 Math.random());
-            const radius = lerp(MIN_RADIUS, MAX_RADIUS, Math.random());
+            const radius = lerp(params.minRadius, params.maxRadius, Math.random());
             // Only give ellipses a rotation.
             const rotationRadians = this.params.shape === ParticleShape.ELLIPSE
                 ? direction.getPointRotationRadians()
