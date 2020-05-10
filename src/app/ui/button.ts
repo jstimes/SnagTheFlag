@@ -65,6 +65,7 @@ export class Button implements Element {
         this.onClickCallback = onClick;
 
         this.isHovered = false;
+        this.isSelected = false;
     }
 
     readonly render = (context: CanvasRenderingContext2D) => {

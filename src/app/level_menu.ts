@@ -8,6 +8,7 @@ import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
 import { ButtonGroup } from './ui/button_group';
 import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from './game_settings';
+import { TextBox, TextBoxStyle } from './ui/text_box';
 
 interface ButtonMetadata {
     text: string;
@@ -19,6 +20,7 @@ export class LevelMenu implements GameModeManager {
     private readonly context: CanvasRenderingContext2D;
     private readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
     private readonly uiManager: UiManager;
+    private selectedLevelIndex: number;
     private selectedMatchType: MatchType;
     private selectedTeamSizeMap: Map<number, number>;
 
@@ -57,90 +59,61 @@ export class LevelMenu implements GameModeManager {
         // no-op
     }
 
+    //  OLD buttonHoverColor = '#fcd281';
     private initLevelMenu(): void {
-        // Level buttons.
-        const leftMargin = .4;
-        const topMargin = .3;
-        const buttonOffsetY = .08;
-        const buttonSize = new Point(.2, .1);
-        const buttonColor = '#f7c25e';
-        const buttonHoverColor = '#fcd281';
-        const fontSize = 24;
-        for (let buttonIndex = 0; buttonIndex < LEVELS.length; buttonIndex++) {
-            const topLeftY = topMargin + buttonIndex * buttonOffsetY + buttonIndex * buttonSize.y;
-            const level = LEVELS[buttonIndex];
-            const button = new Button({
-                dimensions: {
-                    topLeft: new Point(leftMargin, topLeftY),
-                    size: buttonSize,
-                    text: level.name,
-                }, style: {
-                    fontSize,
-                    color: buttonColor,
-                    hoverColor: buttonHoverColor,
-                    textColor: THEME.buttonTextColor,
-                },
-                onClick: () => {
-                    const settings: GameSettings = {
-                        matchType: this.selectedMatchType,
-                        teamIndexToSquadSize: this.selectedTeamSizeMap,
-                        maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
-                        numTeams: DEFAULT_GAME_SETTINGS.numTeams,
-                    }
-                    this.onSelectLevel(buttonIndex, settings);
-                },
-            });
-            this.uiManager.addElement(button);
-        }
 
-        // Match type buttons.
-        const matchTypeToString: Map<MatchType, string> = new Map([
-            [MatchType.PLAYER_VS_PLAYER_LOCAL, 'PvP'],
-            [MatchType.PLAYER_VS_AI, 'PvAI'],
-            [MatchType.AI_VS_AI, 'AIvAI'],
-        ]);
-        const matchIndexToMatchType: MatchType[] = [];
-        const matchTypeButtonSize = new Point(.15, .08);
-        const matchTypeOffsetY = .04;
-        const matchTypeTopMargin = .35;
-        const matchTypeLeftMargin = leftMargin + matchTypeButtonSize.x + .15;
-        const matchTypeButtonColor = '#f7c25e';
-        const matchTypeButtonHoverColor = '#deaf57';
-        const selectedColor = '#db9d2a';
-        const selectedBorderColor = '#000000';
-        const matchTypeFontSize = 24;
-        const matchTypes = [...matchTypeToString.keys()];
-        const dimensions: ButtonDimensions[] = [];
-        for (let matchTypeButtonIndex = 0;
-            matchTypeButtonIndex < matchTypes.length;
-            matchTypeButtonIndex++) {
-            const topLeftY = matchTypeTopMargin + matchTypeButtonIndex * matchTypeOffsetY + matchTypeButtonIndex * matchTypeButtonSize.y;
-            const matchType = matchTypes[matchTypeButtonIndex];
-            matchIndexToMatchType.push(matchType);
-            dimensions.push({
-                topLeft: new Point(matchTypeLeftMargin, topLeftY),
-                size: matchTypeButtonSize,
-                text: matchTypeToString.get(matchType)!,
-            });
-        }
-        const style: ButtonStyle = {
+        const headerTopMargin = .28;
+        const buttonOffsetY = .04;
+        const elementSize = new Point(.18, .08);
+        const buttonTopMargin = headerTopMargin + buttonOffsetY + elementSize.y;
+        const fontSize = 24;
+        const headerStyle: TextBoxStyle = {
+            color: '#dddddd',
             fontSize,
-            color: matchTypeButtonColor,
-            hoverColor: matchTypeButtonHoverColor,
-            selectedColor,
-            selectedBorderColor,
+            textColor: '#000000',
+        };
+        const buttonStyle: ButtonStyle = {
+            fontSize,
+            color: '#f7c25e',
+            hoverColor: '#deaf57',
+            selectedColor: '#db9d2a',
+            selectedBorderColor: '#000000',
             textColor: THEME.buttonTextColor,
         };
-        const initialSelectionIndex = 0;
-        const onChangeCallback = (index: number) => {
-            this.selectedMatchType = matchIndexToMatchType[index];
+
+        // Level buttons.
+        const leftMargin = .12;
+        const levelHeader = new TextBox({
+            dimensions: {
+                size: elementSize,
+                text: 'Level',
+                topLeft: new Point(leftMargin, headerTopMargin),
+            },
+            style: headerStyle,
+        });
+        this.uiManager.addElement(levelHeader);
+
+        const levelDimensions: ButtonDimensions[] = [];
+        for (let buttonIndex = 0; buttonIndex < LEVELS.length; buttonIndex++) {
+            const topLeftY = buttonTopMargin + buttonIndex * buttonOffsetY + buttonIndex * elementSize.y;
+            const level = LEVELS[buttonIndex];
+            levelDimensions.push({
+                topLeft: new Point(leftMargin, topLeftY),
+                size: elementSize,
+                text: level.name,
+            });
+        }
+
+        const initialLevelSelectionIndex = 0;
+        const onLevelChangeCallback = (index: number) => {
+            this.selectedLevelIndex = index;
         };
-        onChangeCallback(initialSelectionIndex);
+        onLevelChangeCallback(initialLevelSelectionIndex);
         this.uiManager.addElement(new ButtonGroup({
-            buttons: dimensions,
-            buttonStyle: style,
-            initialSelectionIndex,
-            onChangeCallback,
+            buttons: levelDimensions,
+            buttonStyle,
+            initialSelectionIndex: initialLevelSelectionIndex,
+            onChangeCallback: onLevelChangeCallback,
         }));
 
         // Team size type buttons.
@@ -158,45 +131,110 @@ export class LevelMenu implements GameModeManager {
             new Map([[0, 2], [1, 4]]),
             new Map([[0, 4], [1, 8]]),
         ];
-        const teamSizeButtonSize = new Point(.15, .08);
-        const teamSizeOffsetY = .04;
-        const teamSizeTopMargin = .35;
-        const teamSizeLeftMargin = leftMargin - matchTypeButtonSize.x - .15;
-        const teamSizeButtonColor = '#f7c25e';
-        const teamSizeButtonHoverColor = '#deaf57';
-        const teamSizeSelectedColor = '#db9d2a';
-        const teamSizeSelectedBorderColor = '#000000';
-        const teamSizeFontSize = 24;
+        const teamSizeLeftMargin = .4;
+
+        const teamSizeHeader = new TextBox({
+            dimensions: {
+                size: elementSize,
+                text: 'Team Size',
+                topLeft: new Point(teamSizeLeftMargin, headerTopMargin),
+            },
+            style: headerStyle,
+        });
+        this.uiManager.addElement(teamSizeHeader);
+
         const teamSizeDimensions: ButtonDimensions[] = [];
         for (let teamSizeIndex = 0;
             teamSizeIndex < teamSizeIndexToTeamSizeMap.length;
             teamSizeIndex++) {
-            const topLeftY = teamSizeTopMargin + teamSizeIndex * teamSizeOffsetY + teamSizeIndex * teamSizeButtonSize.y;
+            const topLeftY = buttonTopMargin + teamSizeIndex * buttonOffsetY + teamSizeIndex * elementSize.y;
             teamSizeDimensions.push({
                 topLeft: new Point(teamSizeLeftMargin, topLeftY),
-                size: teamSizeButtonSize,
+                size: elementSize,
                 text: teamSizeIndexToString[teamSizeIndex],
             });
         }
-        const teamSizeStyle: ButtonStyle = {
-            fontSize: teamSizeFontSize,
-            color: teamSizeButtonColor,
-            hoverColor: teamSizeButtonHoverColor,
-            selectedColor: teamSizeSelectedColor,
-            selectedBorderColor: teamSizeSelectedBorderColor,
-            textColor: THEME.buttonTextColor,
-        };
         const initialTeamSizeSelectionIndex = 0;
         const onTeamSizeChangeCallback = (index: number) => {
             this.selectedTeamSizeMap = teamSizeIndexToTeamSizeMap[index];
         };
-        onChangeCallback(initialSelectionIndex);
+        onTeamSizeChangeCallback(initialTeamSizeSelectionIndex);
         this.uiManager.addElement(new ButtonGroup({
             buttons: teamSizeDimensions,
-            buttonStyle: teamSizeStyle,
+            buttonStyle,
             initialSelectionIndex: initialTeamSizeSelectionIndex,
             onChangeCallback: onTeamSizeChangeCallback,
         }));
+
+        // Match type buttons.
+        const matchTypeToString: Map<MatchType, string> = new Map([
+            [MatchType.PLAYER_VS_PLAYER_LOCAL, 'PvP'],
+            [MatchType.PLAYER_VS_AI, 'PvAI'],
+            [MatchType.AI_VS_AI, 'AIvAI'],
+        ]);
+        const matchIndexToMatchType: MatchType[] = [];
+        const matchTypeLeftMargin = teamSizeLeftMargin + elementSize.x + .1;
+
+        const matchTypeHeader = new TextBox({
+            dimensions: {
+                size: elementSize,
+                text: 'Match Type',
+                topLeft: new Point(matchTypeLeftMargin, headerTopMargin),
+            },
+            style: headerStyle,
+        });
+        this.uiManager.addElement(matchTypeHeader);
+
+        const matchTypes = [...matchTypeToString.keys()];
+        const dimensions: ButtonDimensions[] = [];
+        for (let matchTypeButtonIndex = 0;
+            matchTypeButtonIndex < matchTypes.length;
+            matchTypeButtonIndex++) {
+            const topLeftY = buttonTopMargin + matchTypeButtonIndex * buttonOffsetY + matchTypeButtonIndex * elementSize.y;
+            const matchType = matchTypes[matchTypeButtonIndex];
+            matchIndexToMatchType.push(matchType);
+            dimensions.push({
+                topLeft: new Point(matchTypeLeftMargin, topLeftY),
+                size: elementSize,
+                text: matchTypeToString.get(matchType)!,
+            });
+        }
+        const initialSelectionIndex = 0;
+        const onChangeCallback = (index: number) => {
+            this.selectedMatchType = matchIndexToMatchType[index];
+        };
+        onChangeCallback(initialSelectionIndex);
+        this.uiManager.addElement(new ButtonGroup({
+            buttons: dimensions,
+            buttonStyle,
+            initialSelectionIndex,
+            onChangeCallback,
+        }));
+
+        // Start button.
+        const startButton = new Button({
+            dimensions: {
+                size: new Point(.2, .1),
+                text: 'Start',
+                topLeft: new Point(.67, .8),
+            },
+            style: {
+                color: '#66d15a',
+                hoverColor: '#7aed6d',
+                fontSize: 28,
+                textColor: THEME.textColor,
+            },
+            onClick: () => {
+                const settings: GameSettings = {
+                    matchType: this.selectedMatchType,
+                    teamIndexToSquadSize: this.selectedTeamSizeMap,
+                    maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                    numTeams: DEFAULT_GAME_SETTINGS.numTeams,
+                }
+                this.onSelectLevel(this.selectedLevelIndex, settings);
+            }
+        });
+        this.uiManager.addElement(startButton);
     }
 
     private renderTitleText(): void {

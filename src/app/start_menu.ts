@@ -14,7 +14,8 @@ interface ButtonMetadata {
 export class StartMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
-    private readonly onPlayGame: () => void;
+    private readonly onFreePlay: () => void;
+    private readonly onCampaign: () => void;
     private readonly onCreateLevel: () => void;
     private readonly uiManager: UiManager;
 
@@ -22,13 +23,15 @@ export class StartMenu implements GameModeManager {
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         callbacks: {
-            onPlayGame: () => void;
+            onFreePlay: () => void;
+            onCampaign: () => void;
             onCreateLevel: () => void;
         }) {
 
         this.canvas = canvas;
         this.context = context;
-        this.onPlayGame = callbacks.onPlayGame;
+        this.onFreePlay = callbacks.onFreePlay;
+        this.onCampaign = callbacks.onCampaign;
         this.onCreateLevel = callbacks.onCreateLevel;
 
         this.uiManager = new UiManager(context);
@@ -56,15 +59,16 @@ export class StartMenu implements GameModeManager {
     }
 
     private initMenu(): void {
-        const leftMargin = .4;
         const topMargin = .3;
         const buttonOffsetY = .08;
-        const buttonSize = new Point(.2, .1);
+        const buttonSize = new Point(.26, .1);
+        const leftMargin = .5 - buttonSize.x / 2;
         const buttonColor = '#f7c25e';
         const buttonHoverColor = '#fcd281';
         const fontSize = 24;
         const buttonMetadatas: ButtonMetadata[] = [
-            { text: 'Play', callback: this.onPlayGame },
+            { text: 'Free play', callback: this.onFreePlay },
+            { text: 'Campaign mode', callback: this.onCampaign },
             { text: 'Create Level', callback: this.onCreateLevel },
         ];
         for (let buttonIndex = 0; buttonIndex < buttonMetadatas.length; buttonIndex++) {

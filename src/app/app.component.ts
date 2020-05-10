@@ -18,7 +18,8 @@ const HOVERED_TILE_COLOR = '#f7c25e';
 
 enum GameState {
   START_MENU,
-  LEVEL_MENU,
+  FREE_PLAY_MENU,
+  CAMPAIGN_MENU,
   GAME,
   LEVEL_CREATOR,
 }
@@ -68,9 +69,13 @@ export class AppComponent {
       this.canvas,
       this.context,
       {
-        onPlayGame: () => {
+        onFreePlay: () => {
           this.tearDownCurrentGameState();
-          this.initLevelMenu();
+          this.initFreePlayMenu();
+        },
+        onCampaign: () => {
+          this.tearDownCurrentGameState();
+          this.initCampaignMenu();
         },
         onCreateLevel: () => {
           this.tearDownCurrentGameState();
@@ -94,8 +99,13 @@ export class AppComponent {
       });
   }
 
-  private initLevelMenu(): void {
-    this.gameState = GameState.LEVEL_MENU;
+  private initCampaignMenu(): void {
+    this.gameState = GameState.CAMPAIGN_MENU;
+    // TODO
+  }
+
+  private initFreePlayMenu(): void {
+    this.gameState = GameState.FREE_PLAY_MENU;
     this.gameStateManager = new LevelMenu(this.canvas, this.context, {
       onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => {
         this.initGame(levelIndex, gameSettings);
