@@ -1,23 +1,20 @@
 import { Point } from 'src/app/math/point';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
-import { LineSegment } from 'src/app/math/collision_detection';
+import { LineSegment, Ray } from 'src/app/math/collision_detection';
 import { ShotInfo, ProjectileDetailsType } from 'src/app/shot_info';
 import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType, CharacterAbilityType } from 'src/app/character_settings';
 import { AnimationState } from 'src/app/animation_state';
 import { getProjectileTargetsPath, getRayForShot } from 'src/app/target_finder';
-// TODO - shouldn't need to depend on this...
-import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Target } from 'src/app/math/target';
 
 const TWO_PI = Math.PI * 2;
 
 const CHARACTER_CIRCLE_RADIUS = Grid.TILE_SIZE / 4;
 
-interface GameInfo {
-    readonly characters: Character[];
-    readonly obstacles: Obstacle[];
+interface GameDelegate {
+    getCurrentAimPath(params: { ray: Ray; startingTileCoords: Point; fromTeamIndex: number; numRicochets: number; }): Target[];
 }
 
 /** Represents one squad member on a team. */
@@ -41,16 +38,16 @@ export class Character {
     tileCoords: Point;
     characterAbilityTypeToAbilityState: Map<CharacterAbilityType, CharacterAbilityState>;
     animationState: AnimationState;
-    gameInfo: { characters: Character[]; obstacles: Obstacle[] };
+    gameDelegate: GameDelegate;
 
     constructor(params: {
         startCoords: Point;
         teamIndex: number;
         index: number;
         settings: CharacterSettings;
-        gameInfo: GameInfo;
+        gameDelegate: GameDelegate;
     }) {
-        this.gameInfo = params.gameInfo;
+        this.gameDelegate = params.gameDelegate;
         this.tileCoords = params.startCoords;
         this.animationState = {
             movementSpeedMs: Grid.TILE_SIZE * .005,
@@ -291,8 +288,7 @@ export class Character {
     }
 
     // TODO - look into sharing the animation update logic.
-    update(elapsedMs: number, gameInfo: GameInfo): void {
-        this.gameInfo = gameInfo;
+    update(elapsedMs: number): void {
         if (this.isAiming) {
             this.calculateTargetPath();
         }
@@ -345,13 +341,11 @@ export class Character {
     }
 
     private calculateTargetPath(): void {
-        this.aimPath = getProjectileTargetsPath({
+        this.aimPath = this.gameDelegate.getCurrentAimPath({
             ray: getRayForShot(this.getCurrentShotInfo()[0]),
             startingTileCoords: this.tileCoords,
             fromTeamIndex: this.teamIndex,
-            numRicochets: 5,
-            characters: this.gameInfo.characters,
-            obstacles: this.gameInfo.obstacles,
+            numRicochets: this.settings.gun.projectileDetails.numRicochets,
         });
     }
 

@@ -9,10 +9,17 @@ Refactoring/Cleanup
 MVP features
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
-    - Can quit/reset upon game over.
-    - Redo level selection ui
-    - Campaign mode?
-        - unlock one at a time, AI has bigger squad
+    - back buttons on free play/campaign.
+
+- Rundown:
+    - better char class & action selection interface
+    - fog of war
+        - move game info off character 
+        - use gameobject interface for rendering, get tile coords first
+    - spawners
+    - preset ai character type
+        - select char class action ?
+    - more than 9 chars ?
 
 AI improvements:
     - Use heals/grenades.

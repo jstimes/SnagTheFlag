@@ -59,6 +59,7 @@ export interface ParticleSystemParams {
  */
 export class ParticleSystem {
 
+    tileCoords: Point;
     private readonly particles: Particle[];
 
     /** True while there are still particles floating around. */
@@ -72,6 +73,7 @@ export class ParticleSystem {
 
         // Make the particles. All start at some position, but have different direction.
         this.isAlive = true;
+        this.tileCoords = Grid.getTileFromCanvasCoords(params.startPositionCanvas);
 
         const deltaTheta = TWO_PI / params.particleCount;
         for (let i = 0; i < params.particleCount; i++) {

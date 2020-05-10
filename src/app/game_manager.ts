@@ -11,8 +11,8 @@ import { Action, ActionType, throwBadAction, HealAction, EndCharacterTurnAction,
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES, CharacterAbilityType } from 'src/app/character_settings';
 import { Flag } from 'src/app/game_objects/flag';
 import { Projectile } from 'src/app/game_objects/projectile';
-import { Hud, TextType, Duration } from 'src/app/game_objects/hud';
 import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/game_objects/particle_system';
+import { Hud, TextType, Duration } from 'src/app/hud';
 import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Character } from 'src/app/game_objects/character';
 import { Ai } from 'src/app/ai';
@@ -109,11 +109,11 @@ export class GameManager implements GameModeManager {
         this.projectiles = this.projectiles
             .filter((projectile) => !projectile.isDead || !projectile.isTrailGone());
         for (const character of this.gameState.getAliveCharacters()) {
-            character.update(elapsedMs, this.gameState.getGameInfo());
+            character.update(elapsedMs);
         }
         this.hud.update(elapsedMs);
 
-        if (this.isAnimating() || this.isGameOver) {
+        if (this.isAnimating()) {
             return;
         }
         if (this.isAiTurn()) {
@@ -308,7 +308,20 @@ export class GameManager implements GameModeManager {
                         teamIndex: this.gameState.currentTeamIndex,
                         index: squadIndex,
                         settings: this.selectedCharacterSettings,
-                        gameInfo: this.gameState.getGameInfo(),
+                        gameDelegate: {
+                            getCurrentAimPath: (params: {
+                                ray: Ray;
+                                startingTileCoords: Point;
+                                fromTeamIndex: number;
+                                numRicochets: number;
+                            }) => {
+                                return getProjectileTargetsPath({
+                                    ...params,
+                                    characters: this.gameState.getAliveCharacters(),
+                                    obstacles: this.gameState.obstacles
+                                });
+                            }
+                        },
                     }));
                     const teamMaxSquadSize = this.gameSettings.teamIndexToSquadSize
                         .get(this.gameState.currentTeamIndex)!;

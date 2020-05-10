@@ -20,6 +20,7 @@ interface Trail {
 }
 
 export class Projectile {
+    tileCoords: Point;
 
     private readonly context: CanvasRenderingContext2D;
     readonly projectileDetails: ProjectileDetails;
@@ -67,6 +68,7 @@ export class Projectile {
         }
         this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
             .add(positionUpdate);
+        this.tileCoords = Grid.getTileFromCanvasCoords(this.animationState.currentCenterCanvas);
         const totalDistanceTravelled = currentTarget.ray.startPt
             .distanceTo(this.animationState.currentCenterCanvas);
         if (totalDistanceTravelled < currentTarget.maxDistance) {
