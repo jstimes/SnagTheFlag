@@ -8,8 +8,10 @@ import { StartMenu } from 'src/app/start_menu';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { LevelCreator } from 'src/app/level_creator';
 import { GameSettings } from 'src/app/game_settings';
-import { LevelMenu } from 'src/app/level_menu';
+import { FreePlayMenu } from 'src/app/free_play_menu';
+import { CampaignMenu } from 'src/app/campaign_menu';
 import { DEFAULT_GAME_SETTINGS } from './game_settings';
+import { CAMPAIGN_LEVELS } from './campaign_level';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -84,7 +86,7 @@ export class AppComponent {
       });
   }
 
-  private initGame(levelIndex: number, gameSettings: GameSettings): void {
+  private initGame(levelIndex: number, gameSettings: GameSettings, onExitGameCallback: (winningTeamIndex: number) => void): void {
     this.gameState = GameState.GAME;
     this.gameStateManager = new GameManager(
       this.canvas,
@@ -92,23 +94,35 @@ export class AppComponent {
       {
         gameSettings,
         levelIndex,
-        onExitGameCallback: () => {
-          this.tearDownCurrentGameState();
-          this.initStartMenu();
-        },
+        onExitGameCallback,
       });
-  }
-
-  private initCampaignMenu(): void {
-    this.gameState = GameState.CAMPAIGN_MENU;
-    // TODO
   }
 
   private initFreePlayMenu(): void {
     this.gameState = GameState.FREE_PLAY_MENU;
-    this.gameStateManager = new LevelMenu(this.canvas, this.context, {
+    this.gameStateManager = new FreePlayMenu(this.canvas, this.context, {
       onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => {
-        this.initGame(levelIndex, gameSettings);
+        this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+          this.tearDownCurrentGameState();
+          this.initFreePlayMenu();
+        });
+      },
+    });
+  }
+
+  private initCampaignMenu(): void {
+    this.gameState = GameState.CAMPAIGN_MENU;
+    this.gameStateManager = new CampaignMenu(this.canvas, this.context, {
+      onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => {
+        this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+          if (winningTeamIndex === 0) {
+            if (campaignLevelIndex < CAMPAIGN_LEVELS.length + 1) {
+              CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
+            }
+          }
+          this.tearDownCurrentGameState();
+          this.initCampaignMenu();
+        });
       },
     });
   }

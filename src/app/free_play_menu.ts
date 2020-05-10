@@ -15,7 +15,7 @@ interface ButtonMetadata {
     callback: () => void;
 }
 
-export class LevelMenu implements GameModeManager {
+export class FreePlayMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;

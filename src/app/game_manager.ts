@@ -27,6 +27,8 @@ interface ClickHandler {
     onClick: (tile: Point) => void;
 }
 
+const QUIT_KEY = Key.Q;
+const RESTART_KEY = Key.R;
 const MOVE_KEY = Key.M;
 /** Used to start and cancel shooting, but doesn't fire the shot.  */
 const TOGGLE_AIM_KEY = Key.A;
@@ -49,9 +51,10 @@ export class GameManager implements GameModeManager {
     private readonly context: CanvasRenderingContext2D;
     private readonly levelIndex: number;
     private readonly gameSettings: GameSettings;
-    private readonly onExitGameCallback: () => void;
+    private readonly onExitGameCallback: (winningTeamIndex: number) => void;
 
-    private isPaused: boolean;
+    private isGameOver: boolean;
+    private winningTeamIndex: number;
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
     private controlMap: ControlMap;
@@ -70,7 +73,7 @@ export class GameManager implements GameModeManager {
         params: {
             gameSettings: GameSettings;
             levelIndex: number;
-            onExitGameCallback: () => void;
+            onExitGameCallback: (winningTeamIndex: number) => void;
         }) {
 
         this.canvas = canvas;
@@ -89,7 +92,8 @@ export class GameManager implements GameModeManager {
     }
 
     update(elapsedMs: number): void {
-        if (this.isPaused) {
+        if (this.isGameOver) {
+            this.controlMap.check();
             return;
         }
         for (const particleSystem of this.particleSystems) {
@@ -109,7 +113,7 @@ export class GameManager implements GameModeManager {
         }
         this.hud.update(elapsedMs);
 
-        if (this.isAnimating() || this.isPaused) {
+        if (this.isAnimating() || this.isGameOver) {
             return;
         }
         if (this.isAiTurn()) {
@@ -182,10 +186,10 @@ export class GameManager implements GameModeManager {
             });
             projectile.setNewTargets(newTargets);
         }
-        if (this.checkGameOver()) {
-            return;
+        this.checkGameOver();
+        if (!this.isGameOver) {
+            this.checkCharacterTurnOver();
         }
-        this.checkCharacterTurnOver();
     }
 
     render(): void {
@@ -333,27 +337,20 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    private checkGameOver(): boolean {
+    private checkGameOver(): void {
         let winningTeam: string | null = null;
+        let winningTeamIndex = -1;
         if (this.gameState.getEnemyCharacters().length === 0) {
+            winningTeamIndex = this.gameState.currentTeamIndex;
             winningTeam = this.gameState.getActiveTeamName();
         }
         else if (this.gameState.getActiveSquad().length === 0) {
             winningTeam = this.gameState.getEnemyTeamName();
+            winningTeamIndex = (1 + this.gameState.currentTeamIndex) % this.gameSettings.numTeams;
         }
-        if (winningTeam == null) {
-            return false
+        if (winningTeam != null) {
+            this.setGameOver(winningTeamIndex, `${winningTeam} has elimanted all oponents.`);
         }
-        this.isPaused = true;
-        this.hud.setText(
-            `Game over`,
-            TextType.TITLE,
-            Duration.LONG);
-        this.hud.setText(
-            `${winningTeam} team has eliminated all oponents.`,
-            TextType.SUBTITLE,
-            Duration.LONG);
-        return true;
     }
 
     private checkCharacterTurnOver(): void {
@@ -470,15 +467,9 @@ export class GameManager implements GameModeManager {
             });
             enemyFlag.tileCoords = toTile;
             if (enemyFlag.tileCoords.equals(this.gameState.getActiveTeamFlag().tileCoords)) {
-                this.hud.setText(
-                    `Game over`,
-                    TextType.TITLE,
-                    Duration.LONG);
-                this.hud.setText(
-                    `${this.gameState.getActiveTeamName()} team has snagged the flag.`,
-                    TextType.SUBTITLE,
-                    Duration.LONG);
-                this.isPaused = true;
+                this.setGameOver(
+                    this.gameState.currentTeamIndex,
+                    `${this.gameState.getActiveTeamName()} team has snagged the flag.`);
             }
         } else if (enemyFlag.tileCoords.equals(toTile)) {
             this.hud.setText(
@@ -486,6 +477,26 @@ export class GameManager implements GameModeManager {
                 TextType.SUBTITLE,
                 Duration.SHORT);
         }
+    }
+    private setGameOver(winningTeamIndex: number, subtitle: string): void {
+        this.controlMap.clear();
+        this.addDefaultControls();
+        this.isGameOver = true;
+        this.winningTeamIndex = winningTeamIndex;
+        this.hud.setText(
+            `Game over`,
+            TextType.TITLE,
+            Duration.LONG);
+        this.hud.setText(
+            `${subtitle}.`,
+            TextType.SUBTITLE,
+            Duration.LONG);
+        const quitKeyString = CONTROLS.getStringForKey(QUIT_KEY);
+        const restartKey = CONTROLS.getStringForKey(RESTART_KEY);
+        this.hud.setText(
+            `Press ${quitKeyString} to quit, ${restartKey} to restart`,
+            TextType.TOAST,
+            Duration.LONG);
     }
 
     private fireShot(shotInfo: ShotInfo): void {
@@ -895,7 +906,8 @@ export class GameManager implements GameModeManager {
         this.destroy();
         this.gameState = new GameState();
         this.loadLevel();
-        this.isPaused = false;
+        this.isGameOver = false;
+        this.winningTeamIndex = -1;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.gameState.characters = [];
         this.projectiles = [];
@@ -941,14 +953,14 @@ export class GameManager implements GameModeManager {
 
     private addDefaultControls(): void {
         this.controlMap.add({
-            key: Key.Q,
+            key: QUIT_KEY,
             name: 'Quit',
-            func: this.onExitGameCallback,
+            func: () => { this.onExitGameCallback(this.winningTeamIndex); },
             eventType: EventType.KeyPress,
         });
         this.controlMap.add({
-            key: Key.R,
-            name: 'Reset',
+            key: RESTART_KEY,
+            name: 'Restart',
             func: this.resetGame,
             eventType: EventType.KeyPress,
         });
