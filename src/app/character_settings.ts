@@ -2,6 +2,7 @@ import { ActionType } from 'src/app/actions';
 import { SplashDamage, ProjectileDetailsType, ProjectileShapeType, Gun } from 'src/app/shot_info';
 import { Grid } from 'src/app/grid';
 import { THEME } from './theme';
+import { Point } from './math/point';
 
 /** Abilities characters can perform in addition to moving and shooting. */
 export interface BaseCharacterAbility {
@@ -62,6 +63,10 @@ export interface CharacterSettings {
     readonly gun: Gun;
 }
 
+
+const DEFAULT_BULLET_COLOR = '#fff86e';
+const DEFAULT_GRENADE_COLOR = '#176107';
+
 const LIGHT_HEAL: HealAbility = {
     abilityType: CharacterAbilityType.HEAL,
     healAmount: 3,
@@ -93,7 +98,7 @@ const LIGHT_GRENADE: ThrowGrenadeAbility = {
         damageManhattanDistanceRadius: 1,
         tilesAwayDamageReduction: .6,
         projectileSpeed: Grid.TILE_SIZE / 160,
-        color: THEME.grenadeColor,
+        color: DEFAULT_GRENADE_COLOR,
         shape: {
             type: ProjectileShapeType.CIRCLE,
             radius: Grid.TILE_SIZE / 6,
@@ -113,7 +118,7 @@ const MEDIUM_GRENADE: ThrowGrenadeAbility = {
         damageManhattanDistanceRadius: 3,
         tilesAwayDamageReduction: .5,
         projectileSpeed: Grid.TILE_SIZE / 160,
-        color: THEME.grenadeColor,
+        color: DEFAULT_GRENADE_COLOR,
         shape: {
             type: ProjectileShapeType.CIRCLE,
             radius: Grid.TILE_SIZE / 6,
@@ -132,10 +137,10 @@ const SHOTGUN: Gun = {
         numRicochets: 1,
         damage: 2,
         projectileSpeed: Grid.TILE_SIZE / 80,
-        color: THEME.bulletColor,
+        color: DEFAULT_BULLET_COLOR,
         shape: {
             type: ProjectileShapeType.CIRCLE,
-            radius: Grid.TILE_SIZE / 12,
+            radius: Grid.TILE_SIZE / 16,
         },
     },
     aimIndicatorLength: .75 * Grid.TILE_SIZE,
@@ -151,7 +156,7 @@ const ASSAULT_RIFLE: Gun = {
         numRicochets: 2,
         damage: 6,
         projectileSpeed: Grid.TILE_SIZE / 80,
-        color: THEME.bulletColor,
+        color: DEFAULT_BULLET_COLOR,
         shape: {
             type: ProjectileShapeType.CIRCLE,
             radius: Grid.TILE_SIZE / 12,
@@ -165,11 +170,11 @@ const SNIPER_RIFLE: Gun = {
         type: ProjectileDetailsType.BULLET,
         numRicochets: 5,
         damage: 8,
-        projectileSpeed: Grid.TILE_SIZE / 80,
-        color: THEME.bulletColor,
+        projectileSpeed: Grid.TILE_SIZE / 60,
+        color: DEFAULT_BULLET_COLOR,
         shape: {
-            type: ProjectileShapeType.CIRCLE,
-            radius: Grid.TILE_SIZE / 12,
+            type: ProjectileShapeType.RECTANGLE,
+            size: new Point(Grid.TILE_SIZE / 4, Grid.TILE_SIZE / 8),
         },
     },
     aimIndicatorLength: 120 * Grid.TILE_SIZE,
@@ -183,10 +188,10 @@ const MISSILE_LAUNCHER: Gun = {
         damageManhattanDistanceRadius: 2,
         tilesAwayDamageReduction: .6,
         projectileSpeed: Grid.TILE_SIZE / 160,
-        color: THEME.grenadeColor,
+        color: '#f2ebeb',
         shape: {
-            type: ProjectileShapeType.CIRCLE,
-            radius: Grid.TILE_SIZE / 6,
+            type: ProjectileShapeType.RECTANGLE,
+            size: new Point(Grid.TILE_SIZE / 4, Grid.TILE_SIZE / 8),
         },
     },
     aimIndicatorLength: .75 * Grid.TILE_SIZE,

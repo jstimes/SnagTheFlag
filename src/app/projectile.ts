@@ -124,10 +124,16 @@ export class Projectile {
 
     render(): void {
         const context = this.context;
-        const radius = this.projectileDetails.shape.type === ProjectileShapeType.CIRCLE ? this.projectileDetails.shape.radius : 0;
+        const shape = this.projectileDetails.shape;
+        let projecileLength;
+        if (shape.type === ProjectileShapeType.CIRCLE) {
+            projecileLength = shape.radius;
+        } else {
+            projecileLength = shape.size.x;
+        }
 
         for (const trail of this.trails) {
-            if (trail.distance < radius || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
+            if (trail.distance < projecileLength || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
                 continue;
             }
             const bacwardsDirection = trail.ray.direction.multiplyScaler(-1);
@@ -167,9 +173,36 @@ export class Projectile {
 
         const currentPointCanvas = this.animationState.currentCenterCanvas;
         context.fillStyle = this.projectileDetails.color;
-        context.beginPath();
-        context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
-        context.closePath();
-        context.fill();
+        switch (shape.type) {
+            case ProjectileShapeType.CIRCLE:
+                const radius = shape.radius;
+                context.beginPath();
+                context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
+                context.closePath();
+                context.fill();
+                break;
+            case ProjectileShapeType.RECTANGLE:
+                const size = shape.size;
+                const direction = this.getCurrentTarget().ray.direction;
+                const directionNormal = direction.getNormalVectorClockwise();
+                const leftOffset = direction.multiplyScaler(-size.x / 2);
+                const rightOffset = direction.multiplyScaler(size.x / 2);
+                const topOffset = directionNormal.multiplyScaler(-size.y / 2);
+                const bottomOffset = directionNormal.multiplyScaler(size.y / 2);
+                const topLeft = currentPointCanvas.add(leftOffset).add(topOffset);
+                const topRight = currentPointCanvas.add(rightOffset).add(topOffset);
+                const bottomRight = currentPointCanvas.add(rightOffset).add(bottomOffset);
+                const bottomLeft = currentPointCanvas.add(leftOffset).add(bottomOffset);
+                context.beginPath();
+                context.moveTo(topLeft.x, topLeft.y);
+                context.lineTo(topRight.x, topRight.y);
+                context.lineTo(bottomRight.x, bottomRight.y);
+                context.lineTo(bottomLeft.x, bottomLeft.y);
+                context.closePath();
+                context.fill();
+                break;
+            default:
+                throw new Error("Unknown projectile shape");
+        }
     }
 }
