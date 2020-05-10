@@ -87,6 +87,17 @@ export class GameState {
         return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
     }
 
+    enemyHasFlag(): boolean {
+        const teamFlagCoords = this.getActiveTeamFlag().tileCoords;
+        return this.getEnemyCharacters().find((character) => character.tileCoords.equals(teamFlagCoords)) != null;
+    }
+
+
+    teamHasFlag(): boolean {
+        const enemyFlagCoords = this.getEnemyFlag().tileCoords;
+        return this.getActiveSquad().find((character) => character.tileCoords.equals(enemyFlagCoords)) != null;
+    }
+
     getPath({ from, to }: { from: Point; to: Point }): Point[] {
         const isObstacleFree = (tile: Point): boolean => {
             return !this.tileHasObstacle(tile);

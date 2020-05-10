@@ -53,6 +53,7 @@ export class GameManager implements GameModeManager {
     private readonly onExitGameCallback: () => void;
 
     private gameSettings: GameSettings;
+    private isPaused: boolean;
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
     private controlMap: ControlMap;
@@ -90,6 +91,9 @@ export class GameManager implements GameModeManager {
     }
 
     update(elapsedMs: number): void {
+        if (this.isPaused) {
+            return;
+        }
         for (const particleSystem of this.particleSystems) {
             particleSystem.update(elapsedMs);
         }
@@ -281,15 +285,7 @@ export class GameManager implements GameModeManager {
                     }
                     this.gameState.selectableTiles = [];
                     if (this.gameState.selectedCharacterState === SelectedCharacterState.MOVING) {
-                        const character = this.gameState.selectedCharacter!;
-                        const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(action.tile);
-                        if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
-                            throw new Error(`Invalid character movement location (too far): ` +
-                                `start: ${character.tileCoords.toString()}, end: ${action.tile.toString()}`);
-                        }
-                        const tilePath = this.gameState.getPath({ from: character.tileCoords, to: action.tile });
-                        const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
-                        character.moveTo(action.tile, targets);
+                        this.handleCharacterMovement(action.tile);
                         this.checkCharacterTurnOver();
                     } else if (this.gameState.selectedCharacterState === SelectedCharacterState.THROWING_GRENADE) {
                         const grenadeDetails = {
@@ -427,6 +423,41 @@ export class GameManager implements GameModeManager {
         return this.gameState;
     }
 
+    private handleCharacterMovement(toTile: Point): void {
+        const character = this.gameState.selectedCharacter!;
+        const manhattandDistanceAway = character.tileCoords.manhattanDistanceTo(toTile);
+        if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
+            throw new Error(`Invalid character movement location (too far): ` +
+                `start: ${character.tileCoords.toString()}, end: ${toTile.toString()}`);
+        }
+        const tilePath = this.gameState.getPath({ from: character.tileCoords, to: toTile });
+        const targets: Target[] = mapTilePathToTargetsPath(character.tileCoords, tilePath);
+        const enemyFlag = this.gameState.getEnemyFlag();
+        const characterHasFlag = character.tileCoords.equals(enemyFlag.tileCoords);
+        character.moveTo(toTile, targets);
+        if (characterHasFlag) {
+            enemyFlag.setIsTaken(() => {
+                return character.animationState.currentCenterCanvas.subtract(Grid.HALF_TILE);
+            });
+            enemyFlag.tileCoords = toTile;
+            if (enemyFlag.tileCoords.equals(this.gameState.getActiveTeamFlag().tileCoords)) {
+                this.hud.setText(
+                    `Game over`,
+                    TextType.TITLE,
+                    Duration.LONG);
+                this.hud.setText(
+                    `${this.gameState.getActiveTeamName()} team has snagged the flag.`,
+                    TextType.SUBTITLE,
+                    Duration.LONG);
+                this.isPaused = true;
+            }
+        } else if (enemyFlag.tileCoords.equals(toTile)) {
+            this.hud.setText(
+                `${this.gameState.getActiveTeamName()} team has taken the flag.`,
+                TextType.SUBTITLE,
+                Duration.SHORT);
+        }
+    }
     private fireShot(shotInfo: ShotInfo): void {
         const ray = getRayForShot(shotInfo);
         const numRicochets = shotInfo.projectileDetails.type === ProjectileDetailsType.BULLET
@@ -554,7 +585,7 @@ export class GameManager implements GameModeManager {
         const maxMoves = this.gameState.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
             return !this.isTileOccupied(tile)
-                && (!tile.equals(ownFlagCoords) || this.gameState.selectedCharacter!.hasFlag);
+                && (!tile.equals(ownFlagCoords) || this.gameState.selectedCharacter!.tileCoords.equals(this.gameState.getEnemyFlag().tileCoords));
         };
         const canGoThrough = (tile: Point): boolean => {
             // Characters can go through tiles occupied by squad members.
@@ -835,6 +866,7 @@ export class GameManager implements GameModeManager {
         this.destroy();
         this.gameState = new GameState();
         this.loadLevel();
+        this.isPaused = false;
         this.gameSettings = DEFAULT_GAME_SETTINGS;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.gameState.characters = [];

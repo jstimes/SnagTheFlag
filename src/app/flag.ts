@@ -7,9 +7,22 @@ export class Flag {
     readonly teamIndex: number;
     tileCoords: Point;
 
+    private isTaken: boolean;
+    private getTileTopLeft?: () => Point;
+
     constructor({ tileCoords, teamIndex }: { tileCoords: Point; teamIndex: number }) {
         this.tileCoords = tileCoords;
         this.teamIndex = teamIndex;
+    }
+
+    setIsTaken(getTileTopLeft: () => Point): void {
+        this.isTaken = true;
+        this.getTileTopLeft = getTileTopLeft;
+    }
+
+    setDropped(): void {
+        this.isTaken = false;
+        this.getTileTopLeft = undefined;
     }
 
     update(elapsedMs: number) {
@@ -17,7 +30,11 @@ export class Flag {
     }
 
     render(context: CanvasRenderingContext2D): void {
-        const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(this.tileCoords);
+        let tileCanvasTopLeft = Grid.getCanvasFromTileCoords(this.tileCoords);
+        if (this.isTaken) {
+            tileCanvasTopLeft = this.getTileTopLeft!();
+        }
+
         // Flag pole.
         const topMargin = Grid.TILE_SIZE * .2;
         const leftMargin = Grid.TILE_SIZE * .1;

@@ -36,7 +36,6 @@ export class Character {
     private aimPath: Target[];
 
     // Game-state.
-    hasFlag: boolean;
     health: number;
     tileCoords: Point;
     characterAbilityTypeToAbilityState: Map<CharacterAbilityType, CharacterAbilityState>;
@@ -64,7 +63,6 @@ export class Character {
         this.settings = params.settings;
 
         this.health = this.settings.maxHealth;
-        this.hasFlag = false;
         this.hasMoved = false;
         this.characterAbilityTypeToAbilityState = new Map();
         for (const extraAction of this.settings.extraActions) {
@@ -283,8 +281,8 @@ export class Character {
             throw new Error(`Already moved.`);
         }
         this.animationState.currentCenterCanvas = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
-        this.tileCoords = tileCoords;
         this.animationState.currentTarget = targetsPath.shift()!;
+        this.tileCoords = tileCoords;
         this.animationState.remainingTargets = targetsPath;
         this.animationState.isAnimating = true;
         this.hasMoved = true;
@@ -313,8 +311,7 @@ export class Character {
             return;
         }
         // Ensure end state is centered in destination tile.
-        this.animationState.currentCenterCanvas =
-            this.animationState.currentTarget!.canvasCoords;
+        this.animationState.currentCenterCanvas = currentTarget.canvasCoords;
         if (this.animationState.remainingTargets.length === 0) {
             this.animationState.isAnimating = false;
             return;

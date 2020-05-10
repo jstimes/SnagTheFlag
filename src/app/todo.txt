@@ -11,13 +11,12 @@ MVP features
     - game over logic.
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
-    - Distinct graphic for missile vs grenade.
-        - shotgun vs normal bullet?
     - level selector - unlock one at a time.
 
 AI improvements:
     - Chase flag carrier
     - Use heals/grenades.
+    - Aim random +X%
 
 Things to experiment with:
 - destructible obstacles
