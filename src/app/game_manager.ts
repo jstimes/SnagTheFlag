@@ -71,6 +71,20 @@ const getGrenadeParticleSystemParams = (startPositionCanvas: Point): ParticleSys
     };
 };
 
+const getHealParticleSystemParams = (startPositionCanvas: Point): ParticleSystemParams => {
+    return {
+        startPositionCanvas,
+        particleCount: 12,
+        colorA: '#1bd133',
+        colorB: '#07ad1d',
+        shape: ParticleShape.PLUS,
+        minParticleSpeed: .001 * Grid.TILE_SIZE,
+        maxParticleSpeed: .002 * Grid.TILE_SIZE,
+        minLifetimeMs: 600,
+        maxLifetimeMs: 800,
+    }
+}
+
 export class GameManager implements GameModeManager {
 
     private readonly canvas: HTMLCanvasElement;
@@ -232,11 +246,6 @@ export class GameManager implements GameModeManager {
                 context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
             }
         }
-        // Render PS first to be covered by obstacle for now...
-        for (const particleSystem of this.particleSystems) {
-            // TODO - be consistent with giving context
-            particleSystem.render(this.context);
-        }
         for (const obstacle of this.gameState.obstacles) {
             obstacle.render(context);
         }
@@ -254,6 +263,10 @@ export class GameManager implements GameModeManager {
         }
         for (const projectile of this.projectiles) {
             projectile.render();
+        }
+        for (const particleSystem of this.particleSystems) {
+            // TODO - be consistent with giving context
+            particleSystem.render(this.context);
         }
         this.hud.render();
     }
@@ -283,6 +296,8 @@ export class GameManager implements GameModeManager {
                 }
                 this.gameState.selectedCharacter.regenHealth(action.healAmount);
                 this.gameState.selectedCharacter.useAbility(CharacterAbilityType.HEAL);
+                const characterCenter = Grid.getCanvasFromTileCoords(this.gameState.selectedCharacter.tileCoords).add(Grid.HALF_TILE);
+                this.particleSystems.push(new ParticleSystem(getHealParticleSystemParams(characterCenter)));
                 this.checkCharacterTurnOver();
                 break;
             case ActionType.END_CHARACTER_TURN:

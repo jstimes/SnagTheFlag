@@ -7,6 +7,7 @@ export enum ParticleShape {
     CIRCLE = 'Circle',
     ELLIPSE = 'Ellipse',
     LINE = 'Line',
+    PLUS = 'Plus',
 }
 
 interface Particle {
@@ -169,6 +170,15 @@ export class ParticleSystem {
                         TWO_PI);
                     context.fill();
                     context.restore();
+                    break;
+                case ParticleShape.PLUS:
+                    context.fillStyle = particle.color;
+                    const radius = particle.radius;
+                    const halfThickness = radius / 4;
+                    const horizontalStart = particle.canvasPosition.subtract(new Point(radius, halfThickness));
+                    context.fillRect(horizontalStart.x, horizontalStart.y, radius * 2, halfThickness * 2);
+                    const verticalStart = particle.canvasPosition.subtract(new Point(halfThickness, radius));
+                    context.fillRect(verticalStart.x, verticalStart.y, halfThickness * 2, radius * 2);
                     break;
             }
 

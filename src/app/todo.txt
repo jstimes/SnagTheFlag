@@ -1,32 +1,24 @@
-GO!
+Refactoring/Cleanup
     - action type to available action types, control abstractions
     - serialize game state, keep track
     - use gameState only?
         - use animations on top of gameState?
-    - AI - getActionSEQUENCE
+    - Make every render size in terms of Grid.TILE_SIZE
+        so it's easy to resize.
 
-MVP
-    - wait for particle to hit before moving on, character movement
-        - Freeze controls?
+MVP features
     - flag capturing
     - game over logic.
+    - wait for particle to hit before moving on, character movement
+        - Freeze controls?
     - ParticleSystem for heal.
     - Distinct graphic for missile vs grenade.
         - shotgun vs normal bullet?
     - level selector - unlock one at a time.
 
-- AI
-    - Freeze projectiles before animations
-    - Need flag logic
-    - Projectile target prediction (figure ricochets ahead of time).
-    - Start using GameState struct.
-    - Make select character, character state into Actions?
-
-
-Make every render size in terms of Grid.TILE_SIZE
-so it's easy to resize.
-
-Use indices instead of isBlueTeam - allows for >2 teams in the future.
+AI improvements:
+    - Chase flag carrier
+    - Use heals/grenades.
 
 Things to experiment with:
 - destructible obstacles
@@ -36,6 +28,7 @@ Things to experiment with:
 - Teleport pads
 - classic explosive barrels
 - engineers that can turn on turrets
+    - or secure new spawners.
 
 Level creation:
 - Symmetry option (horizontally, vertically, diagonally)
