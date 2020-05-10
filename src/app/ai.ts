@@ -15,6 +15,9 @@ type ActionSequenceItem = (gameState: GameState) => Action;
 
 const POST_ANIMATION_DELAY = 500;
 
+const MAX_ANGLE_RANDOMIZATION = Math.PI / 32;
+const IS_RANDOMIZING_SHOTS = false;
+
 export class Ai {
 
     readonly teamIndex: number;
@@ -64,8 +67,8 @@ export class Ai {
             const characterCenter = getTileCenterCanvas(selectedCharacter.tileCoords);
             const possibleShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
             if (possibleShots.length > 0) {
-                // TODO - pick best.
-                return this.getShootSequence(possibleShots[0]);
+                return this.getShootSequence(
+                    this.getBestShot(selectedCharacter.tileCoords, gameState, possibleShots));
             }
         }
         const endTurn = (gameState) => {
@@ -97,10 +100,9 @@ export class Ai {
 
     private getHasntMovedNorShot(character: Character, gameState: GameState): ActionSequenceItem[] {
         const currentCharacterCenterCanvas = getTileCenterCanvas(character.tileCoords);
-        const potentialShots = this.getEnemyTargetsInDirectSight(currentCharacterCenterCanvas, gameState);
-        if (potentialShots.length > 0) {
-            // TODO - pick best.
-            const shoot = this.getShootSequence(potentialShots[0]);
+        const possibleShots = this.getEnemyTargetsInDirectSight(currentCharacterCenterCanvas, gameState);
+        if (possibleShots.length > 0) {
+            const shoot = this.getShootSequence(this.getBestShot(character.tileCoords, gameState, possibleShots));
             const targetTile = gameState.enemyHasFlag()
                 ? gameState.getActiveTeamFlag().tileCoords
                 : gameState.getEnemyFlag().tileCoords;
@@ -187,6 +189,37 @@ export class Ai {
         return bestTile.tile;
     }
 
+    private getBestShot(fromTile: Point, gameState: GameState, shots: ShotDetails[]): ShotDetails {
+        // Best is flag carrier. 
+        for (const shot of shots) {
+            if (shot.target.tile.equals(gameState.getActiveTeamFlag().tileCoords)) {
+                return shot;
+            }
+        }
+
+        // Then pick weakest, tie break by distance.
+        const enemyCharacters = gameState.getEnemyCharacters();
+        let best: { shot: ShotDetails, targetHealth: number, distance: number } | null = null;
+        for (const shot of shots) {
+            const targetCharacter = enemyCharacters
+                .find((character) => character.tileCoords.equals(shot.target.tile));
+            if (targetCharacter == null) {
+                throw new Error(`Expected a character at shot: ${JSON.stringify(shot)}`);
+            }
+            const targetHealth = targetCharacter.health;
+            const distance = targetCharacter.tileCoords.manhattanDistanceTo(fromTile);
+            if ((best == null)
+                || (targetHealth < best.targetHealth)
+                || (targetHealth === best.targetHealth && distance < best.distance)) {
+                best = { shot, distance, targetHealth };
+            }
+        }
+        if (best == null) {
+            throw new Error(`Expected to find best shot in getBestShot`);
+        }
+        return best.shot;
+    }
+
     private getShootSequence(shotDetails: ShotDetails): ActionSequenceItem[] {
         const startAiming = (gameState) => {
             const startAimingAction: SelectCharacterStateAction = {
@@ -196,9 +229,13 @@ export class Ai {
             return startAimingAction;
         };
         const thenAim = (gameState) => {
+            let aim = shotDetails.aimAngleClockwiseRadians;
+            if (IS_RANDOMIZING_SHOTS) {
+                aim = aim + Math.random() * MAX_ANGLE_RANDOMIZATION - MAX_ANGLE_RANDOMIZATION / 2;
+            }
             const takeAimAction: AimAction = {
                 type: ActionType.AIM,
-                aimAngleClockwiseRadians: shotDetails.aimAngleClockwiseRadians,
+                aimAngleClockwiseRadians: aim,
             };
             return takeAimAction;
         };
