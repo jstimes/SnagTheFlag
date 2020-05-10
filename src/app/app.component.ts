@@ -1,17 +1,14 @@
 import { Component } from '@angular/core';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
-import { Grid } from 'src/app/grid';
-import { Point } from 'src/app/math/point';
 import { CONTROLS } from 'src/app/controls';
-import { GameManager } from 'src/app/game_manager';
-import { StartMenu } from 'src/app/start_menu';
 import { GameModeManager } from 'src/app/game_mode_manager';
+import { GameManager } from 'src/app/game_manager';
 import { LevelCreator } from 'src/app/level_creator';
 import { GameSettings } from 'src/app/game_settings';
-import { FreePlayMenu } from 'src/app/free_play_menu';
-import { CampaignMenu } from 'src/app/campaign_menu';
-import { DEFAULT_GAME_SETTINGS } from './game_settings';
-import { CAMPAIGN_LEVELS } from './campaign_level';
+import { CAMPAIGN_LEVELS } from 'src/app/campaign_level';
+import { FreePlayMenu } from 'src/app/menus/free_play_menu';
+import { CampaignMenu } from 'src/app/menus/campaign_menu';
+import { StartMenu } from 'src/app/menus/start_menu';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -29,7 +26,7 @@ enum GameState {
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: [],
 })
 export class AppComponent {
 

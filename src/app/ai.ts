@@ -1,7 +1,7 @@
 import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction, AimAction } from 'src/app/actions';
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
-import { Character } from 'src/app/character';
+import { Character } from 'src/app/game_objects/character';
 import { Grid, pathTo } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
 import { Target } from './math/target';
@@ -11,18 +11,17 @@ interface ShotDetails {
     readonly target: Target;
 }
 
-type ActionSequenceItem = (gameState: GameState) => Action;
+type OnGetNextAction = (gameState: GameState) => Action;
 
 const POST_ANIMATION_DELAY = 500;
-
 const MAX_ANGLE_RANDOMIZATION = Math.PI / 32;
 const IS_RANDOMIZING_SHOTS = false;
+const IS_LOGGING = false;
 
 export class Ai {
 
     readonly teamIndex: number;
-    private actionQueue: ActionSequenceItem[];
-    private readonly isLogging = true;
+    private actionQueue: OnGetNextAction[];
 
     constructor({ teamIndex }: { teamIndex: number; }) {
         this.teamIndex = teamIndex;
@@ -45,7 +44,7 @@ export class Ai {
         return nextAction;
     }
 
-    private getActionsForGameState(gameState: GameState): ActionSequenceItem[] {
+    private getActionsForGameState(gameState: GameState): OnGetNextAction[] {
         if (gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             return [(gs) => {
                 return this.placeCharacter(gs);
@@ -98,7 +97,7 @@ export class Ai {
         };
     }
 
-    private getHasntMovedNorShot(character: Character, gameState: GameState): ActionSequenceItem[] {
+    private getHasntMovedNorShot(character: Character, gameState: GameState): OnGetNextAction[] {
         const currentCharacterCenterCanvas = getTileCenterCanvas(character.tileCoords);
         const possibleShots = this.getEnemyTargetsInDirectSight(currentCharacterCenterCanvas, gameState);
         if (possibleShots.length > 0) {
@@ -144,13 +143,13 @@ export class Ai {
         }
     }
 
-    private getActionsForFlagCarrrier(character: Character, gameState: GameState): ActionSequenceItem[] {
+    private getActionsForFlagCarrrier(character: Character, gameState: GameState): OnGetNextAction[] {
         // TODO - need to differentiate flag starting spot and flag current spot.
         const teamFlagTile = gameState.getActiveTeamFlag().tileCoords;
         return this.getSafeMoveTowardsLocation(character, teamFlagTile);
     }
 
-    private getSafeMoveTowardsLocation(character: Character, tileLocation: Point): ActionSequenceItem[] {
+    private getSafeMoveTowardsLocation(character: Character, tileLocation: Point): OnGetNextAction[] {
         const startMoving = (gameState) => {
             const startMovingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
@@ -220,7 +219,7 @@ export class Ai {
         return best.shot;
     }
 
-    private getShootSequence(shotDetails: ShotDetails): ActionSequenceItem[] {
+    private getShootSequence(shotDetails: ShotDetails): OnGetNextAction[] {
         const startAiming = (gameState) => {
             const startAimingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
@@ -277,7 +276,7 @@ export class Ai {
     }
 
     private log(message: string) {
-        if (this.isLogging) {
+        if (IS_LOGGING) {
             console.log(message);
         }
     }

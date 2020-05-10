@@ -7,7 +7,8 @@ import { ActionType } from 'src/app/actions';
 import { CharacterAbility, CharacterSettings, CharacterAbilityState, ThrowGrenadeAbility, ClassType, CharacterAbilityType } from 'src/app/character_settings';
 import { AnimationState } from 'src/app/animation_state';
 import { getProjectileTargetsPath, getRayForShot } from 'src/app/target_finder';
-import { Obstacle } from 'src/app/obstacle';
+// TODO - shouldn't need to depend on this...
+import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Target } from 'src/app/math/target';
 
 const TWO_PI = Math.PI * 2;

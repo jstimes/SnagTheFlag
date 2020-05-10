@@ -1,8 +1,8 @@
 import { ShotInfo } from 'src/app/shot_info';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { Point, containsPoint } from 'src/app/math/point';
-import { Character } from 'src/app/character';
-import { Obstacle } from 'src/app/obstacle';
+import { Character } from 'src/app/game_objects/character';
+import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Target } from 'src/app/math/target';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';

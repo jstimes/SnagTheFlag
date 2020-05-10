@@ -1,8 +1,8 @@
 import { Point } from 'src/app/math/point';
-import { Flag } from 'src/app/flag';
-import { Obstacle } from 'src/app/obstacle';
-import { Character } from 'src/app/character';
-import { pathTo } from './grid';
+import { Flag } from 'src/app/game_objects/flag';
+import { Obstacle } from 'src/app/game_objects/obstacle';
+import { Character } from 'src/app/game_objects/character';
+import { pathTo } from 'src/app/grid';
 
 export enum GamePhase {
     // Setup.

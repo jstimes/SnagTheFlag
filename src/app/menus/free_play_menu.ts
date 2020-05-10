@@ -6,9 +6,9 @@ import { CONTROLS } from 'src/app/controls';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
-import { ButtonGroup } from './ui/button_group';
-import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from './game_settings';
-import { TextBox, TextBoxStyle } from './ui/text_box';
+import { ButtonGroup } from 'src/app/ui/button_group';
+import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
+import { TextBox, TextBoxStyle } from 'src/app/ui/text_box';
 
 interface ButtonMetadata {
     text: string;

@@ -1,5 +1,5 @@
 import { Point } from './math/point';
-import { ParticleSystemParams, ParticleShape } from './particle_system';
+import { ParticleSystemParams, ParticleShape } from 'src/app/game_objects/particle_system';
 import { Grid } from './grid';
 
 export function getBulletParticleSystemParams(startPositionCanvas: Point): ParticleSystemParams {

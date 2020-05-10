@@ -1,8 +1,8 @@
 import { LevelData } from 'src/app/level';
 import { Grid } from 'src/app/grid';
 import { Point } from 'src/app/math/point';
-import { Obstacle } from 'src/app/obstacle';
-import { Flag } from 'src/app/flag';
+import { Obstacle } from 'src/app/game_objects/obstacle';
+import { Flag } from 'src/app/game_objects/flag';
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { CONTROLS, ControlMap, EventType, Key } from 'src/app/controls';
 import { THEME } from 'src/app/theme';

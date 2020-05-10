@@ -6,10 +6,9 @@ import { CONTROLS } from 'src/app/controls';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
-import { ButtonGroup } from './ui/button_group';
-import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from './game_settings';
-import { TextBox, TextBoxStyle } from './ui/text_box';
-import { CAMPAIGN_LEVELS } from './campaign_level';
+import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
+import { TextBox, TextBoxStyle } from 'src/app/ui/text_box';
+import { CAMPAIGN_LEVELS } from 'src/app/campaign_level';
 
 interface ButtonMetadata {
     text: string;
