@@ -111,7 +111,7 @@ export class GameManager implements GameModeManager {
         }
         this.hud.update(elapsedMs);
 
-        if (this.isAnimating()) {
+        if (this.isAnimating() || this.isPaused) {
             return;
         }
         if (this.isAiTurn()) {
@@ -184,7 +184,9 @@ export class GameManager implements GameModeManager {
             });
             projectile.setNewTargets(newTargets);
         }
-        this.checkGameOver();
+        if (this.checkGameOver()) {
+            return;
+        }
         this.checkCharacterTurnOver();
     }
 
@@ -249,6 +251,7 @@ export class GameManager implements GameModeManager {
                 const shotInfos = this.gameState.selectedCharacter.shoot();
                 for (const shotInfo of shotInfos) {
                     this.fireShot(shotInfo);
+                    this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                 }
                 // Next turn logic runs when projectile dies.
                 break;
@@ -330,7 +333,7 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    private checkGameOver(): void {
+    private checkGameOver(): boolean {
         let winningTeam: string | null = null;
         if (this.gameState.getEnemyCharacters().length === 0) {
             winningTeam = this.gameState.getActiveTeamName();
@@ -339,7 +342,7 @@ export class GameManager implements GameModeManager {
             winningTeam = this.gameState.getEnemyTeamName();
         }
         if (winningTeam == null) {
-            return;
+            return false
         }
         this.isPaused = true;
         this.hud.setText(
@@ -350,6 +353,7 @@ export class GameManager implements GameModeManager {
             `${winningTeam} team has eliminated all oponents.`,
             TextType.SUBTITLE,
             Duration.LONG);
+        return true;
     }
 
     private checkCharacterTurnOver(): void {
@@ -481,6 +485,7 @@ export class GameManager implements GameModeManager {
                 Duration.SHORT);
         }
     }
+
     private fireShot(shotInfo: ShotInfo): void {
         const ray = getRayForShot(shotInfo);
         const numRicochets = shotInfo.projectileDetails.type === ProjectileDetailsType.BULLET
@@ -838,7 +843,6 @@ export class GameManager implements GameModeManager {
                             type: ActionType.SHOOT,
                         };
                         this.onAction(fireAction);
-                        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
                     },
                     eventType: EventType.KeyPress,
                 });
