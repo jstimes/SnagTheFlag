@@ -6,14 +6,38 @@ export enum ProjectileDetailsType {
     SPLASH,
 }
 
-export interface Bullet {
-    readonly type: ProjectileDetailsType.BULLET;
-    readonly damage: number;
-    readonly numRicochets: number;
+export enum ProjectileShapeType {
+    CIRCLE = 'Circle',
+    RECTANGLE = 'Rectangle',
 }
 
-export interface SplashDamage {
+interface Circle {
+    readonly type: ProjectileShapeType.CIRCLE;
+    readonly radius: number;
+}
+
+interface Rectangle {
+    readonly type: ProjectileShapeType.RECTANGLE;
+    readonly size: Point;
+}
+
+export type ProjectileShape = Circle | Rectangle;
+
+interface BaseProjectileDetails {
+    readonly numRicochets: number;
+    readonly shape: ProjectileShape;
+    readonly projectileSpeed: number;
+    readonly color: string;
+}
+
+export interface Bullet extends BaseProjectileDetails {
+    readonly type: ProjectileDetailsType.BULLET;
+    readonly damage: number;
+}
+
+export interface SplashDamage extends BaseProjectileDetails {
     readonly type: ProjectileDetailsType.SPLASH;
+    readonly numRicochets: 0;
     readonly damage: number;
     /** Tiles away from target that will be hit by grenade. */
     readonly damageManhattanDistanceRadius: number;

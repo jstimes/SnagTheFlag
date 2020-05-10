@@ -2,7 +2,7 @@ import { Point } from 'src/app/math/point';
 import { Ray } from 'src/app/math/collision_detection';
 import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
-import { ShotInfo, ProjectileDetailsType, ProjectileDetails } from 'src/app/shot_info';
+import { ShotInfo, ProjectileDetailsType, ProjectileDetails, ProjectileShapeType } from 'src/app/shot_info';
 import { hexStringToColor } from 'src/app/color';
 import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
@@ -11,21 +11,6 @@ const MAX_TRAIL_DISTANCE = Grid.TILE_SIZE * 3;
 
 // TODO - extract into shared constant
 const TWO_PI = Math.PI * 2;
-
-const speeds: Map<ProjectileDetailsType, number> = new Map([
-    [ProjectileDetailsType.BULLET, Grid.TILE_SIZE / 80],
-    [ProjectileDetailsType.SPLASH, Grid.TILE_SIZE / 160],
-]);
-
-const radii: Map<ProjectileDetailsType, number> = new Map([
-    [ProjectileDetailsType.BULLET, Grid.TILE_SIZE / 12],
-    [ProjectileDetailsType.SPLASH, Grid.TILE_SIZE / 6],
-]);
-
-const colors: Map<ProjectileDetailsType, string> = new Map([
-    [ProjectileDetailsType.BULLET, THEME.bulletColor],
-    [ProjectileDetailsType.SPLASH, THEME.grenadeColor],
-]);
 
 // TODO - this is hack-E.
 interface Trail {
@@ -113,7 +98,7 @@ export class Projectile {
         const remainingTargets = targets;
         const currentCenterCanvas = this.animationState != null ? this.animationState.currentCenterCanvas : firstTarget.ray.startPt;
         this.animationState = {
-            movementSpeedMs: speeds.get(this.projectileDetails.type)!,
+            movementSpeedMs: this.projectileDetails.projectileSpeed,
             currentCenterCanvas,
             isAnimating: true,
             currentTarget: firstTarget,
@@ -139,7 +124,7 @@ export class Projectile {
 
     render(): void {
         const context = this.context;
-        const radius = radii.get(this.projectileDetails.type)!;
+        const radius = this.projectileDetails.shape.type === ProjectileShapeType.CIRCLE ? this.projectileDetails.shape.radius : 0;
 
         for (const trail of this.trails) {
             if (trail.distance < radius || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
@@ -181,7 +166,7 @@ export class Projectile {
         }
 
         const currentPointCanvas = this.animationState.currentCenterCanvas;
-        context.fillStyle = colors.get(this.projectileDetails.type)!;
+        context.fillStyle = this.projectileDetails.color;
         context.beginPath();
         context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
         context.closePath();

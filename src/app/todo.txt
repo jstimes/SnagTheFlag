@@ -11,7 +11,6 @@ MVP features
     - game over logic.
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
-    - ParticleSystem for heal.
     - Distinct graphic for missile vs grenade.
         - shotgun vs normal bullet?
     - level selector - unlock one at a time.
