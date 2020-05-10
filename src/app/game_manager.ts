@@ -2,12 +2,11 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid, bfs, pathTo } from 'src/app/grid';
 import { Point, pointFromSerialized, containsPoint } from 'src/app/math/point';
 import { Obstacle } from 'src/app/obstacle';
-import { MatchType } from 'src/app/match_type';
 import { CONTROLS, ControlMap, EventType, Key, numberToKey, numberToOrdinal } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
 import { Flag } from 'src/app/flag';
 import { LEVELS } from 'src/app/level';
-import { GameSettings, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
+import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
 import { Character } from 'src/app/character';
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
@@ -49,10 +48,9 @@ export class GameManager implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly levelIndex: number;
-    private readonly matchType: MatchType;
+    private readonly gameSettings: GameSettings;
     private readonly onExitGameCallback: () => void;
 
-    private gameSettings: GameSettings;
     private isPaused: boolean;
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
@@ -70,14 +68,14 @@ export class GameManager implements GameModeManager {
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         params: {
-            matchType: MatchType;
+            gameSettings: GameSettings;
             levelIndex: number;
             onExitGameCallback: () => void;
         }) {
 
         this.canvas = canvas;
         this.context = context;
-        this.matchType = params.matchType;
+        this.gameSettings = params.gameSettings;
         this.levelIndex = params.levelIndex;
         this.onExitGameCallback = params.onExitGameCallback;
         this.resetGame();
@@ -308,7 +306,9 @@ export class GameManager implements GameModeManager {
                         settings: this.selectedCharacterSettings,
                         gameInfo: this.gameState.getGameInfo(),
                     }));
-                    if (activeSquad.length + 1 === this.gameSettings.squadSize) {
+                    const teamMaxSquadSize = this.gameSettings.teamIndexToSquadSize
+                        .get(this.gameState.currentTeamIndex)!;
+                    if (activeSquad.length + 1 === teamMaxSquadSize) {
                         // Placed all characters, end turn.
                         this.nextTurn();
                     } else {
@@ -404,9 +404,11 @@ export class GameManager implements GameModeManager {
     private initCharacterPlacementTurn(): void {
         this.gameState.selectableTiles = this.getAvailableTilesForCharacterPlacement();
         const teamName = this.gameState.getActiveTeamName();
+        const teamMaxSquadSize = this.gameSettings.teamIndexToSquadSize
+            .get(this.gameState.currentTeamIndex)!;
         this.hud.setText(`${teamName} team turn`, TextType.TITLE, Duration.LONG);
         this.hud.setText(
-            `Place squad members(${this.gameSettings.squadSize} remaining) `,
+            `Place squad members (${teamMaxSquadSize} remaining) `,
             TextType.SUBTITLE,
             Duration.LONG);
     }
@@ -894,7 +896,6 @@ export class GameManager implements GameModeManager {
         this.gameState = new GameState();
         this.loadLevel();
         this.isPaused = false;
-        this.gameSettings = DEFAULT_GAME_SETTINGS;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.gameState.characters = [];
         this.projectiles = [];
@@ -903,9 +904,9 @@ export class GameManager implements GameModeManager {
         this.teamIndexToIsAi = [];
         for (let i = 0; i < this.gameSettings.numTeams; i++) {
             let isAi = i !== 0;
-            if (this.matchType === MatchType.AI_VS_AI) {
+            if (this.gameSettings.matchType === MatchType.AI_VS_AI) {
                 isAi = true;
-            } else if (this.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL) {
+            } else if (this.gameSettings.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL) {
                 isAi = false;
             }
             this.teamIndexToIsAi.push(isAi);

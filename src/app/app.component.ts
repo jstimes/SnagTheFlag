@@ -7,8 +7,9 @@ import { GameManager } from 'src/app/game_manager';
 import { StartMenu } from 'src/app/start_menu';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { LevelCreator } from 'src/app/level_creator';
-import { MatchType } from 'src/app/match_type';
+import { GameSettings } from 'src/app/game_settings';
 import { LevelMenu } from 'src/app/level_menu';
+import { DEFAULT_GAME_SETTINGS } from './game_settings';
 
 
 const BACKGROUND_COLOR = '#959aa3';
@@ -78,13 +79,13 @@ export class AppComponent {
       });
   }
 
-  private initGame(levelIndex: number, matchType: MatchType): void {
+  private initGame(levelIndex: number, gameSettings: GameSettings): void {
     this.gameState = GameState.GAME;
     this.gameStateManager = new GameManager(
       this.canvas,
       this.context,
       {
-        matchType,
+        gameSettings,
         levelIndex,
         onExitGameCallback: () => {
           this.tearDownCurrentGameState();
@@ -96,8 +97,8 @@ export class AppComponent {
   private initLevelMenu(): void {
     this.gameState = GameState.LEVEL_MENU;
     this.gameStateManager = new LevelMenu(this.canvas, this.context, {
-      onSelectLevel: (levelIndex: number, matchType: MatchType) => {
-        this.initGame(levelIndex, matchType);
+      onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => {
+        this.initGame(levelIndex, gameSettings);
       },
     });
   }

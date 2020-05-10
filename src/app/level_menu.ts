@@ -6,8 +6,8 @@ import { CONTROLS } from 'src/app/controls';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
-import { MatchType } from './match_type';
 import { ButtonGroup } from './ui/button_group';
+import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from './game_settings';
 
 interface ButtonMetadata {
     text: string;
@@ -17,15 +17,16 @@ interface ButtonMetadata {
 export class LevelMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
-    private readonly onSelectLevel: (levelIndex: number, matchType: MatchType) => void;
+    private readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
     private readonly uiManager: UiManager;
     private selectedMatchType: MatchType;
+    private selectedTeamSizeMap: Map<number, number>;
 
     constructor(
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         callbacks: {
-            readonly onSelectLevel: (levelIndex: number, matchType: MatchType) => void;
+            readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
         }) {
 
         this.canvas = canvas;
@@ -79,7 +80,15 @@ export class LevelMenu implements GameModeManager {
                     hoverColor: buttonHoverColor,
                     textColor: THEME.buttonTextColor,
                 },
-                onClick: () => { this.onSelectLevel(buttonIndex, this.selectedMatchType); },
+                onClick: () => {
+                    const settings: GameSettings = {
+                        matchType: this.selectedMatchType,
+                        teamIndexToSquadSize: this.selectedTeamSizeMap,
+                        maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                        numTeams: DEFAULT_GAME_SETTINGS.numTeams,
+                    }
+                    this.onSelectLevel(buttonIndex, settings);
+                },
             });
             this.uiManager.addElement(button);
         }
@@ -132,6 +141,61 @@ export class LevelMenu implements GameModeManager {
             buttonStyle: style,
             initialSelectionIndex,
             onChangeCallback,
+        }));
+
+        // Team size type buttons.
+        const teamSizeIndexToString: string[] = [
+            '2x2',
+            '4x4',
+            '8x8',
+            '2x4',
+            '4x8',
+        ];
+        const teamSizeIndexToTeamSizeMap: Array<Map<number, number>> = [
+            new Map([[0, 2], [1, 2]]),
+            new Map([[0, 4], [1, 4]]),
+            new Map([[0, 8], [1, 8]]),
+            new Map([[0, 2], [1, 4]]),
+            new Map([[0, 4], [1, 8]]),
+        ];
+        const teamSizeButtonSize = new Point(.15, .08);
+        const teamSizeOffsetY = .04;
+        const teamSizeTopMargin = .35;
+        const teamSizeLeftMargin = leftMargin - matchTypeButtonSize.x - .15;
+        const teamSizeButtonColor = '#f7c25e';
+        const teamSizeButtonHoverColor = '#deaf57';
+        const teamSizeSelectedColor = '#db9d2a';
+        const teamSizeSelectedBorderColor = '#000000';
+        const teamSizeFontSize = 24;
+        const teamSizeDimensions: ButtonDimensions[] = [];
+        for (let teamSizeIndex = 0;
+            teamSizeIndex < teamSizeIndexToTeamSizeMap.length;
+            teamSizeIndex++) {
+            const topLeftY = teamSizeTopMargin + teamSizeIndex * teamSizeOffsetY + teamSizeIndex * teamSizeButtonSize.y;
+            teamSizeDimensions.push({
+                topLeft: new Point(teamSizeLeftMargin, topLeftY),
+                size: teamSizeButtonSize,
+                text: teamSizeIndexToString[teamSizeIndex],
+            });
+        }
+        const teamSizeStyle: ButtonStyle = {
+            fontSize: teamSizeFontSize,
+            color: teamSizeButtonColor,
+            hoverColor: teamSizeButtonHoverColor,
+            selectedColor: teamSizeSelectedColor,
+            selectedBorderColor: teamSizeSelectedBorderColor,
+            textColor: THEME.buttonTextColor,
+        };
+        const initialTeamSizeSelectionIndex = 0;
+        const onTeamSizeChangeCallback = (index: number) => {
+            this.selectedTeamSizeMap = teamSizeIndexToTeamSizeMap[index];
+        };
+        onChangeCallback(initialSelectionIndex);
+        this.uiManager.addElement(new ButtonGroup({
+            buttons: teamSizeDimensions,
+            buttonStyle: teamSizeStyle,
+            initialSelectionIndex: initialTeamSizeSelectionIndex,
+            onChangeCallback: onTeamSizeChangeCallback,
         }));
     }
 

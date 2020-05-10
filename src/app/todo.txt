@@ -15,7 +15,6 @@ MVP features
         - unlock one at a time, AI has bigger squad
 
 AI improvements:
-    - Chase flag carrier/return flag.
     - Use heals/grenades.
     - Aim random +X%
 
