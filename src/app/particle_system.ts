@@ -124,7 +124,6 @@ export class ParticleSystem {
             const particleCenter = particle.canvasPosition;
             switch (particle.shape) {
                 case ParticleShape.CIRCLE:
-                    context.save();
                     context.fillStyle = particle.color;
                     context.beginPath();
                     context.arc(
@@ -134,10 +133,8 @@ export class ParticleSystem {
                         0,
                         TWO_PI);
                     context.fill();
-                    context.restore();
                     break;
                 case ParticleShape.LINE:
-                    context.save();
                     context.strokeStyle = particle.color;
                     context.lineWidth = 1;
                     context.beginPath();
@@ -150,10 +147,8 @@ export class ParticleSystem {
                     context.moveTo(start.x, start.y);
                     context.lineTo(end.x, end.y);
                     context.stroke();
-                    context.restore();
                     break;
                 case ParticleShape.ELLIPSE:
-                    context.save();
                     context.fillStyle = particle.color;
                     context.beginPath();
                     const xRadius = particle.radius;
@@ -167,7 +162,6 @@ export class ParticleSystem {
                         0,
                         TWO_PI);
                     context.fill();
-                    context.restore();
                     break;
                 case ParticleShape.PLUS:
                     context.fillStyle = particle.color;
