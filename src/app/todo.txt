@@ -9,10 +9,13 @@ Refactoring/Cleanup
 MVP features
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
-    - level selector - unlock one at a time.
+    - Can quit/reset upon game over.
+    - Redo level selection ui
+    - Campaign mode?
+        - unlock one at a time, AI has bigger squad
 
 AI improvements:
-    - Chase flag carrier
+    - Chase flag carrier/return flag.
     - Use heals/grenades.
     - Aim random +X%
 
@@ -33,7 +36,7 @@ Level creation:
 
 Things to copy to template:
     - Theme
-    - Grid search/path algs.
+    - Grid search/path algs
     - particle system
     - update math & ui libs
 
