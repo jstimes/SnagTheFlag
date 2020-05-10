@@ -19,7 +19,7 @@ export class Ai {
 
     readonly teamIndex: number;
     private actionQueue: ActionSequenceItem[];
-    private readonly isLogging = true;
+    private readonly isLogging = false;
 
     constructor({ teamIndex }: { teamIndex: number; }) {
         this.teamIndex = teamIndex;

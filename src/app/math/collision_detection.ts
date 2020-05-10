@@ -129,5 +129,15 @@ export function detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment
 }
 
 function haveOppositeSigns(a: number, b: number): boolean {
-    return (a > 0 && b < 0) || (a < 0 && b > 0);
+    const strictly = (a > 0 && b < 0) || (a < 0 && b > 0);
+    if (strictly) {
+        return true;
+    }
+    return (isZero(a) && !isZero(b)) || (isZero(b) && !isZero(a));
+}
+
+// TODO - constants.
+const epsilon = .000001;
+function isZero(n: number): boolean {
+    return Math.abs(n) < epsilon;
 }

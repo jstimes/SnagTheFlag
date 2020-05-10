@@ -108,6 +108,10 @@ function getGridBorderTarget(ray: Ray): Target {
         }
     }
     if (gridBorderCollisionPt == null) {
+        debugger;
+        const a = detectRayLineSegmentCollision(ray, bottomBorderSegment);
+        const b = detectRayLineSegmentCollision(ray, rightBorderSegment);
+
         throw new Error(`Shot ray does not intersect with any Grid`);
     }
     const hitCorner = (corner: Point): boolean => {
