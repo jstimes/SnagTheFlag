@@ -91,7 +91,7 @@ export class GameState {
     }
 
     getEnemyFlag(): Flag {
-        return this.flags.filter((flag) => flag.teamIndex !== this.currentTeamIndex)[0];
+        return this.flags.find((flag) => flag.teamIndex !== this.currentTeamIndex)!;
     }
 
     tileHasObstacle(tile: Point): boolean {

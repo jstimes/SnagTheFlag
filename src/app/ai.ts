@@ -19,7 +19,7 @@ export class Ai {
 
     readonly teamIndex: number;
     private actionQueue: ActionSequenceItem[];
-    private readonly isLogging = false;
+    private readonly isLogging = true;
 
     constructor({ teamIndex }: { teamIndex: number; }) {
         this.teamIndex = teamIndex;
@@ -60,7 +60,7 @@ export class Ai {
             return this.getSafeMoveTowardsEnemyFlag(selectedCharacter);
         }
         if (!selectedCharacter.hasShot) {
-            const characterCenter = getCharacterCanvasCenter(selectedCharacter);
+            const characterCenter = getTileCenterCanvas(selectedCharacter.tileCoords);
             const possibleShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
             if (possibleShots.length > 0) {
                 // TODO - pick best.
@@ -78,8 +78,8 @@ export class Ai {
 
     private placeCharacter(gameState: GameState): Action {
         for (const tile of gameState.selectableTiles) {
-            const tileCenter = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
-            if (this.getEnemyTargetsInDirectSight(tileCenter, gameState).length === 0) {
+            const tileCenterCanvas = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
+            if (this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length === 0) {
                 return {
                     type: ActionType.SELECT_TILE,
                     tile,
@@ -95,8 +95,8 @@ export class Ai {
     }
 
     private getHasntMovedNorShot(character: Character, gameState: GameState): ActionSequenceItem[] {
-        const characterCenter = getCharacterCanvasCenter(character);
-        const potentialShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
+        const currentCharacterCenterCanvas = getTileCenterCanvas(character.tileCoords);
+        const potentialShots = this.getEnemyTargetsInDirectSight(currentCharacterCenterCanvas, gameState);
         if (potentialShots.length > 0) {
             // TODO - pick best.
             const shoot = this.getShootSequence(potentialShots[0]);
@@ -111,20 +111,17 @@ export class Ai {
                 return startMovingAction;
             };
             const thenMove = (gameState) => {
-                const tileStringToDirectHits = new Map<string, ShotDetails[]>();
+                const tileAndDirectHits: Array<{ tile: Point; directHits: number; }> = [];
                 for (const selectableTile of gameState.selectableTiles) {
-                    const directHits = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
-                    tileStringToDirectHits.set(JSON.stringify(selectableTile), directHits);
+                    const tileCenterCanvas = getTileCenterCanvas(selectableTile);
+                    const directHitDetails = this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState);
+                    tileAndDirectHits.push({ tile: selectableTile, directHits: directHitDetails.length });
                 }
                 let bestTile;
-                for (const key of tileStringToDirectHits.keys()) {
-                    const hits = tileStringToDirectHits.get(key)!;
-                    // Prefer square where character can shoot enemy and is in sight of no others.
-                    if (hits.length === 1) {
-                        bestTile = JSON.parse(key) as Point;
-                    }
-                }
-                if (bestTile == null) {
+                let bestTileAndHits = tileAndDirectHits.find((tileAndHit) => tileAndHit.directHits === 1);
+                if (bestTileAndHits != null) {
+                    bestTile = bestTileAndHits.tile;
+                } else {
                     bestTile = this.getClosestSelectableTileToEnemyFlagWithFewestDirectHits(gameState);
                 }
                 const selectTileAction: SelectTileAction = {
@@ -164,7 +161,8 @@ export class Ai {
         };
         for (const selectableTile of gameState.selectableTiles) {
             const pathToFlag = pathToEnemyFlag(selectableTile, gameState);
-            const directHits = this.getEnemyTargetsInDirectSight(selectableTile, gameState).length;
+            const tileCenterCanvas = getTileCenterCanvas(selectableTile)
+            const directHits = this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length;
             if (directHits < bestTile.directHits
                 || (directHits === bestTile.directHits && pathToFlag.length < bestTile.distance)) {
                 bestTile.tile = selectableTile;
@@ -207,7 +205,7 @@ export class Ai {
         const fromTile = Grid.getTileFromCanvasCoords(fromCanvas);
         const shots: ShotDetails[] = [];
         for (const enemy of gameState.getEnemyCharacters()) {
-            const enemyCenter = getCharacterCanvasCenter(enemy);
+            const enemyCenter = getTileCenterCanvas(enemy.tileCoords);
             const direction = enemyCenter.subtract(fromCanvas).normalize();
             const aimAngleClockwiseRadians = direction.getPointRotationRadians();
             const target = getProjectileTarget({
@@ -234,8 +232,8 @@ export class Ai {
     }
 }
 
-function getCharacterCanvasCenter(character: Character): Point {
-    return Grid.getCanvasFromTileCoords(character.tileCoords).add(Grid.HALF_TILE)
+function getTileCenterCanvas(tile: Point): Point {
+    return Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE)
 }
 
 function getTileClosestTo(tiles: Point[], to: Point): Point {

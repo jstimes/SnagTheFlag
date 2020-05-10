@@ -139,6 +139,7 @@ function getGridBorderTarget(ray: Ray): Target {
     return target;
 }
 
+/** Assumes only alive characters are passed in. */
 function getTileTarget(
     params: {
         startTile: Point;
@@ -193,7 +194,6 @@ function getTileTarget(
                 }
             } else {
                 const character = params.characters
-                    .filter((character) => character.isAlive())
                     .find((character) => character.tileCoords.equals(tile));
                 if (!character) {
                     throw new Error(`Tile is occupied but no obstacle or character...`);
