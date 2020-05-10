@@ -67,6 +67,17 @@ export class GameState {
         }
     }
 
+    getEnemyTeamName(): string {
+        switch (this.currentTeamIndex) {
+            case 1:
+                return 'Blue';
+            case 0:
+                return 'Red';
+            default:
+                throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
+        }
+    }
+
     getActiveSquad(): Character[] {
         return this.getAliveCharacters().filter((character) => character.teamIndex === this.currentTeamIndex)
     }

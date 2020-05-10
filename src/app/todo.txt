@@ -1,3 +1,6 @@
+Bugs
+    - AIvAI 4v4 on Horizontal - cant find grid border target.
+
 Refactoring/Cleanup
     - action type to available action types, control abstractions
     - serialize game state, keep track
@@ -7,7 +10,6 @@ Refactoring/Cleanup
         so it's easy to resize.
 
 MVP features
-    - flag capturing
     - game over logic.
     - wait for particle to hit before moving on, character movement
         - Freeze controls?
@@ -19,23 +21,23 @@ AI improvements:
     - Aim random +X%
 
 Things to experiment with:
-- destructible obstacles
-- Fog of war
-- pickups
-- To respawn, or not to respawn.
-- Teleport pads
-- classic explosive barrels
-- engineers that can turn on turrets
-    - or secure new spawners.
+    - Fog of war
+    - To respawn, or not to respawn.
+    - engineers that can turn on turrets
+        - or secure new spawners.
+    - destructible obstacles
+        - classic explosive barrels
+    - pickups
+    - Teleport pads
 
 Level creation:
-- Symmetry option (horizontally, vertically, diagonally)
-- Set name
-- Grid dimensions
+    - Symmetry option (horizontally, vertically, diagonally)
+    - Set name
+    - Grid dimensions
 
 Things to copy to template:
-- Theme
-- closePath on grid lines
-- particle system
-- update math & ui libs
+    - Theme
+    - closePath on grid lines
+    - particle system
+    - update math & ui libs
 

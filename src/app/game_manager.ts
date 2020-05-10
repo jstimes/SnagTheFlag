@@ -184,6 +184,7 @@ export class GameManager implements GameModeManager {
             });
             projectile.setNewTargets(newTargets);
         }
+        this.checkGameOver();
         this.checkCharacterTurnOver();
     }
 
@@ -327,6 +328,28 @@ export class GameManager implements GameModeManager {
             default:
                 throwBadAction(action);
         }
+    }
+
+    private checkGameOver(): void {
+        let winningTeam: string | null = null;
+        if (this.gameState.getEnemyCharacters().length === 0) {
+            winningTeam = this.gameState.getActiveTeamName();
+        }
+        else if (this.gameState.getActiveSquad().length === 0) {
+            winningTeam = this.gameState.getEnemyTeamName();
+        }
+        if (winningTeam == null) {
+            return;
+        }
+        this.isPaused = true;
+        this.hud.setText(
+            `Game over`,
+            TextType.TITLE,
+            Duration.LONG);
+        this.hud.setText(
+            `${winningTeam} team has eliminated all oponents.`,
+            TextType.SUBTITLE,
+            Duration.LONG);
     }
 
     private checkCharacterTurnOver(): void {
