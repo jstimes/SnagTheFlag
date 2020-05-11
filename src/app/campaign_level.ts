@@ -14,7 +14,7 @@ const UNLOCK_ALL = true;
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     // Level 1
     {
-        levelIndex: 1,
+        levelIndex: 0,
         levelName: 'Starting grounds',
         teamIndexToSquadSize: new Map([[0, 4], [1, 4]]),
         isUnlocked: true,
@@ -22,7 +22,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 2
     {
-        levelIndex: 2,
+        levelIndex: 1,
         levelName: 'Getting tougher',
         teamIndexToSquadSize: new Map([[0, 3], [1, 5]]),
         isUnlocked: UNLOCK_ALL,
@@ -30,7 +30,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 3
     {
-        levelIndex: 3,
+        levelIndex: 2,
         levelName: 'Protect it',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -38,7 +38,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 4
     {
-        levelIndex: 4,
+        levelIndex: 3,
         levelName: 'Snag it',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -46,7 +46,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 5
     {
-        levelIndex: 5,
+        levelIndex: 4,
         levelName: 'Familiar',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -55,7 +55,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
 
     // Level 6
     {
-        levelIndex: 4,
+        levelIndex: 5,
         levelName: 'Snarls',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -63,7 +63,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 7
     {
-        levelIndex: 4,
+        levelIndex: 6,
         levelName: 'To snag...',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -71,7 +71,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 8
     {
-        levelIndex: 4,
+        levelIndex: 7,
         levelName: 'Or be snagged...',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -79,7 +79,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 9
     {
-        levelIndex: 4,
+        levelIndex: 8,
         levelName: 'Snag and tag',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -87,7 +87,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 10
     {
-        levelIndex: 4,
+        levelIndex: 9,
         levelName: 'Flag of snag',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -95,7 +95,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 11
     {
-        levelIndex: 4,
+        levelIndex: 10,
         levelName: 'Frag and flag',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -103,7 +103,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 12
     {
-        levelIndex: 4,
+        levelIndex: 11,
         levelName: 'Final snag',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
