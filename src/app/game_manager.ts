@@ -697,7 +697,7 @@ export class GameManager implements GameModeManager {
         const squad = this.gameState.getActiveSquad();
         const squadMemeberAtTile =
             squad.find((character) => character.tileCoords.equals(tileCoords));
-        if (squadMemeberAtTile) {
+        if (squadMemeberAtTile && !squadMemeberAtTile.isTurnOver()) {
             const selectCharacterAction: SelectCharacterAction = {
                 type: ActionType.SELECT_CHARACTER,
                 characterIndex: squadMemeberAtTile.index,
