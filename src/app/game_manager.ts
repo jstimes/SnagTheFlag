@@ -30,6 +30,7 @@ interface ClickHandler {
 
 const DEFAULT_HUMAN_TEAM_INDEX = 0;
 
+const PAUSE_KEY = Key.P;
 const QUIT_KEY = Key.Q;
 const RESTART_KEY = Key.R;
 const MOVE_KEY = Key.M;
@@ -57,6 +58,7 @@ export class GameManager implements GameModeManager {
     private readonly onExitGameCallback: (winningTeamIndex: number) => void;
 
     private isGameOver: boolean;
+    private isPaused: boolean;
     private winningTeamIndex: number;
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
@@ -95,6 +97,10 @@ export class GameManager implements GameModeManager {
     }
 
     update(elapsedMs: number): void {
+        if (this.isPaused) {
+            this.controlMap.check();
+            return;
+        }
         for (const particleSystem of this.particleSystems) {
             particleSystem.update(elapsedMs);
         }
@@ -322,6 +328,9 @@ export class GameManager implements GameModeManager {
     }
 
     onAction(action: Action): void {
+        if (this.isPaused) {
+            return;
+        }
         const activeSquad = this.gameState.getActiveSquad();
         switch (action.type) {
             case ActionType.SHOOT:
@@ -598,7 +607,7 @@ export class GameManager implements GameModeManager {
     }
     private setGameOver(winningTeamIndex: number, subtitle: string): void {
         this.controlMap.clear();
-        this.addDefaultControls();
+        this.togglePause();
         this.isGameOver = true;
         this.winningTeamIndex = winningTeamIndex;
         this.hud.setText(
@@ -1032,6 +1041,7 @@ export class GameManager implements GameModeManager {
         this.gameState = new GameState(this.gameSettings);
         this.loadLevel();
         this.isGameOver = false;
+        this.isPaused = false;
         this.winningTeamIndex = -1;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.gameState.characters = [];
@@ -1097,6 +1107,46 @@ export class GameManager implements GameModeManager {
 
     private addDefaultControls(): void {
         this.controlMap.add({
+            key: PAUSE_KEY,
+            name: 'Pause',
+            func: () => { this.togglePause(); },
+            eventType: EventType.KeyPress,
+        });
+        this.controlMap.add({
+            key: Key.QUESTION_MARK,
+            name: 'Show/Hide controls',
+            func: () => { this.hud.toggleShowControlMap(); },
+            eventType: EventType.KeyPress,
+        });
+    }
+
+    private togglePause(): void {
+        this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+            this.addQuitAndRestartControls();
+            this.hud.setText(
+                'PAUSED',
+                TextType.TITLE,
+                Duration.SHORT
+            );
+            this.hud.setText(
+                `Press ${CONTROLS.getStringForKey(QUIT_KEY)} to quit;` +
+                ` ${CONTROLS.getStringForKey(RESTART_KEY)} to restart`,
+                TextType.TOAST,
+                Duration.SHORT,
+            );
+            this.hud.setControlMap(new ControlMap());
+        } else {
+            this.hud.clearText(TextType.TITLE);
+            this.hud.clearText(TextType.TOAST);
+            this.controlMap.remove(QUIT_KEY);
+            this.controlMap.remove(RESTART_KEY);
+            this.hud.setControlMap(this.controlMap);
+        }
+    }
+
+    private addQuitAndRestartControls(): void {
+        this.controlMap.add({
             key: QUIT_KEY,
             name: 'Quit',
             func: () => { this.onExitGameCallback(this.winningTeamIndex); },
@@ -1106,12 +1156,6 @@ export class GameManager implements GameModeManager {
             key: RESTART_KEY,
             name: 'Restart',
             func: this.resetGame,
-            eventType: EventType.KeyPress,
-        });
-        this.controlMap.add({
-            key: Key.QUESTION_MARK,
-            name: 'Show/Hide controls',
-            func: () => { this.hud.toggleShowControlMap(); },
             eventType: EventType.KeyPress,
         });
     }

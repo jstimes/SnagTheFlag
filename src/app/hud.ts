@@ -142,6 +142,23 @@ export class Hud {
         }
     }
 
+    clearText(textType: TextType): void {
+        switch (textType) {
+            case TextType.TITLE:
+                this.titleText = '';
+                this.titleMsLeft = 0;
+                break;
+            case TextType.SUBTITLE:
+                this.subtitleText = '';
+                this.subtitleMsLeft = 0;
+                break;
+            case TextType.TOAST:
+                this.toastText = '';
+                this.toastMsLeft = 0;
+                break;
+        }
+    }
+
     private renderControls(): void {
         const context = this.context;
         context.fillStyle = THEME.hudTextColor;
