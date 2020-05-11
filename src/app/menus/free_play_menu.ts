@@ -69,7 +69,7 @@ export class FreePlayMenu implements GameModeManager {
         const buttonOffsetY = .02;
         const elementSize = new Point(.18, .08);
         const buttonTopMargin = headerTopMargin + buttonOffsetY + elementSize.y;
-        const fontSize = 24;
+        const fontSize = 22;
         const headerStyle: TextBoxStyle = {
             color: '#dddddd',
             fontSize,
