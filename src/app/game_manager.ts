@@ -1081,10 +1081,15 @@ export class GameManager implements GameModeManager {
         });
         this.gameState.spawners = [];
         if (this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
+            const aiDifficultyToSpawnDelays = new Map([
+                [AiDifficulty.WEAK, 8],
+                [AiDifficulty.MEDIUM, 6],
+                [AiDifficulty.STRONG, 5],
+            ]);
             const params = {
                 tileCoords: pointFromSerialized(level.aiSpawner),
                 teamIndex: 1,
-                turnsBetweenSpawns: 5,
+                turnsBetweenSpawns: aiDifficultyToSpawnDelays.get(this.gameState.settings.aiDifficulty)!,
             };
             this.gameState.spawners.push(new Spawner(params));
         }
