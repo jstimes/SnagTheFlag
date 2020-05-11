@@ -242,7 +242,7 @@ export class FreePlayMenu implements GameModeManager {
                     teamIndexToSquadSize: this.selectedTeamSizeMap,
                     maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
                     numTeams: DEFAULT_GAME_SETTINGS.numTeams,
-                    hasFogOfWar: true,
+                    hasFogOfWar: false,
                     aiDifficulty: AiDifficulty.MEDIUM,
                 }
                 this.onSelectLevel(this.selectedLevelIndex, settings);

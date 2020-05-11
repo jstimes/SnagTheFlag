@@ -22,6 +22,7 @@ import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
 import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
 import { getGrenadeSmokeParticleSystemParams, getGrenadeBurstParticleSystemParams, getBulletParticleSystemParams, getHealParticleSystemParams } from './particle_system_theme';
+import { Spawner } from './game_objects/spawner';
 
 interface ClickHandler {
     onClick: (tile: Point) => void;
@@ -227,6 +228,9 @@ export class GameManager implements GameModeManager {
                 character.render(this.context);
             }
         }
+        for (const spawner of this.gameState.spawners) {
+            spawner.render(this.context);
+        }
         if (this.gameState.selectedCharacter != null && !this.isAiTurn()) {
             const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(this.gameState.selectedCharacter.tileCoords);
             context.strokeStyle = THEME.selectedCharacterOutlineColor;
@@ -382,20 +386,7 @@ export class GameManager implements GameModeManager {
                         teamIndex: this.gameState.currentTeamIndex,
                         index: squadIndex,
                         settings: this.selectedCharacterSettings,
-                        gameDelegate: {
-                            getCurrentAimPath: (params: {
-                                ray: Ray;
-                                startingTileCoords: Point;
-                                fromTeamIndex: number;
-                                numRicochets: number;
-                            }) => {
-                                return getProjectileTargetsPath({
-                                    ...params,
-                                    characters: this.gameState.getAliveCharacters(),
-                                    obstacles: this.gameState.obstacles
-                                });
-                            }
-                        },
+                        gameDelegate: this.gameDelegate,
                     }));
                     const teamMaxSquadSize = this.gameSettings.teamIndexToSquadSize
                         .get(this.gameState.currentTeamIndex)!;
@@ -432,6 +423,21 @@ export class GameManager implements GameModeManager {
                 throwBadAction(action);
         }
     }
+
+    private gameDelegate = {
+        getCurrentAimPath: (params: {
+            ray: Ray;
+            startingTileCoords: Point;
+            fromTeamIndex: number;
+            numRicochets: number;
+        }) => {
+            return getProjectileTargetsPath({
+                ...params,
+                characters: this.gameState.getAliveCharacters(),
+                obstacles: this.gameState.obstacles
+            });
+        }
+    };
 
     private checkGameOver(): void {
         let winningTeam: string | null = null;
@@ -482,6 +488,22 @@ export class GameManager implements GameModeManager {
             }
         } else {
             this.advanceToNextCombatTurn();
+            // Spawn at end of turns.
+            for (const spawner of this.gameState.spawners) {
+                if (spawner.teamIndex === this.gameState.currentTeamIndex) {
+                    spawner.advanceTurn();
+                    if (spawner.checkAndHandleRespawn()) {
+                        const character = new Character({
+                            startCoords: spawner.tileCoords,
+                            teamIndex: this.gameState.currentTeamIndex,
+                            index: this.gameState.characters.filter((character) => character.teamIndex === this.gameState.currentTeamIndex).length,
+                            settings: this.selectedCharacterSettings,
+                            gameDelegate: this.gameDelegate,
+                        });
+                        this.gameState.characters.push(character);
+                    }
+                }
+            }
         }
 
         if (!this.isAiTurn()) {
@@ -1057,6 +1079,15 @@ export class GameManager implements GameModeManager {
         this.gameState.obstacles = level.data.obstacles.map((serializedPt) => {
             return new Obstacle(pointFromSerialized(serializedPt));
         });
+        this.gameState.spawners = [];
+        if (this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
+            const params = {
+                tileCoords: pointFromSerialized(level.aiSpawner),
+                teamIndex: 1,
+                turnsBetweenSpawns: 5,
+            };
+            this.gameState.spawners.push(new Spawner(params));
+        }
     }
 
     private addDefaultControls(): void {

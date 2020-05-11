@@ -4,6 +4,7 @@ import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Character } from 'src/app/game_objects/character';
 import { pathTo, Grid } from 'src/app/grid';
 import { GameSettings } from './game_settings';
+import { Spawner } from './game_objects/spawner';
 
 export enum GamePhase {
     // Setup.
@@ -27,6 +28,7 @@ export class GameState {
     gamePhase: GamePhase;
     obstacles: Obstacle[];
     characters: Character[];
+    spawners: Spawner[];
     flags: Flag[];
     currentTeamIndex: number;
     selectableTiles: Point[];
