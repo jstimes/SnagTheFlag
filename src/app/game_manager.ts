@@ -1025,10 +1025,12 @@ export class GameManager implements GameModeManager {
                 isAi = false;
             }
             this.teamIndexToIsAi.push(isAi);
-            this.ais.push(new Ai({
-                teamIndex: i,
-                difficulty: this.gameState.settings.aiDifficulty,
-            }));
+            if (isAi) {
+                this.ais.push(new Ai({
+                    teamIndex: i,
+                    difficulty: this.gameState.settings.aiDifficulty,
+                }));
+            }
         }
         this.controlMap = new ControlMap();
         this.addDefaultControls();

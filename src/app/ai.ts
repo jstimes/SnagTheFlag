@@ -58,6 +58,7 @@ export class Ai {
     constructor({ teamIndex, difficulty }: { teamIndex: number; difficulty: AiDifficulty; }) {
         this.teamIndex = teamIndex;
         this.difficulty = difficulty;
+        console.log(`AI created on ${difficulty} difficulty`);
         this.settings = difficultyToSettings.get(difficulty)!;
         this.actionQueue = [];
     }
