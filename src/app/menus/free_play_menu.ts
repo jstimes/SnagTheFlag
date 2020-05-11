@@ -7,7 +7,7 @@ import { GameModeManager } from 'src/app/game_mode_manager';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
 import { ButtonGroup } from 'src/app/ui/button_group';
-import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
+import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS, AiDifficulty } from 'src/app/game_settings';
 import { TextBox, TextBoxStyle } from 'src/app/ui/text_box';
 
 interface ButtonMetadata {
@@ -231,6 +231,7 @@ export class FreePlayMenu implements GameModeManager {
                     maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
                     numTeams: DEFAULT_GAME_SETTINGS.numTeams,
                     hasFogOfWar: true,
+                    aiDifficulty: AiDifficulty.MEDIUM,
                 }
                 this.onSelectLevel(this.selectedLevelIndex, settings);
             }

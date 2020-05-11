@@ -6,12 +6,7 @@ import { Grid, pathTo } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
 import { Target } from './math/target';
 import { CharacterSettings, ASSAULT_CHARACTER_SETTINGS, SCOUT_CHARACTER_SETTINGS } from './character_settings';
-
-export enum AiDifficulty {
-    WEAK = 'Weak',
-    MEDIUM = 'Medium',
-    STRONG = 'Strong',
-}
+import { AiDifficulty } from './game_settings';
 
 interface AiSettings {
     readonly maxAngleRandomization: number;

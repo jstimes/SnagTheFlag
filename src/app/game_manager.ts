@@ -4,7 +4,7 @@ import { Point, pointFromSerialized, containsPoint } from 'src/app/math/point';
 import { CONTROLS, ControlMap, EventType, Key, numberToKey, numberToOrdinal } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
-import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS } from 'src/app/game_settings';
+import { GameSettings, MatchType, AiDifficulty } from 'src/app/game_settings';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails, SplashDamage } from 'src/app/shot_info';
 import { Action, ActionType, throwBadAction, HealAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction } from 'src/app/actions';
@@ -15,7 +15,7 @@ import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/gam
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Character } from 'src/app/game_objects/character';
-import { Ai, AiDifficulty } from 'src/app/ai';
+import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
@@ -1022,7 +1022,10 @@ export class GameManager implements GameModeManager {
                 isAi = false;
             }
             this.teamIndexToIsAi.push(isAi);
-            this.ais.push(new Ai({ teamIndex: i, difficulty: AiDifficulty.WEAK }));
+            this.ais.push(new Ai({
+                teamIndex: i,
+                difficulty: this.gameState.settings.aiDifficulty,
+            }));
         }
         this.controlMap = new ControlMap();
         this.addDefaultControls();
