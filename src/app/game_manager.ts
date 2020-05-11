@@ -15,7 +15,7 @@ import { ParticleSystem, ParticleShape, ParticleSystemParams } from 'src/app/gam
 import { Hud, TextType, Duration } from 'src/app/hud';
 import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Character } from 'src/app/game_objects/character';
-import { Ai } from 'src/app/ai';
+import { Ai, AiDifficulty } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
 import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
@@ -1022,7 +1022,7 @@ export class GameManager implements GameModeManager {
                 isAi = false;
             }
             this.teamIndexToIsAi.push(isAi);
-            this.ais.push(new Ai({ teamIndex: i }));
+            this.ais.push(new Ai({ teamIndex: i, difficulty: AiDifficulty.WEAK }));
         }
         this.controlMap = new ControlMap();
         this.addDefaultControls();

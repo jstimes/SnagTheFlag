@@ -5,6 +5,37 @@ import { Character } from 'src/app/game_objects/character';
 import { Grid, pathTo } from 'src/app/grid';
 import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/target_finder';
 import { Target } from './math/target';
+import { CharacterSettings, ASSAULT_CHARACTER_SETTINGS, SCOUT_CHARACTER_SETTINGS } from './character_settings';
+
+export enum AiDifficulty {
+    WEAK = 'Weak',
+    MEDIUM = 'Medium',
+    STRONG = 'Strong',
+}
+
+interface AiSettings {
+    readonly maxAngleRandomization: number;
+    readonly ignoresFogOfWar: boolean;
+    readonly characterClass: CharacterSettings;
+}
+
+const WEAK_AI_SETTINGS: AiSettings = {
+    maxAngleRandomization: Math.PI / 28,
+    ignoresFogOfWar: false,
+    characterClass: SCOUT_CHARACTER_SETTINGS,
+};
+
+const MEDIUM_AI_SETTINGS: AiSettings = {
+    maxAngleRandomization: Math.PI / 36,
+    ignoresFogOfWar: false,
+    characterClass: ASSAULT_CHARACTER_SETTINGS,
+};
+
+const HARD_AI_SETTINGS: AiSettings = {
+    maxAngleRandomization: 0,
+    ignoresFogOfWar: true,
+    characterClass: ASSAULT_CHARACTER_SETTINGS,
+};
 
 interface ShotDetails {
     readonly aimAngleClockwiseRadians: number;
@@ -20,11 +51,13 @@ const IS_LOGGING = false;
 
 export class Ai {
 
+    readonly difficulty: AiDifficulty;
     readonly teamIndex: number;
     private actionQueue: OnGetNextAction[];
 
-    constructor({ teamIndex }: { teamIndex: number; }) {
+    constructor({ teamIndex, difficulty }: { teamIndex: number; difficulty: AiDifficulty; }) {
         this.teamIndex = teamIndex;
+        this.difficulty = difficulty;
         this.actionQueue = [];
     }
 
@@ -228,10 +261,8 @@ export class Ai {
             return startAimingAction;
         };
         const thenAim = (gameState) => {
-            let aim = shotDetails.aimAngleClockwiseRadians;
-            if (IS_RANDOMIZING_SHOTS) {
-                aim = aim + Math.random() * MAX_ANGLE_RANDOMIZATION - MAX_ANGLE_RANDOMIZATION / 2;
-            }
+            const randomAimAdjustment = Math.random() * MAX_ANGLE_RANDOMIZATION - MAX_ANGLE_RANDOMIZATION / 2;
+            const aim = shotDetails.aimAngleClockwiseRadians + randomAimAdjustment;
             const takeAimAction: AimAction = {
                 type: ActionType.AIM,
                 aimAngleClockwiseRadians: aim,
