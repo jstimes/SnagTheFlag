@@ -99,7 +99,7 @@ export class FreePlayMenu implements GameModeManager {
             new Map([[0, 2], [1, 4]]),
             new Map([[0, 4], [1, 8]]),
         ];
-        const teamSizeLeftMargin = .08;
+        const teamSizeLeftMargin = .04;
 
         const teamSizeHeader = new TextBox({
             dimensions: {
@@ -180,8 +180,8 @@ export class FreePlayMenu implements GameModeManager {
         }));
 
         // Level buttons.
-        const levelButtonsLeftMargin = matchTypeLeftMargin + elementSize.x + .04;
-        const levelHeaderLeftMargin = levelButtonsLeftMargin + elementSize.x / 2;
+        const levelButtonsLeftMargin = matchTypeLeftMargin + elementSize.x + .08;
+        const levelHeaderLeftMargin = levelButtonsLeftMargin + elementSize.x / 2 + .04 / 2;
         const levelHeader = new TextBox({
             dimensions: {
                 size: elementSize,
@@ -199,7 +199,7 @@ export class FreePlayMenu implements GameModeManager {
             let column = Math.floor(buttonIndex / columnSize);
             let leftMargin = levelButtonsLeftMargin;
             if (column === 1) {
-                leftMargin = leftMargin + elementSize.x + .1;
+                leftMargin = leftMargin + elementSize.x + .04;
             }
             const topLeftY = buttonTopMargin + row * buttonOffsetY + row * elementSize.y;
             const level = LEVELS[buttonIndex];
