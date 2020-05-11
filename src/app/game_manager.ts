@@ -94,10 +94,6 @@ export class GameManager implements GameModeManager {
     }
 
     update(elapsedMs: number): void {
-        if (this.isGameOver) {
-            this.controlMap.check();
-            return;
-        }
         for (const particleSystem of this.particleSystems) {
             particleSystem.update(elapsedMs);
         }
@@ -118,10 +114,6 @@ export class GameManager implements GameModeManager {
         if (this.isAnimating()) {
             return;
         }
-        if (this.isAiTurn()) {
-            const nextAction = this.getCurrentTurnAi().getNextAction(this.getGameState());
-            this.onAction(nextAction);
-        }
 
         this.controlMap.check();
         if (CONTROLS.hasClick()) {
@@ -129,6 +121,14 @@ export class GameManager implements GameModeManager {
             if (this.clickHandler != null) {
                 this.clickHandler.onClick(mouseTileCoords);
             }
+        }
+        if (this.isGameOver) {
+            return;
+        }
+
+        if (this.isAiTurn()) {
+            const nextAction = this.getCurrentTurnAi().getNextAction(this.getGameState());
+            this.onAction(nextAction);
         }
     }
 
@@ -410,7 +410,13 @@ export class GameManager implements GameModeManager {
                 }
                 break;
             case ActionType.SELECT_CHARACTER:
-                const character = activeSquad[action.characterIndex];
+                const character = activeSquad.find((character) => character.index === action.characterIndex);
+                if (character == null) {
+                    throw new Error(
+                        `Can't find character in SELECT_CHARACTER action.` +
+                        ` cur team index: ${this.gameState.currentTeamIndex}; ` +
+                        ` charIndex: ${action.characterIndex}`);
+                }
                 if (character.isTurnOver() || !character.isAlive()) {
                     throw new Error(`Selected character is dead or turn is over.`);
                 }
@@ -975,6 +981,7 @@ export class GameManager implements GameModeManager {
         if (this.isAiTurn()) {
             this.controlMap.clear();
             this.addDefaultControls();
+            this.clickHandler = null;
         }
     }
 
