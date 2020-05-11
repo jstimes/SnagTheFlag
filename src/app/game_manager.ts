@@ -970,6 +970,12 @@ export class GameManager implements GameModeManager {
             default:
                 throw new Error(`Unknown selected character state`);
         }
+
+        // TODO - very hackE: should separate game state update from control update :O
+        if (this.isAiTurn()) {
+            this.controlMap.clear();
+            this.addDefaultControls();
+        }
     }
 
     /** 

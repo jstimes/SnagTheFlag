@@ -106,15 +106,6 @@ export class Character {
             tileBottomLeftCanvas.x + margins.x,
             tileBottomLeftCanvas.y - margins.y);
 
-        // Draws bounding box.
-        // for (const edge of this.getEdges()) {
-        //     context.beginPath();
-        //     context.moveTo(edge.startPt.x, edge.startPt.y);
-        //     context.lineTo(edge.endPt.x, edge.endPt.y);
-        //     context.closePath();
-        //     context.stroke();
-        // }
-
         // Health bar.
         const healthBarHeight = Grid.TILE_SIZE / 10;
         const healthBarWidth = 2 * CHARACTER_CIRCLE_RADIUS + healthBarHeight;
