@@ -153,7 +153,7 @@ export class LevelCreator {
 
     private renderControls(): void {
         const context = this.context;
-        context.fillStyle = THEME.textColor;
+        context.fillStyle = THEME.hudTextColor;
         const fontSize = 18;
         context.font = `${fontSize}px fantasy`;
 

@@ -3,7 +3,8 @@ export interface Theme {
     /* Gameplay/level creation colors. */
     readonly gridBackgroundColor: string;
     readonly gridLineColor: string;
-    readonly textColor: string;
+    readonly hudTextColor: string;
+    readonly characterTextColor: string;
     readonly fogColor: string;
 
     readonly obstacleColor: string;
@@ -37,7 +38,8 @@ export interface Theme {
 export const THEME: Theme = {
     gridBackgroundColor: '#959aa3',
     gridLineColor: '#1560e8',
-    textColor: '#614447',
+    characterTextColor: '#614447',
+    hudTextColor: '#edb951',
     fogColor: '#0a0a0a88',
 
     obstacleColor: '#4c6e47',

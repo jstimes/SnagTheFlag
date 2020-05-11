@@ -97,7 +97,7 @@ export class Character {
         // Character number.
         const tileBottomLeftCanvas = tileTopLeftCanvas.add(new Point(0, Grid.TILE_SIZE));
         const text = `${this.index + 1}`;
-        context.fillStyle = THEME.textColor;
+        context.fillStyle = THEME.characterTextColor;
         const fontSize = 12;
         const margins = new Point(Grid.TILE_SIZE / 12, Grid.TILE_SIZE / 12);
         context.font = `${fontSize}px fantasy`;

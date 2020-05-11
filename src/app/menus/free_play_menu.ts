@@ -222,7 +222,7 @@ export class FreePlayMenu implements GameModeManager {
                 color: '#66d15a',
                 hoverColor: '#7aed6d',
                 fontSize: 28,
-                textColor: THEME.textColor,
+                textColor: THEME.buttonTextColor,
             },
             onClick: () => {
                 const settings: GameSettings = {

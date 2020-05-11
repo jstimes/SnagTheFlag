@@ -144,7 +144,7 @@ export class Hud {
 
     private renderControls(): void {
         const context = this.context;
-        context.fillStyle = THEME.textColor;
+        context.fillStyle = THEME.hudTextColor;
         const fontSize = 18;
         context.font = `${fontSize}px fantasy`;
 
@@ -165,7 +165,7 @@ export class Hud {
     private renderText(
         text: string, textRenderSettings: TextRenderSettings, percentTimeLeft: number): void {
 
-        const fadedColor = hexStringToColor(THEME.textColor);
+        const fadedColor = hexStringToColor(THEME.hudTextColor);
         fadedColor.a = percentTimeLeft;
         this.context.fillStyle = colorToString(fadedColor);
         this.context.font = `${textRenderSettings.fontSize}px fantasy`;
