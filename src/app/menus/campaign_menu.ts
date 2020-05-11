@@ -19,6 +19,7 @@ export class CampaignMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => void;
+    private readonly onBack: () => void;
     private readonly uiManager: UiManager;
 
     constructor(
@@ -26,11 +27,13 @@ export class CampaignMenu implements GameModeManager {
         context: CanvasRenderingContext2D,
         callbacks: {
             readonly onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => void;
+            onBack: () => void;
         }) {
 
         this.canvas = canvas;
         this.context = context;
         this.onSelectLevel = callbacks.onSelectLevel;
+        this.onBack = callbacks.onBack;
 
         this.uiManager = new UiManager(context);
         this.initLevelMenu();
@@ -60,7 +63,7 @@ export class CampaignMenu implements GameModeManager {
 
         const buttonOffsetY = .04;
         const elementSize = new Point(.24, .08);
-        const buttonTopMargin = .24 + buttonOffsetY + elementSize.y;
+        const buttonTopMargin = .2 + buttonOffsetY + elementSize.y;
         const fontSize = 24;
 
         const buttonStyle: ButtonStyle = {
@@ -78,17 +81,27 @@ export class CampaignMenu implements GameModeManager {
             textColor: THEME.buttonTextColor,
         };
 
-        const leftColumnLeftMargin = .12;
-        const middleColumnLeftMargin = .4;
+        const middleColumnLeftMargin = .5 - elementSize.x / 2;
+        const leftColumnLeftMargin = middleColumnLeftMargin - elementSize.x - .1;
         const rightColumnLeftMargin = middleColumnLeftMargin + elementSize.x + .1;
 
+        const columns = 3;
+        const columnSize = CAMPAIGN_LEVELS.length / columns;
         for (let campaignLevelIndex = 0; campaignLevelIndex < CAMPAIGN_LEVELS.length; campaignLevelIndex++) {
-            const topLeftY = buttonTopMargin + campaignLevelIndex * buttonOffsetY + campaignLevelIndex * elementSize.y;
+            const column = Math.floor(campaignLevelIndex / columnSize);
+            const row = campaignLevelIndex % columnSize;
+            const topLeftY = buttonTopMargin + row * buttonOffsetY + row * elementSize.y;
             const campaignLevel = CAMPAIGN_LEVELS[campaignLevelIndex];
+            let leftMargin = leftColumnLeftMargin;
+            if (column === 1) {
+                leftMargin = middleColumnLeftMargin;
+            } else if (column === 2) {
+                leftMargin = rightColumnLeftMargin;
+            }
             const dimensions = {
-                topLeft: new Point(leftColumnLeftMargin, topLeftY),
+                topLeft: new Point(leftMargin, topLeftY),
                 size: elementSize,
-                text: campaignLevel.levelName,
+                text: campaignLevel.isUnlocked ? campaignLevel.levelName : 'Locked',
             };
             if (campaignLevel.isUnlocked) {
                 this.uiManager.addElement(new Button({
@@ -113,17 +126,33 @@ export class CampaignMenu implements GameModeManager {
                 }));
             }
         }
+
+        const backButton = new Button({
+            dimensions: {
+                size: elementSize,
+                topLeft: new Point(.08, .86),
+                text: 'Back',
+            },
+            style: {
+                fontSize,
+                color: '#d9c8a3',
+                hoverColor: '#e6dbc3',
+                textColor: THEME.buttonTextColor,
+            },
+            onClick: this.onBack,
+        });
+        this.uiManager.addElement(backButton);
     }
 
     private renderTitleText(): void {
         this.context.fillStyle = THEME.buttonTextColor;
         const fontSize = 72;
         this.context.font = `${fontSize}px fantasy`;
-        const text = 'Snag the Flag'
+        const text = 'Single Player Campaign'
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(
             RENDER_SETTINGS.canvasWidth / 2,
-            RENDER_SETTINGS.canvasHeight / 4);
+            RENDER_SETTINGS.canvasHeight / 6);
         this.context.fillText(
             text,
             textCanvasPosition.x - textWidth / 2,

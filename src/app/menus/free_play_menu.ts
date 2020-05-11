@@ -19,6 +19,7 @@ export class FreePlayMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
     private readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
+    private readonly onBack: () => void;
     private readonly uiManager: UiManager;
     private selectedLevelIndex: number;
     private selectedMatchType: MatchType;
@@ -29,11 +30,13 @@ export class FreePlayMenu implements GameModeManager {
         context: CanvasRenderingContext2D,
         callbacks: {
             readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
+            onBack: () => void;
         }) {
 
         this.canvas = canvas;
         this.context = context;
         this.onSelectLevel = callbacks.onSelectLevel;
+        this.onBack = callbacks.onBack;
 
         this.uiManager = new UiManager(context);
         this.initLevelMenu();
@@ -62,7 +65,7 @@ export class FreePlayMenu implements GameModeManager {
     //  OLD buttonHoverColor = '#fcd281';
     private initLevelMenu(): void {
 
-        const headerTopMargin = .28;
+        const headerTopMargin = .2;
         const buttonOffsetY = .02;
         const elementSize = new Point(.18, .08);
         const buttonTopMargin = headerTopMargin + buttonOffsetY + elementSize.y;
@@ -81,41 +84,6 @@ export class FreePlayMenu implements GameModeManager {
             textColor: THEME.buttonTextColor,
         };
 
-        // Level buttons.
-        const leftMargin = .12;
-        const levelHeader = new TextBox({
-            dimensions: {
-                size: elementSize,
-                text: 'Level',
-                topLeft: new Point(leftMargin, headerTopMargin),
-            },
-            style: headerStyle,
-        });
-        this.uiManager.addElement(levelHeader);
-
-        const levelDimensions: ButtonDimensions[] = [];
-        for (let buttonIndex = 0; buttonIndex < LEVELS.length; buttonIndex++) {
-            const topLeftY = buttonTopMargin + buttonIndex * buttonOffsetY + buttonIndex * elementSize.y;
-            const level = LEVELS[buttonIndex];
-            levelDimensions.push({
-                topLeft: new Point(leftMargin, topLeftY),
-                size: elementSize,
-                text: level.name,
-            });
-        }
-
-        const initialLevelSelectionIndex = 0;
-        const onLevelChangeCallback = (index: number) => {
-            this.selectedLevelIndex = index;
-        };
-        onLevelChangeCallback(initialLevelSelectionIndex);
-        this.uiManager.addElement(new ButtonGroup({
-            buttons: levelDimensions,
-            buttonStyle,
-            initialSelectionIndex: initialLevelSelectionIndex,
-            onChangeCallback: onLevelChangeCallback,
-        }));
-
         // Team size type buttons.
         const teamSizeIndexToString: string[] = [
             '2x2',
@@ -131,7 +99,7 @@ export class FreePlayMenu implements GameModeManager {
             new Map([[0, 2], [1, 4]]),
             new Map([[0, 4], [1, 8]]),
         ];
-        const teamSizeLeftMargin = .4;
+        const teamSizeLeftMargin = .08;
 
         const teamSizeHeader = new TextBox({
             dimensions: {
@@ -173,7 +141,7 @@ export class FreePlayMenu implements GameModeManager {
             [MatchType.AI_VS_AI, 'AIvAI'],
         ]);
         const matchIndexToMatchType: MatchType[] = [];
-        const matchTypeLeftMargin = teamSizeLeftMargin + elementSize.x + .1;
+        const matchTypeLeftMargin = .3;
 
         const matchTypeHeader = new TextBox({
             dimensions: {
@@ -211,12 +179,56 @@ export class FreePlayMenu implements GameModeManager {
             onChangeCallback,
         }));
 
+        // Level buttons.
+        const levelButtonsLeftMargin = matchTypeLeftMargin + elementSize.x + .04;
+        const levelHeaderLeftMargin = levelButtonsLeftMargin + elementSize.x / 2;
+        const levelHeader = new TextBox({
+            dimensions: {
+                size: elementSize,
+                text: 'Level',
+                topLeft: new Point(levelHeaderLeftMargin, headerTopMargin),
+            },
+            style: headerStyle,
+        });
+        this.uiManager.addElement(levelHeader);
+
+        const levelDimensions: ButtonDimensions[] = [];
+        const columnSize = 6;
+        for (let buttonIndex = 0; buttonIndex < LEVELS.length; buttonIndex++) {
+            let row = buttonIndex % columnSize;
+            let column = Math.floor(buttonIndex / columnSize);
+            let leftMargin = levelButtonsLeftMargin;
+            if (column === 1) {
+                leftMargin = leftMargin + elementSize.x + .1;
+            }
+            const topLeftY = buttonTopMargin + row * buttonOffsetY + row * elementSize.y;
+            const level = LEVELS[buttonIndex];
+
+            levelDimensions.push({
+                topLeft: new Point(leftMargin, topLeftY),
+                size: elementSize,
+                text: level.name,
+            });
+        }
+
+        const initialLevelSelectionIndex = 0;
+        const onLevelChangeCallback = (index: number) => {
+            this.selectedLevelIndex = index;
+        };
+        onLevelChangeCallback(initialLevelSelectionIndex);
+        this.uiManager.addElement(new ButtonGroup({
+            buttons: levelDimensions,
+            buttonStyle,
+            initialSelectionIndex: initialLevelSelectionIndex,
+            onChangeCallback: onLevelChangeCallback,
+        }));
+
         // Start button.
         const startButton = new Button({
             dimensions: {
-                size: new Point(.2, .1),
+                size: elementSize,
                 text: 'Start',
-                topLeft: new Point(.67, .8),
+                topLeft: new Point(matchTypeLeftMargin, .86),
             },
             style: {
                 color: '#66d15a',
@@ -237,17 +249,34 @@ export class FreePlayMenu implements GameModeManager {
             }
         });
         this.uiManager.addElement(startButton);
+
+        // Back button.
+        const backButton = new Button({
+            dimensions: {
+                size: elementSize,
+                topLeft: new Point(teamSizeLeftMargin, .86),
+                text: 'Back',
+            },
+            style: {
+                fontSize,
+                color: '#d9c8a3',
+                hoverColor: '#e6dbc3',
+                textColor: THEME.buttonTextColor,
+            },
+            onClick: this.onBack,
+        });
+        this.uiManager.addElement(backButton);
     }
 
     private renderTitleText(): void {
         this.context.fillStyle = THEME.buttonTextColor;
         const fontSize = 72;
         this.context.font = `${fontSize}px fantasy`;
-        const text = 'Snag the Flag'
+        const text = 'Free Play'
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(
             RENDER_SETTINGS.canvasWidth / 2,
-            RENDER_SETTINGS.canvasHeight / 4);
+            RENDER_SETTINGS.canvasHeight / 6);
         this.context.fillText(
             text,
             textCanvasPosition.x - textWidth / 2,

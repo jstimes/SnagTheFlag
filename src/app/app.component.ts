@@ -98,29 +98,16 @@ export class AppComponent {
   private initFreePlayMenu(): void {
     this.gameState = GameState.FREE_PLAY_MENU;
     this.gameStateManager = new FreePlayMenu(this.canvas, this.context, {
-      onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => {
-        this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
-          this.tearDownCurrentGameState();
-          this.initFreePlayMenu();
-        });
-      },
+      onSelectLevel: this.onSelectFreePlayLevel,
+      onBack: this.onBack,
     });
   }
 
   private initCampaignMenu(): void {
     this.gameState = GameState.CAMPAIGN_MENU;
     this.gameStateManager = new CampaignMenu(this.canvas, this.context, {
-      onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => {
-        this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
-          if (winningTeamIndex === 0) {
-            if (campaignLevelIndex < CAMPAIGN_LEVELS.length + 1) {
-              CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
-            }
-          }
-          this.tearDownCurrentGameState();
-          this.initCampaignMenu();
-        });
-      },
+      onSelectLevel: this.onSelectCampaignLevel,
+      onBack: this.onBack,
     });
   }
 
@@ -138,4 +125,28 @@ export class AppComponent {
   private tearDownCurrentGameState(): void {
     this.gameStateManager.destroy();
   }
+
+  private readonly onSelectFreePlayLevel = (levelIndex: number, gameSettings: GameSettings) => {
+    this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+      this.tearDownCurrentGameState();
+      this.initFreePlayMenu();
+    });
+  };
+
+  private readonly onSelectCampaignLevel = (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => {
+    this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+      if (winningTeamIndex === 0) {
+        if (campaignLevelIndex < CAMPAIGN_LEVELS.length + 1) {
+          CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
+        }
+      }
+      this.tearDownCurrentGameState();
+      this.initCampaignMenu();
+    });
+  };
+
+  private readonly onBack = () => {
+    this.tearDownCurrentGameState();
+    this.initStartMenu();
+  };
 }

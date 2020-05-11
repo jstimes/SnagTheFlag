@@ -9,33 +9,104 @@ interface CampaignLevel {
     readonly aiDifficulty: AiDifficulty;
 }
 
+const UNLOCK_ALL = true;
+
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
+    // Level 1
     {
-        levelIndex: 3,
+        levelIndex: 1,
         levelName: 'Starting grounds',
         teamIndexToSquadSize: new Map([[0, 4], [1, 4]]),
         isUnlocked: true,
         aiDifficulty: AiDifficulty.WEAK,
     },
+    // Level 2
     {
-        levelIndex: 1,
+        levelIndex: 2,
         levelName: 'Getting tougher',
         teamIndexToSquadSize: new Map([[0, 3], [1, 5]]),
-        isUnlocked: false,
+        isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.WEAK,
     },
+    // Level 3
     {
-        levelIndex: 2,
-        levelName: 'Snag...',
+        levelIndex: 3,
+        levelName: 'Protect it',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
-        isUnlocked: false,
+        isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.WEAK,
     },
+    // Level 4
     {
-        levelIndex: 2,
+        levelIndex: 4,
+        levelName: 'Snag it',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.MEDIUM,
+    },
+    // Level 5
+    {
+        levelIndex: 5,
+        levelName: 'Familiar',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.MEDIUM,
+    },
+
+    // Level 6
+    {
+        levelIndex: 4,
+        levelName: 'Snarls',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.MEDIUM,
+    },
+    // Level 7
+    {
+        levelIndex: 4,
+        levelName: 'To snag...',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.MEDIUM,
+    },
+    // Level 8
+    {
+        levelIndex: 4,
         levelName: 'Or be snagged...',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
-        isUnlocked: false,
-        aiDifficulty: AiDifficulty.WEAK,
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.STRONG,
+    },
+    // Level 9
+    {
+        levelIndex: 4,
+        levelName: 'Snag and tag',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.STRONG,
+    },
+    // Level 10
+    {
+        levelIndex: 4,
+        levelName: 'Flag of snag',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.STRONG,
+    },
+    // Level 11
+    {
+        levelIndex: 4,
+        levelName: 'Frag and flag',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.STRONG,
+    },
+    // Level 12
+    {
+        levelIndex: 4,
+        levelName: 'Final snag',
+        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.STRONG,
     },
 ]

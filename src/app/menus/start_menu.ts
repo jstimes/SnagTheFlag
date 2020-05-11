@@ -67,8 +67,8 @@ export class StartMenu implements GameModeManager {
         const buttonHoverColor = '#fcd281';
         const fontSize = 24;
         const buttonMetadatas: ButtonMetadata[] = [
-            { text: 'Free play', callback: this.onFreePlay },
             { text: 'Campaign mode', callback: this.onCampaign },
+            { text: 'Free play', callback: this.onFreePlay },
             { text: 'Create Level', callback: this.onCreateLevel },
         ];
         for (let buttonIndex = 0; buttonIndex < buttonMetadatas.length; buttonIndex++) {
