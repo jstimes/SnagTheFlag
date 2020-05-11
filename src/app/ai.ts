@@ -1,4 +1,4 @@
-import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction, AimAction } from 'src/app/actions';
+import { Action, ActionType, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, SelectTileAction, AimAction, SelectCharacterClassAction } from 'src/app/actions';
 import { Point } from 'src/app/math/point';
 import { GameState, GamePhase, SelectedCharacterState } from 'src/app/game_state';
 import { Character } from 'src/app/game_objects/character';
@@ -26,11 +26,17 @@ const MEDIUM_AI_SETTINGS: AiSettings = {
     characterClass: ASSAULT_CHARACTER_SETTINGS,
 };
 
-const HARD_AI_SETTINGS: AiSettings = {
+const STRONG_AI_SETTINGS: AiSettings = {
     maxAngleRandomization: 0,
     ignoresFogOfWar: true,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
 };
+
+const difficultyToSettings: Map<AiDifficulty, AiSettings> = new Map([
+    [AiDifficulty.WEAK, WEAK_AI_SETTINGS],
+    [AiDifficulty.MEDIUM, MEDIUM_AI_SETTINGS],
+    [AiDifficulty.STRONG, STRONG_AI_SETTINGS],
+])
 
 interface ShotDetails {
     readonly aimAngleClockwiseRadians: number;
@@ -40,19 +46,19 @@ interface ShotDetails {
 type OnGetNextAction = (gameState: GameState) => Action;
 
 const POST_ANIMATION_DELAY = 500;
-const MAX_ANGLE_RANDOMIZATION = Math.PI / 32;
-const IS_RANDOMIZING_SHOTS = false;
 const IS_LOGGING = false;
 
 export class Ai {
 
     readonly difficulty: AiDifficulty;
+    readonly settings: AiSettings;
     readonly teamIndex: number;
     private actionQueue: OnGetNextAction[];
 
     constructor({ teamIndex, difficulty }: { teamIndex: number; difficulty: AiDifficulty; }) {
         this.teamIndex = teamIndex;
         this.difficulty = difficulty;
+        this.settings = difficultyToSettings.get(difficulty)!;
         this.actionQueue = [];
     }
 
@@ -74,9 +80,7 @@ export class Ai {
 
     private getActionsForGameState(gameState: GameState): OnGetNextAction[] {
         if (gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            return [(gs) => {
-                return this.placeCharacter(gs);
-            }];
+            return this.placeCharacter(gameState);
         }
         if (gameState.selectedCharacter == null || gameState.selectedCharacterState == null) {
             throw new Error('Expected a selected character and state');
@@ -107,22 +111,36 @@ export class Ai {
         return [endTurn];
     }
 
-    private placeCharacter(gameState: GameState): Action {
-        for (const tile of gameState.selectableTiles) {
-            const tileCenterCanvas = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
-            if (this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length === 0) {
-                return {
-                    type: ActionType.SELECT_TILE,
-                    tile,
-                };
-            }
-        }
-
-        this.log("AI: No unexposed tiles");
-        return {
-            type: ActionType.SELECT_TILE,
-            tile: gameState.selectableTiles[0],
+    private placeCharacter(gameState: GameState): OnGetNextAction[] {
+        const selectCharacterClass = (gameState: GameState) => {
+            const selectCharacterClassAction: SelectCharacterClassAction = {
+                type: ActionType.SELECT_CHARACTER_CLASS,
+                class: this.settings.characterClass,
+            };
+            return selectCharacterClassAction;
         };
+
+        const thenSelectTile = (gameState: GameState) => {
+            for (const tile of gameState.selectableTiles) {
+                const tileCenterCanvas = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
+                if (this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length === 0) {
+                    const action: SelectTileAction = {
+                        type: ActionType.SELECT_TILE,
+                        tile,
+                    };
+                    return action;
+                }
+            }
+
+            this.log("AI: No unexposed tiles");
+            const selectTileAction: SelectTileAction = {
+                type: ActionType.SELECT_TILE,
+                tile: gameState.selectableTiles[0],
+            };
+            return selectTileAction;
+        };
+
+        return [selectCharacterClass, thenSelectTile];
     }
 
     private getHasntMovedNorShot(character: Character, gameState: GameState): OnGetNextAction[] {
@@ -256,7 +274,10 @@ export class Ai {
             return startAimingAction;
         };
         const thenAim = (gameState) => {
-            const randomAimAdjustment = Math.random() * MAX_ANGLE_RANDOMIZATION - MAX_ANGLE_RANDOMIZATION / 2;
+            const randomAimAdjustment =
+                Math.random()
+                * this.settings.maxAngleRandomization
+                * - this.settings.maxAngleRandomization / 2;
             const aim = shotDetails.aimAngleClockwiseRadians + randomAimAdjustment;
             const takeAimAction: AimAction = {
                 type: ActionType.AIM,
@@ -281,6 +302,10 @@ export class Ai {
         const fromTile = Grid.getTileFromCanvasCoords(fromCanvas);
         const shots: ShotDetails[] = [];
         for (const enemy of gameState.getEnemyCharacters()) {
+            if (!this.settings.ignoresFogOfWar
+                && !gameState.isTileVisibleByTeamIndex(enemy.tileCoords, this.teamIndex)) {
+                continue;
+            }
             const enemyCenter = getTileCenterCanvas(enemy.tileCoords);
             const direction = enemyCenter.subtract(fromCanvas).normalize();
             const aimAngleClockwiseRadians = direction.getPointRotationRadians();

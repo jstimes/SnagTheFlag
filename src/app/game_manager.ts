@@ -7,7 +7,7 @@ import { LEVELS } from 'src/app/level';
 import { GameSettings, MatchType, AiDifficulty } from 'src/app/game_settings';
 import { Ray, LineSegment, detectRayLineSegmentCollision } from 'src/app/math/collision_detection';
 import { ShotInfo, ProjectileDetailsType, Bullet, ProjectileDetails, SplashDamage } from 'src/app/shot_info';
-import { Action, ActionType, throwBadAction, HealAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction } from 'src/app/actions';
+import { Action, ActionType, throwBadAction, HealAction, EndCharacterTurnAction, ShootAction, SelectCharacterStateAction, AimAction, SelectTileAction, SelectCharacterAction, SelectCharacterClassAction } from 'src/app/actions';
 import { CharacterSettings, HealAbility, ASSAULT_CHARACTER_SETTINGS, ClassType, CHARACTER_CLASSES, CharacterAbilityType } from 'src/app/character_settings';
 import { Flag } from 'src/app/game_objects/flag';
 import { Projectile } from 'src/app/game_objects/projectile';
@@ -424,6 +424,9 @@ export class GameManager implements GameModeManager {
                 break;
             case ActionType.SELECT_CHARACTER_STATE:
                 this.setSelectedCharacterState(action.state);
+                break;
+            case ActionType.SELECT_CHARACTER_CLASS:
+                this.selectedCharacterSettings = action.class;
                 break;
             default:
                 throwBadAction(action);
@@ -1082,11 +1085,13 @@ export class GameManager implements GameModeManager {
                 key,
                 name: characterClassType,
                 func: () => {
-                    const newClass = CHARACTER_CLASSES.find((settings) => {
-                        return settings.type === characterClassType;
-                    })!;
-                    this.selectedCharacterSettings = newClass;
-                    return true;
+                    const selectCharacterClassAction: SelectCharacterClassAction = {
+                        type: ActionType.SELECT_CHARACTER_CLASS,
+                        class: CHARACTER_CLASSES.find((settings) => {
+                            return settings.type === characterClassType;
+                        })!
+                    };
+                    this.onAction(selectCharacterClassAction);
                 },
                 eventType: EventType.KeyPress,
             });

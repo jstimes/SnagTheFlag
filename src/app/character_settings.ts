@@ -1,4 +1,3 @@
-import { ActionType } from 'src/app/actions';
 import { SplashDamage, ProjectileDetailsType, ProjectileShapeType, Gun } from 'src/app/shot_info';
 import { Grid } from 'src/app/grid';
 import { THEME } from './theme';

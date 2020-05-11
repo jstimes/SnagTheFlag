@@ -11,7 +11,7 @@ interface CampaignLevel {
 
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     {
-        levelIndex: 0,
+        levelIndex: 3,
         levelName: 'Starting grounds',
         teamIndexToSquadSize: new Map([[0, 4], [1, 4]]),
         isUnlocked: true,

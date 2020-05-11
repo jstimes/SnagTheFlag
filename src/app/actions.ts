@@ -1,8 +1,10 @@
 import { Point } from 'src/app/math/point';
 import { SplashDamage } from 'src/app/shot_info';
 import { SelectedCharacterState } from 'src/app/game_state';
+import { CharacterSettings } from 'src/app/character_settings';
 
 export enum ActionType {
+    SELECT_CHARACTER_CLASS = 'SELECT_CHARACTER_CLASS',
     SELECT_TILE = 'SELECT_TILE',
     SELECT_CHARACTER = 'SELECT_CHARACTER',
     SELECT_CHARACTER_STATE = 'SELECT_CHARACTER_STATE',
@@ -10,6 +12,12 @@ export enum ActionType {
     SHOOT = 'SHOOT',
     HEAL = 'HEAL',
     END_CHARACTER_TURN = 'END_CHARACTER_TURN',
+}
+
+
+export interface SelectCharacterClassAction {
+    readonly type: ActionType.SELECT_CHARACTER_CLASS;
+    readonly class: CharacterSettings;
 }
 
 export interface SelectTileAction {
@@ -45,7 +53,7 @@ export interface HealAction {
     readonly healAmount: number;
 }
 
-export type Action =
+export type Action = SelectCharacterClassAction |
     EndCharacterTurnAction | ShootAction | HealAction |
     SelectTileAction | SelectCharacterAction |
     SelectCharacterStateAction | AimAction;
