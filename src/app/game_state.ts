@@ -2,7 +2,8 @@ import { Point } from 'src/app/math/point';
 import { Flag } from 'src/app/game_objects/flag';
 import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Character } from 'src/app/game_objects/character';
-import { pathTo } from 'src/app/grid';
+import { pathTo, Grid } from 'src/app/grid';
+import { GameSettings } from './game_settings';
 
 export enum GamePhase {
     // Setup.
@@ -18,7 +19,11 @@ export enum SelectedCharacterState {
     THROWING_GRENADE = 'THROWING_GRENADE',
 }
 
+
+const DEFAULT_FLAG_VISIBILITY = 2;
+
 export class GameState {
+    readonly settings: GameSettings;
     gamePhase: GamePhase;
     obstacles: Obstacle[];
     characters: Character[];
@@ -28,13 +33,46 @@ export class GameState {
     selectedCharacter?: Character;
     selectedCharacterState?: SelectedCharacterState;
 
-    constructor() {
+    constructor(settings: GameSettings) {
         this.gamePhase = GamePhase.CHARACTER_PLACEMENT;
+        this.settings = settings;
         this.obstacles = [];
         this.characters = [];
         this.flags = [];
         this.currentTeamIndex = 0;
         this.selectableTiles = [];
+    }
+
+    isFogOfWarOn(): boolean {
+        return this.settings.hasFogOfWar != null
+            && this.settings.hasFogOfWar === true;
+    }
+
+    isTileVisibleByTeamIndex(tile: Point, teamIndex: number): boolean {
+        for (const character of this.getCharactersForTeamIndex(teamIndex)) {
+            if (character.tileCoords.manhattanDistanceTo(tile) <= character.settings.maxSight) {
+                return true;
+            }
+        }
+        const distToTeamFlag =
+            this.getFlagForTeamIndex(teamIndex).tileCoords.manhattanDistanceTo(tile);
+        if (distToTeamFlag <= DEFAULT_FLAG_VISIBILITY) {
+            return true;
+        }
+        return false;
+    }
+
+    getTilesVisibleByTeamIndex(teamIndex: number): Point[] {
+        const visibleTiles: Point[] = [];
+        for (let x = 0; x < Grid.TILES_WIDE; x++) {
+            for (let y = 0; y < Grid.TILES_TALL; y++) {
+                const tile = new Point(x, y);
+                if (this.isTileVisibleByTeamIndex(tile, teamIndex)) {
+                    visibleTiles.push(tile);
+                }
+            }
+        }
+        return visibleTiles;
     }
 
     getFirstCharacterIndex(): number {
@@ -128,5 +166,15 @@ export class GameState {
                 && squadMember.tileCoords.equals(tile)
                 && squadMember !== this.selectedCharacter;
         }) != null;
+    }
+
+    getCharactersForTeamIndex(teamIndex: number): Character[] {
+        return this.getAliveCharacters().filter((character) => {
+            return character.teamIndex === teamIndex;
+        });
+    }
+
+    getFlagForTeamIndex(teamIndex: number): Flag {
+        return this.flags[teamIndex];
     }
 }

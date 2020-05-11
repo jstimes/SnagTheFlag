@@ -44,6 +44,7 @@ export class Projectile {
             throw new Error(`Created a projectile with no targets`);
         }
         this.setNewTargets(params.targets);
+        this.tileCoords = Grid.getTileFromCanvasCoords(this.animationState.currentTarget!.ray.startPt);
         this.trails = [{
             ray: this.animationState.currentTarget!.ray,
             distance: 0,

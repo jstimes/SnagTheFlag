@@ -57,6 +57,8 @@ export interface CharacterSettings {
     readonly maxHealth: number;
     /** Manhattan distance from curent position a character can move */
     readonly maxMovesPerTurn: number;
+    /** Manhattan distance away a character can see when fog of war is on. */
+    readonly maxSight: number;
     /** Special abilities a character can use. */
     readonly extraActions: Set<CharacterAbility>;
 
@@ -201,6 +203,7 @@ export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SCOUT,
     maxHealth: 8,
     maxMovesPerTurn: 6,
+    maxSight: 8,
     gun: SHOTGUN,
     extraActions: new Set<CharacterAbility>([
         LIGHT_HEAL,
@@ -211,6 +214,7 @@ export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.ASSAULT,
     maxHealth: 10,
     maxMovesPerTurn: 4,
+    maxSight: 6,
     gun: ASSAULT_RIFLE,
     extraActions: new Set<CharacterAbility>([
         MEDIUM_HEAL,
@@ -220,6 +224,7 @@ export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
 export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.SNIPER,
     maxHealth: 8,
+    maxSight: 8,
     maxMovesPerTurn: 3,
     gun: SNIPER_RIFLE,
     extraActions: new Set<CharacterAbility>([
@@ -229,6 +234,7 @@ export const SNIPER_CHARACTER_SETTINGS: CharacterSettings = {
 export const DEMOLITION_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.DEMOLITION,
     maxHealth: 12,
+    maxSight: 4,
     maxMovesPerTurn: 3,
     gun: MISSILE_LAUNCHER,
     extraActions: new Set<CharacterAbility>([

@@ -27,6 +27,8 @@ interface ClickHandler {
     onClick: (tile: Point) => void;
 }
 
+const DEFAULT_HUMAN_TEAM_INDEX = 0;
+
 const QUIT_KEY = Key.Q;
 const RESTART_KEY = Key.R;
 const MOVE_KEY = Key.M;
@@ -199,10 +201,12 @@ export class GameManager implements GameModeManager {
         context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
 
         if (this.gameState.selectableTiles != null && this.gameState.selectableTiles.length) {
-            for (const availableTile of this.gameState.selectableTiles) {
-                const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(availableTile);
-                context.fillStyle = THEME.availableForMovementColor;
-                context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+            if (!this.isAiTurn()) {
+                for (const availableTile of this.gameState.selectableTiles) {
+                    const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(availableTile);
+                    context.fillStyle = THEME.availableForMovementColor;
+                    context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+                }
             }
             // Indicate hovered tile.
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
@@ -219,22 +223,92 @@ export class GameManager implements GameModeManager {
             flag.render(this.context);
         }
         for (const character of this.gameState.getAliveCharacters()) {
-            character.render(this.context);
+            if (this.shouldRenderCharacter(character)) {
+                character.render(this.context);
+            }
         }
-        if (this.gameState.selectedCharacter != null) {
+        if (this.gameState.selectedCharacter != null && !this.isAiTurn()) {
             const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(this.gameState.selectedCharacter.tileCoords);
             context.strokeStyle = THEME.selectedCharacterOutlineColor;
             context.lineWidth = 2;
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
         for (const projectile of this.projectiles) {
-            projectile.render();
+            if (this.shouldRenderProjectile(projectile)) {
+                projectile.render();
+            }
         }
         for (const particleSystem of this.particleSystems) {
             // TODO - be consistent with giving context
             particleSystem.render(this.context);
         }
+        this.renderFogOfWar(this.context);
         this.hud.render();
+    }
+
+    private shouldRenderCharacter(character: Character): boolean {
+        if (!this.gameState.isFogOfWarOn()) {
+            return true;
+        }
+        if (this.gameState.settings.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL
+            || this.gameState.settings.matchType === MatchType.AI_VS_AI) {
+            // TODO - implement 'pass device' screen.
+            return this.gameState.isTileVisibleByTeamIndex(character.tileCoords, this.gameState.currentTeamIndex);
+        }
+
+        // In player vs AI, always render from player perspective
+        if (character.teamIndex === DEFAULT_HUMAN_TEAM_INDEX) {
+            return true;
+        } else {
+            const animatingCharacterTile = Grid.getTileFromCanvasCoords(character.animationState.currentCenterCanvas);
+            return this.gameState
+                .isTileVisibleByTeamIndex(animatingCharacterTile,
+                    DEFAULT_HUMAN_TEAM_INDEX);
+        }
+    }
+
+    private shouldRenderProjectile(projectile: Projectile): boolean {
+        if (!this.gameState.isFogOfWarOn()) {
+            return true;
+        }
+        const projectileTile = projectile.tileCoords;
+        if (this.gameState.settings.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL
+            || this.gameState.settings.matchType === MatchType.AI_VS_AI) {
+            // TODO - implement 'pass device' screen.
+            return this.gameState.isTileVisibleByTeamIndex(projectileTile, this.gameState.currentTeamIndex);
+        }
+        // In player vs AI, always render from player perspective
+        return this.gameState.isTileVisibleByTeamIndex(
+            projectileTile,
+            DEFAULT_HUMAN_TEAM_INDEX);
+    }
+
+    private renderFogOfWar(context: CanvasRenderingContext2D): void {
+        if (!this.gameState.isFogOfWarOn()) {
+            return;
+        }
+        let visibleTiles: Point[] = [];
+        if (this.gameState.settings.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL
+            || this.gameState.settings.matchType === MatchType.AI_VS_AI) {
+            visibleTiles = this.gameState.getTilesVisibleByTeamIndex(this.gameState.currentTeamIndex);
+        } else if (this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
+            visibleTiles = this.gameState.getTilesVisibleByTeamIndex(DEFAULT_HUMAN_TEAM_INDEX);
+        }
+        if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT && !this.isAiTurn()) {
+            visibleTiles = visibleTiles.concat(this.gameState.selectableTiles);
+        }
+        context.fillStyle = THEME.fogColor;
+        for (let x = 0; x < Grid.TILES_WIDE; x++) {
+            for (let y = 0; y < Grid.TILES_TALL; y++) {
+                const tile = new Point(x, y);
+                const isVisible = visibleTiles.find((visibleTile) => visibleTile.equals(tile));
+                if (isVisible) {
+                    continue;
+                }
+                const canvasTopLeft = Grid.getCanvasFromTileCoords(tile);
+                context.fillRect(canvasTopLeft.x, canvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+            }
+        }
     }
 
     destroy(): void {
@@ -917,7 +991,7 @@ export class GameManager implements GameModeManager {
     // MUTATE
     private resetGame = (): void => {
         this.destroy();
-        this.gameState = new GameState();
+        this.gameState = new GameState(this.gameSettings);
         this.loadLevel();
         this.isGameOver = false;
         this.winningTeamIndex = -1;

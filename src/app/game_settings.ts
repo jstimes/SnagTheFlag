@@ -13,6 +13,7 @@ export interface GameSettings {
      */
     maxSpawnDistanceFromFlag: number;
     numTeams: number;
+    hasFogOfWar?: boolean;
 }
 
 const EQUAL_DEFAULT_SQUAD_SIZE = 4;

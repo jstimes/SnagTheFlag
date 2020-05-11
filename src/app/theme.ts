@@ -4,6 +4,7 @@ export interface Theme {
     readonly gridBackgroundColor: string;
     readonly gridLineColor: string;
     readonly textColor: string;
+    readonly fogColor: string;
 
     readonly obstacleColor: string;
     readonly flagPoleColor: string;
@@ -37,6 +38,7 @@ export const THEME: Theme = {
     gridBackgroundColor: '#959aa3',
     gridLineColor: '#1560e8',
     textColor: '#614447',
+    fogColor: '#0a0a0a88',
 
     obstacleColor: '#4c6e47',
     flagPoleColor: '#7a5f3e',

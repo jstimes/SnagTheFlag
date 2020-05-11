@@ -100,6 +100,7 @@ export class CampaignMenu implements GameModeManager {
                             teamIndexToSquadSize: campaignLevel.teamIndexToSquadSize,
                             numTeams: DEFAULT_GAME_SETTINGS.numTeams,
                             maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                            hasFogOfWar: true,
                         };
                         this.onSelectLevel(campaignLevelIndex, campaignLevel.levelIndex, settings);
                     },
