@@ -85,20 +85,16 @@ export class FreePlayMenu implements GameModeManager {
         };
 
         // Team size type buttons.
-        const teamSizeIndexToString: string[] = [
-            '2x2',
-            '4x4',
-            '8x8',
-            '2x4',
-            '4x8',
-        ];
         const teamSizeIndexToTeamSizeMap: Array<Map<number, number>> = [
             new Map([[0, 2], [1, 2]]),
             new Map([[0, 4], [1, 4]]),
             new Map([[0, 8], [1, 8]]),
-            new Map([[0, 2], [1, 4]]),
-            new Map([[0, 4], [1, 8]]),
+            new Map([[0, 12], [1, 12]]),
+            new Map([[0, 16], [1, 16]]),
         ];
+        const teamSizeIndexToString: string[] = teamSizeIndexToTeamSizeMap.map((map) => {
+            return `${map.get(0)!}x${map.get(1)!}`;
+        });
         const teamSizeLeftMargin = .04;
 
         const teamSizeHeader = new TextBox({
