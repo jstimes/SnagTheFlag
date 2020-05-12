@@ -57,5 +57,16 @@ export class Spawner {
             context.stroke();
             theta += radiansThick + radiansOffset;
         }
+
+        // Indicate turns til next spawn.
+        const text = `${this.turnsBetweenSpawns - this.turnsSinceLastSpawn}`;
+        context.fillStyle = THEME.characterTextColor;
+        const fontSize = 12;
+        const margins = new Point(Grid.TILE_SIZE / 12, Grid.TILE_SIZE / 12);
+        context.font = `${fontSize}px fantasy`;
+        context.fillText(
+            text,
+            tileCanvasCenter.x - 3,
+            tileCanvasCenter.y + 1);
     }
 }
