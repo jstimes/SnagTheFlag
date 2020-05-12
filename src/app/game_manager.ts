@@ -28,6 +28,7 @@ interface ClickHandler {
     onClick: (tile: Point) => void;
 }
 
+const ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS = false;
 const DEFAULT_HUMAN_TEAM_INDEX = 0;
 
 const PAUSE_KEY = Key.P;
@@ -122,6 +123,12 @@ export class GameManager implements GameModeManager {
             return;
         }
 
+        if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
+            && this.gameState.getActiveSquad().filter(character => !character.isTurnOver()).length === 0) {
+            // Should automatically skip turn with delay when team is out of characters,
+            // but need update loop to run for spawners...
+            return;
+        }
         this.controlMap.check();
         if (CONTROLS.hasClick()) {
             const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
@@ -379,6 +386,10 @@ export class GameManager implements GameModeManager {
                     this.gameState.selectableTiles = [];
                     if (this.gameState.selectedCharacterState === SelectedCharacterState.MOVING) {
                         this.handleCharacterMovement(action.tile);
+                        if (this.isGameOver) {
+                            // Flag was snagged.
+                            return;
+                        }
                         this.checkCharacterTurnOver();
                     } else if (this.gameState.selectedCharacterState === SelectedCharacterState.THROWING_GRENADE) {
                         const grenadeDetails = {
@@ -449,6 +460,9 @@ export class GameManager implements GameModeManager {
     };
 
     private checkGameOver(): void {
+        if (!ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS) {
+            return;
+        }
         let winningTeam: string | null = null;
         let winningTeamIndex = -1;
         if (this.gameState.getEnemyCharacters().length === 0) {
@@ -497,22 +511,6 @@ export class GameManager implements GameModeManager {
             }
         } else {
             this.advanceToNextCombatTurn();
-            // Spawn at end of turns.
-            for (const spawner of this.gameState.spawners) {
-                if (spawner.teamIndex === this.gameState.currentTeamIndex) {
-                    spawner.advanceTurn();
-                    if (spawner.checkAndHandleRespawn()) {
-                        const character = new Character({
-                            startCoords: spawner.tileCoords,
-                            teamIndex: this.gameState.currentTeamIndex,
-                            index: this.gameState.characters.filter((character) => character.teamIndex === this.gameState.currentTeamIndex).length,
-                            settings: this.selectedCharacterSettings,
-                            gameDelegate: this.gameDelegate,
-                        });
-                        this.gameState.characters.push(character);
-                    }
-                }
-            }
         }
 
         if (!this.isAiTurn()) {
@@ -553,8 +551,29 @@ export class GameManager implements GameModeManager {
     }
 
     private advanceToNextCombatTurn(): void {
+        // Spawn at end of turns.
+        for (const spawner of this.gameState.spawners) {
+            if (spawner.teamIndex === this.gameState.currentTeamIndex) {
+                spawner.advanceTurn();
+                if (spawner.checkAndHandleRespawn()) {
+                    const character = new Character({
+                        startCoords: spawner.tileCoords,
+                        teamIndex: this.gameState.currentTeamIndex,
+                        index: this.gameState.characters.filter((character) => character.teamIndex === this.gameState.currentTeamIndex).length,
+                        settings: this.selectedCharacterSettings,
+                        gameDelegate: this.gameDelegate,
+                    });
+                    this.gameState.characters.push(character);
+                }
+            }
+        }
+
         this.gameState.currentTeamIndex = (this.gameState.currentTeamIndex + 1) % this.gameSettings.numTeams;
         const squad = this.gameState.getActiveSquad();
+        if (squad.length === 0) {
+            this.advanceToNextCombatTurn();
+            return;
+        }
         for (const character of squad) {
             character.resetTurnState();
         }

@@ -3,6 +3,8 @@ import { Grid } from 'src/app/grid';
 import { THEME } from './theme';
 import { Point } from './math/point';
 
+const GOD_MODE = true;
+
 /** Abilities characters can perform in addition to moving and shooting. */
 export interface BaseCharacterAbility {
     /**  Max times this ability can be used. 0 indicates unlimited. */
@@ -155,7 +157,7 @@ const ASSAULT_RIFLE: Gun = {
     projectileDetails: {
         type: ProjectileDetailsType.BULLET,
         numRicochets: 2,
-        damage: 6,
+        damage: GOD_MODE ? 20 : 6,
         projectileSpeed: Grid.TILE_SIZE / 80,
         color: DEFAULT_BULLET_COLOR,
         shape: {
@@ -212,7 +214,7 @@ export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
 export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.ASSAULT,
     maxHealth: 10,
-    maxMovesPerTurn: 4,
+    maxMovesPerTurn: GOD_MODE ? 20 : 4,
     maxSight: 6,
     gun: ASSAULT_RIFLE,
     extraActions: new Set<CharacterAbility>([
