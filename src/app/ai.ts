@@ -7,26 +7,32 @@ import { getProjectileTarget, getRayForShot, getRayForShot2 } from 'src/app/targ
 import { Target } from './math/target';
 import { CharacterSettings, ASSAULT_CHARACTER_SETTINGS, SCOUT_CHARACTER_SETTINGS } from './character_settings';
 import { AiDifficulty } from './game_settings';
+import { randomElement } from './math/random';
 
 interface AiSettings {
+    /** If true, simply chooses any optimal tile instead of always the first. */
+    readonly randomizeMovement: boolean;
     readonly maxAngleRandomization: number;
     readonly ignoresFogOfWar: boolean;
     readonly characterClass: CharacterSettings;
 }
 
 const WEAK_AI_SETTINGS: AiSettings = {
+    randomizeMovement: false,
     maxAngleRandomization: Math.PI / 28,
     ignoresFogOfWar: false,
     characterClass: SCOUT_CHARACTER_SETTINGS,
 };
 
 const MEDIUM_AI_SETTINGS: AiSettings = {
+    randomizeMovement: true,
     maxAngleRandomization: Math.PI / 36,
     ignoresFogOfWar: false,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
 };
 
 const STRONG_AI_SETTINGS: AiSettings = {
+    randomizeMovement: true,
     maxAngleRandomization: 0,
     ignoresFogOfWar: true,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
@@ -122,15 +128,23 @@ export class Ai {
         };
 
         const thenSelectTile = (gameState: GameState) => {
+            const safestTiles: Point[] = [];
             for (const tile of gameState.selectableTiles) {
                 const tileCenterCanvas = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
                 if (this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length === 0) {
-                    const action: SelectTileAction = {
-                        type: ActionType.SELECT_TILE,
-                        tile,
-                    };
-                    return action;
+                    safestTiles.push(tile);
                 }
+            }
+            if (safestTiles.length > 0) {
+                let selection = safestTiles[0];
+                if (this.settings.randomizeMovement) {
+                    selection = randomElement(safestTiles);
+                }
+                const action: SelectTileAction = {
+                    type: ActionType.SELECT_TILE,
+                    tile: selection,
+                };
+                return action;
             }
 
             this.log("AI: No unexposed tiles");
@@ -176,20 +190,24 @@ export class Ai {
                     const directHitDetails = this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState);
                     tileAndDirectHits.push({ tile: selectableTile, directHits: directHitDetails.length });
                 }
-                let bestTile;
-                let bestTileAndHits = tileAndDirectHits.find((tileAndHit) => tileAndHit.directHits === 1);
-                if (bestTileAndHits != null) {
-                    bestTile = bestTileAndHits.tile;
+                let optimalTiles: Point[] = [];
+                const bestTileAndHits = tileAndDirectHits.filter((tileAndHit) => tileAndHit.directHits === 1);
+                if (bestTileAndHits.length > 0) {
+                    optimalTiles = bestTileAndHits.map(obj => obj.tile);
                 } else {
                     // Chase down flag if enemy has it, otherwise go for enemy flag.
                     const targetTile = gameState.enemyHasFlag()
                         ? gameState.getActiveTeamFlag().tileCoords
                         : gameState.getEnemyFlag().tileCoords;
-                    bestTile = this.getClosestSelectableTileToLocationWithFewestDirectHits(targetTile, gameState);
+                    optimalTiles = this.getClosestSelectableTileToLocationWithFewestDirectHits(targetTile, gameState);
+                }
+                let selection = optimalTiles[0];
+                if (this.settings.randomizeMovement) {
+                    selection = randomElement(optimalTiles);
                 }
                 const selectTileAction: SelectTileAction = {
                     type: ActionType.SELECT_TILE,
-                    tile: bestTile,
+                    tile: selection,
                 };
                 return selectTileAction;
             };
@@ -212,22 +230,27 @@ export class Ai {
             return startMovingAction;
         };
         const thenMove = (gameState) => {
-            const bestTile = this.getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation, gameState);
+            const bestTiles = this.getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation, gameState);
+            let selection = bestTiles[0];
+            if (this.settings.randomizeMovement) {
+                selection = randomElement(bestTiles);
+            }
             const selectTileAction: SelectTileAction = {
                 type: ActionType.SELECT_TILE,
-                tile: bestTile,
+                tile: selection,
             };
             return selectTileAction;
         };
         return [startMoving, thenMove];
     }
 
-    private getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation: Point, gameState: GameState): Point {
+    private getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation: Point, gameState: GameState): Point[] {
         let bestTile = {
             tile: gameState.selectableTiles[0],
             distance: 10000,
             directHits: 100,
         };
+        let optimalTiles: Point[] = [];
         for (const selectableTile of gameState.selectableTiles) {
             const pathToLocation = getPathToLocation(selectableTile, tileLocation, gameState);
             const tileCenterCanvas = getTileCenterCanvas(selectableTile)
@@ -237,9 +260,13 @@ export class Ai {
                 bestTile.tile = selectableTile;
                 bestTile.distance = pathToLocation.length;
                 bestTile.directHits = directHits;
+                optimalTiles = [bestTile.tile];
+            } else if (directHits === bestTile.directHits
+                && pathToLocation.length === bestTile.distance) {
+                optimalTiles.push(selectableTile);
             }
         }
-        return bestTile.tile;
+        return optimalTiles;
     }
 
     private getBestShot(fromTile: Point, gameState: GameState, shots: ShotDetails[]): ShotDetails {
