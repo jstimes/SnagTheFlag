@@ -37,7 +37,7 @@ export class Spawner {
     }
 
     render(context: CanvasRenderingContext2D): void {
-        const strokeStyle = this.teamIndex === 0 ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
+        context.strokeStyle = this.teamIndex === 0 ? THEME.blueCharacterReadyColor : THEME.redCharacterReadyColor;
 
         const tileCanvasCenter = Grid.getCanvasFromTileCoords(this.tileCoords).add(Grid.HALF_TILE);
         const radiansThick = Math.PI / 16;

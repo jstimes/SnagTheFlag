@@ -1034,7 +1034,10 @@ export class GameManager implements GameModeManager {
                     (character) => {
                         return character.isAlive() && character.tileCoords.equals(tileCoords);
                     });
-        return potentialObstacle != null || potentialCharacter != null;
+        const potentialSpawner = this.gameState.spawners.find((spawner) => spawner.tileCoords.equals(tileCoords));
+        return potentialObstacle != null
+            || potentialCharacter != null
+            || potentialSpawner != null;
     }
 
     // MUTATE
