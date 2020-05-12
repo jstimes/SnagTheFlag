@@ -460,8 +460,11 @@ export class GameManager implements GameModeManager {
     };
 
     private checkGameOver(): void {
-        if (!ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS) {
-            return;
+        if (!ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS && this.gameState.spawners.length > 0) {
+            // TODO - assumes spawners only appear for ai
+            if (this.gameState.getCharactersForTeamIndex(DEFAULT_HUMAN_TEAM_INDEX).length !== 0) {
+                return;
+            }
         }
         let winningTeam: string | null = null;
         let winningTeamIndex = -1;

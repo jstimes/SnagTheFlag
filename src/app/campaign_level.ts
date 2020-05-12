@@ -9,7 +9,7 @@ interface CampaignLevel {
     readonly aiDifficulty: AiDifficulty;
 }
 
-const UNLOCK_ALL = false;
+const UNLOCK_ALL = true;
 
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     // Level 1

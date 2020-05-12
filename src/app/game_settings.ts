@@ -29,6 +29,6 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     matchType: MatchType.PLAYER_VS_PLAYER_LOCAL,
     teamIndexToSquadSize: new Map([[0, EQUAL_DEFAULT_SQUAD_SIZE], [1, EQUAL_DEFAULT_SQUAD_SIZE]]),
     aiDifficulty: AiDifficulty.WEAK,
-    maxSpawnDistanceFromFlag: 11,
+    maxSpawnDistanceFromFlag: 8,
     numTeams: 2,
 }
