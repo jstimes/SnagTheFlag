@@ -8,7 +8,7 @@ import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
 import { ButtonGroup } from 'src/app/ui/button_group';
 import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS, AiDifficulty } from 'src/app/game_settings';
-import { TextBox, TextBoxStyle } from 'src/app/ui/text_box';
+import { TextBox, TextBoxStyle, TextBoxDimensions } from 'src/app/ui/text_box';
 
 interface ButtonMetadata {
     text: string;
@@ -24,6 +24,9 @@ export class FreePlayMenu implements GameModeManager {
     private selectedLevelIndex: number;
     private selectedMatchType: MatchType;
     private selectedTeamSizeMap: Map<number, number>;
+    private selectedAiDifficulty: AiDifficulty;
+    private isFogOfWarOn: boolean;
+    private hasSpawners: boolean;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -39,7 +42,11 @@ export class FreePlayMenu implements GameModeManager {
         this.onBack = callbacks.onBack;
 
         this.uiManager = new UiManager(context);
-        this.initLevelMenu();
+        const settingsLeftMargin = .04;
+        const levelMenuLeft = .5 + settingsLeftMargin;
+        this.initSettingsElements(settingsLeftMargin);
+        this.initLevelElements(levelMenuLeft);
+        this.initButtons(.1);
     }
 
     update(elapsedTime: number): void {
@@ -62,14 +69,283 @@ export class FreePlayMenu implements GameModeManager {
         // no-op
     }
 
-    //  OLD buttonHoverColor = '#fcd281';
-    private initLevelMenu(): void {
+    private initButtons(backButtonLeft: number): void {
+        const topMargin = .9;
+        const buttonSize = new Point(.18, .08);
 
+        // Back button.
+        const backButton = new Button({
+            dimensions: {
+                size: buttonSize,
+                topLeft: new Point(backButtonLeft, topMargin),
+                text: 'Back',
+            },
+            style: {
+                fontSize: 22,
+                color: '#d9c8a3',
+                hoverColor: '#e6dbc3',
+                textColor: THEME.buttonTextColor,
+            },
+            onClick: this.onBack,
+        });
+        this.uiManager.addElement(backButton);
+
+        // Start button.
+        const startButtonLeft = backButtonLeft + buttonSize.x + .04;
+        const startButton = new Button({
+            dimensions: {
+                size: buttonSize,
+                text: 'Start',
+                topLeft: new Point(startButtonLeft, topMargin),
+            },
+            style: {
+                color: '#66d15a',
+                hoverColor: '#7aed6d',
+                fontSize: 28,
+                textColor: THEME.buttonTextColor,
+            },
+            onClick: () => {
+                const settings: GameSettings = {
+                    matchType: this.selectedMatchType,
+                    teamIndexToSquadSize: this.selectedTeamSizeMap,
+                    maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                    numTeams: DEFAULT_GAME_SETTINGS.numTeams,
+                    hasFogOfWar: this.isFogOfWarOn,
+                    aiDifficulty: this.selectedAiDifficulty,
+                    hasSpawners: this.hasSpawners,
+                }
+                this.onSelectLevel(this.selectedLevelIndex, settings);
+            }
+        });
+        this.uiManager.addElement(startButton);
+    }
+
+    private initSettingsElements(leftMargin: number): void {
+        const headerTopMargin = .2;
+        const buttonOffsetX = .04;
+        const buttonGroupOffsetY = .04;
+        const buttonSize = new Point(.09, .06);
+        const headerSize = new Point(.18, .08);
+        const settingsTopMargin =
+            headerTopMargin + buttonGroupOffsetY / 2 + headerSize.y;
+        const fontSize = 22;
+        const headerStyle: TextBoxStyle = {
+            color: '#dddddd',
+            fontSize,
+            textColor: '#000000',
+        };
+        const labelStyle: TextBoxStyle = {
+            color: '#dddddd',
+            fontSize: fontSize - 2,
+            textColor: '#000000',
+        };
+        const buttonStyle: ButtonStyle = {
+            fontSize: fontSize - 2,
+            color: '#f7c25e',
+            hoverColor: '#deaf57',
+            selectedColor: '#db9d2a',
+            selectedBorderColor: '#000000',
+            textColor: THEME.buttonTextColor,
+        };
+
+        const settingsHeader = new TextBox({
+            dimensions: {
+                size: headerSize,
+                text: 'Settings',
+                topLeft: new Point(.25 - headerSize.x / 2, headerTopMargin),
+            },
+            style: headerStyle,
+        });
+        this.uiManager.addElement(settingsHeader);
+
+        const createSettingRowElements = (params: {
+            rowIndex: number;
+            headerText: string;
+            buttonTexts: string[];
+            initialButtonIndex: number;
+            rows: number;
+            onButtonChangeCallback: (selectedIndex: number) => void;
+        }) => {
+            const labelSize = new Point(.14, .06);
+            const topY = settingsTopMargin
+                + params.rowIndex * (buttonSize.y + buttonGroupOffsetY);
+            const labelLeftMargin = leftMargin;
+            const header = new TextBox({
+                dimensions: {
+                    size: labelSize,
+                    text: params.headerText,
+                    topLeft: new Point(labelLeftMargin, topY),
+                },
+                style: labelStyle,
+            });
+
+            const buttonLeftMargin = labelLeftMargin + labelSize.x + .02;
+            const dimensions: ButtonDimensions[] = [];
+            const rowLength = 3;
+            const rowOffset = buttonGroupOffsetY / 2;
+            for (let index = 0; index < params.buttonTexts.length; index++) {
+                const column = index % rowLength;
+                const row = Math.floor(index / rowLength);
+                let topLeftX = buttonLeftMargin + column * (buttonOffsetX +
+                    buttonSize.y);
+                let topLeftY = topY + row * (rowOffset + buttonSize.y)
+                dimensions.push({
+                    topLeft: new Point(topLeftX, topLeftY),
+                    size: buttonSize,
+                    text: params.buttonTexts[index],
+                });
+            }
+            params.onButtonChangeCallback(params.initialButtonIndex);
+            const buttonGroup = new ButtonGroup({
+                buttons: dimensions,
+                buttonStyle,
+                initialSelectionIndex: params.initialButtonIndex,
+                onChangeCallback: params.onButtonChangeCallback,
+            });
+            return [header, buttonGroup];
+        };
+
+        // Team size type buttons.
+        const teamSizeIndexToTeamSizeMap: Array<Map<number, number>> = [
+            new Map([[0, 2], [1, 2]]),
+            new Map([[0, 4], [1, 4]]),
+            new Map([[0, 8], [1, 8]]),
+            new Map([[0, 12], [1, 12]]),
+            new Map([[0, 16], [1, 16]]),
+        ];
+        const teamSizeIndexToString: string[] = teamSizeIndexToTeamSizeMap
+            .map((map) => {
+                return `${map.get(0)!}x${map.get(1)!}`;
+            });
+        const onTeamSizeChangeCallback = (index: number) => {
+            this.selectedTeamSizeMap = teamSizeIndexToTeamSizeMap[index];
+        };
+        const teamSizeElements = createSettingRowElements({
+            rowIndex: 0,
+            rows: 2,
+            headerText: 'Team size',
+            buttonTexts: teamSizeIndexToString,
+            initialButtonIndex: 0,
+            onButtonChangeCallback: onTeamSizeChangeCallback,
+        });
+        this.uiManager.addElement(teamSizeElements[0]);
+        this.uiManager.addElement(teamSizeElements[1]);
+
+        // AI difficulty buttons.
+        const difficulties: AiDifficulty[] = [
+            AiDifficulty.WEAK,
+            AiDifficulty.MEDIUM,
+            AiDifficulty.STRONG,
+        ];
+        const difficultyStrings = [
+            'Easy',
+            'Medium',
+            'Hard',
+        ];
+        const onAiChangeCallback = (index: number) => {
+            this.selectedAiDifficulty = difficulties[index];
+        };
+        const aiDifficultyElements = createSettingRowElements({
+            rowIndex: 3,
+            rows: 1,
+            headerText: 'Difficulty',
+            buttonTexts: difficultyStrings,
+            initialButtonIndex: 0,
+            onButtonChangeCallback: onAiChangeCallback,
+        });
+        this.uiManager.addElement(aiDifficultyElements[0]);
+        this.uiManager.addElement(aiDifficultyElements[1]);
+
+        // Match type buttons.
+        const matchTypes: MatchType[] = [
+            MatchType.PLAYER_VS_PLAYER_LOCAL,
+            MatchType.PLAYER_VS_AI,
+            MatchType.AI_VS_AI,
+        ];
+        const matchTypeStrings = [
+            'PvP',
+            'PvAI',
+            'AIvAI',
+        ];
+        const onChangeCallback = (index: number) => {
+            const previousMatchType = this.selectedMatchType;
+            this.selectedMatchType = matchTypes[index];
+            if (this.selectedMatchType === MatchType.PLAYER_VS_PLAYER_LOCAL &&
+                previousMatchType !== MatchType.PLAYER_VS_PLAYER_LOCAL) {
+                this.uiManager.removeElement(aiDifficultyElements[0]);
+                this.uiManager.removeElement(aiDifficultyElements[1]);
+            } else if (this.selectedMatchType !== MatchType.PLAYER_VS_PLAYER_LOCAL
+                && previousMatchType === MatchType.PLAYER_VS_PLAYER_LOCAL) {
+                this.uiManager.addElement(aiDifficultyElements[0]);
+                this.uiManager.addElement(aiDifficultyElements[1]);
+            }
+        };
+        const matchTypeElements = createSettingRowElements({
+            rowIndex: 2,
+            rows: 1,
+            headerText: 'Match type',
+            buttonTexts: matchTypeStrings,
+            initialButtonIndex: 0,
+            onButtonChangeCallback: onChangeCallback,
+        });
+        this.uiManager.addElement(matchTypeElements[0]);
+        this.uiManager.addElement(matchTypeElements[1]);
+
+        // Fog of war.
+        const fogOfWarOptions: boolean[] = [
+            true,
+            false,
+        ];
+        const fogOfWarOptionStrings = [
+            'On',
+            'Off',
+        ];
+        const onFogOfWarChangeCallback = (index: number) => {
+            this.isFogOfWarOn = fogOfWarOptions[index];
+        };
+        const fogOfWarElements = createSettingRowElements({
+            rowIndex: 4,
+            rows: 1,
+            headerText: 'Fog of war',
+            buttonTexts: fogOfWarOptionStrings,
+            initialButtonIndex: 0,
+            onButtonChangeCallback: onFogOfWarChangeCallback,
+        });
+        this.uiManager.addElement(fogOfWarElements[0]);
+        this.uiManager.addElement(fogOfWarElements[1]);
+
+        // Spawners.
+        const spawnersOptions: boolean[] = [
+            true,
+            false,
+        ];
+        const spawnersOptionStrings = [
+            'On',
+            'Off',
+        ];
+        const onSpawnersChangeCallback = (index: number) => {
+            this.hasSpawners = spawnersOptions[index];
+        };
+        const spawnerElements = createSettingRowElements({
+            rowIndex: 5,
+            rows: 1,
+            headerText: 'Spawners',
+            buttonTexts: spawnersOptionStrings,
+            initialButtonIndex: 0,
+            onButtonChangeCallback: onSpawnersChangeCallback,
+        });
+        this.uiManager.addElement(spawnerElements[0]);
+        this.uiManager.addElement(spawnerElements[1]);
+    }
+
+    private initLevelElements(leftMargin: number): void {
+        const fontSize = 22;
         const headerTopMargin = .2;
         const buttonOffsetY = .02;
-        const elementSize = new Point(.18, .08);
-        const buttonTopMargin = headerTopMargin + buttonOffsetY + elementSize.y;
-        const fontSize = 22;
+        const levelElementSize = new Point(.18, .08);
+        const buttonTopMargin =
+            headerTopMargin + buttonOffsetY + levelElementSize.y;
+
         const headerStyle: TextBoxStyle = {
             color: '#dddddd',
             fontSize,
@@ -84,103 +360,13 @@ export class FreePlayMenu implements GameModeManager {
             textColor: THEME.buttonTextColor,
         };
 
-        // Team size type buttons.
-        const teamSizeIndexToTeamSizeMap: Array<Map<number, number>> = [
-            new Map([[0, 2], [1, 2]]),
-            new Map([[0, 4], [1, 4]]),
-            new Map([[0, 8], [1, 8]]),
-            new Map([[0, 12], [1, 12]]),
-            new Map([[0, 16], [1, 16]]),
-        ];
-        const teamSizeIndexToString: string[] = teamSizeIndexToTeamSizeMap.map((map) => {
-            return `${map.get(0)!}x${map.get(1)!}`;
-        });
-        const teamSizeLeftMargin = .04;
-
-        const teamSizeHeader = new TextBox({
-            dimensions: {
-                size: elementSize,
-                text: 'Team Size',
-                topLeft: new Point(teamSizeLeftMargin, headerTopMargin),
-            },
-            style: headerStyle,
-        });
-        this.uiManager.addElement(teamSizeHeader);
-
-        const teamSizeDimensions: ButtonDimensions[] = [];
-        for (let teamSizeIndex = 0;
-            teamSizeIndex < teamSizeIndexToTeamSizeMap.length;
-            teamSizeIndex++) {
-            const topLeftY = buttonTopMargin + teamSizeIndex * buttonOffsetY + teamSizeIndex * elementSize.y;
-            teamSizeDimensions.push({
-                topLeft: new Point(teamSizeLeftMargin, topLeftY),
-                size: elementSize,
-                text: teamSizeIndexToString[teamSizeIndex],
-            });
-        }
-        const initialTeamSizeSelectionIndex = 0;
-        const onTeamSizeChangeCallback = (index: number) => {
-            this.selectedTeamSizeMap = teamSizeIndexToTeamSizeMap[index];
-        };
-        onTeamSizeChangeCallback(initialTeamSizeSelectionIndex);
-        this.uiManager.addElement(new ButtonGroup({
-            buttons: teamSizeDimensions,
-            buttonStyle,
-            initialSelectionIndex: initialTeamSizeSelectionIndex,
-            onChangeCallback: onTeamSizeChangeCallback,
-        }));
-
-        // Match type buttons.
-        const matchTypeToString: Map<MatchType, string> = new Map([
-            [MatchType.PLAYER_VS_PLAYER_LOCAL, 'PvP'],
-            [MatchType.PLAYER_VS_AI, 'PvAI'],
-            [MatchType.AI_VS_AI, 'AIvAI'],
-        ]);
-        const matchIndexToMatchType: MatchType[] = [];
-        const matchTypeLeftMargin = .3;
-
-        const matchTypeHeader = new TextBox({
-            dimensions: {
-                size: elementSize,
-                text: 'Match Type',
-                topLeft: new Point(matchTypeLeftMargin, headerTopMargin),
-            },
-            style: headerStyle,
-        });
-        this.uiManager.addElement(matchTypeHeader);
-
-        const matchTypes = [...matchTypeToString.keys()];
-        const dimensions: ButtonDimensions[] = [];
-        for (let matchTypeButtonIndex = 0;
-            matchTypeButtonIndex < matchTypes.length;
-            matchTypeButtonIndex++) {
-            const topLeftY = buttonTopMargin + matchTypeButtonIndex * buttonOffsetY + matchTypeButtonIndex * elementSize.y;
-            const matchType = matchTypes[matchTypeButtonIndex];
-            matchIndexToMatchType.push(matchType);
-            dimensions.push({
-                topLeft: new Point(matchTypeLeftMargin, topLeftY),
-                size: elementSize,
-                text: matchTypeToString.get(matchType)!,
-            });
-        }
-        const initialSelectionIndex = 0;
-        const onChangeCallback = (index: number) => {
-            this.selectedMatchType = matchIndexToMatchType[index];
-        };
-        onChangeCallback(initialSelectionIndex);
-        this.uiManager.addElement(new ButtonGroup({
-            buttons: dimensions,
-            buttonStyle,
-            initialSelectionIndex,
-            onChangeCallback,
-        }));
-
         // Level buttons.
-        const levelButtonsLeftMargin = matchTypeLeftMargin + elementSize.x + .08;
-        const levelHeaderLeftMargin = levelButtonsLeftMargin + elementSize.x / 2 + .04 / 2;
+        const levelButtonsLeftMargin = leftMargin;
+        const levelHeaderLeftMargin =
+            levelButtonsLeftMargin + levelElementSize.x / 2 + .04 / 2;
         const levelHeader = new TextBox({
             dimensions: {
-                size: elementSize,
+                size: levelElementSize,
                 text: 'Level',
                 topLeft: new Point(levelHeaderLeftMargin, headerTopMargin),
             },
@@ -195,14 +381,15 @@ export class FreePlayMenu implements GameModeManager {
             let column = Math.floor(buttonIndex / columnSize);
             let leftMargin = levelButtonsLeftMargin;
             if (column === 1) {
-                leftMargin = leftMargin + elementSize.x + .04;
+                leftMargin = leftMargin + levelElementSize.x + .04;
             }
-            const topLeftY = buttonTopMargin + row * buttonOffsetY + row * elementSize.y;
+            const topLeftY = buttonTopMargin + row * buttonOffsetY
+                + row * levelElementSize.y;
             const level = LEVELS[buttonIndex];
 
             levelDimensions.push({
                 topLeft: new Point(leftMargin, topLeftY),
-                size: elementSize,
+                size: levelElementSize,
                 text: level.name,
             });
         }
@@ -218,50 +405,6 @@ export class FreePlayMenu implements GameModeManager {
             initialSelectionIndex: initialLevelSelectionIndex,
             onChangeCallback: onLevelChangeCallback,
         }));
-
-        // Start button.
-        const startButton = new Button({
-            dimensions: {
-                size: elementSize,
-                text: 'Start',
-                topLeft: new Point(matchTypeLeftMargin, .86),
-            },
-            style: {
-                color: '#66d15a',
-                hoverColor: '#7aed6d',
-                fontSize: 28,
-                textColor: THEME.buttonTextColor,
-            },
-            onClick: () => {
-                const settings: GameSettings = {
-                    matchType: this.selectedMatchType,
-                    teamIndexToSquadSize: this.selectedTeamSizeMap,
-                    maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
-                    numTeams: DEFAULT_GAME_SETTINGS.numTeams,
-                    hasFogOfWar: false,
-                    aiDifficulty: AiDifficulty.MEDIUM,
-                }
-                this.onSelectLevel(this.selectedLevelIndex, settings);
-            }
-        });
-        this.uiManager.addElement(startButton);
-
-        // Back button.
-        const backButton = new Button({
-            dimensions: {
-                size: elementSize,
-                topLeft: new Point(teamSizeLeftMargin, .86),
-                text: 'Back',
-            },
-            style: {
-                fontSize,
-                color: '#d9c8a3',
-                hoverColor: '#e6dbc3',
-                textColor: THEME.buttonTextColor,
-            },
-            onClick: this.onBack,
-        });
-        this.uiManager.addElement(backButton);
     }
 
     private renderTitleText(): void {

@@ -26,6 +26,10 @@ export class UiManager {
         this.elements.push(element);
     }
 
+    removeElement(element: Element): void {
+        this.elements.splice(this.elements.indexOf(element), 1);
+    }
+
     onMouseMove(canvasCoords: Point): void {
         const uiCoords = this.getUiCoords(canvasCoords);
         for (const element of this.elements) {

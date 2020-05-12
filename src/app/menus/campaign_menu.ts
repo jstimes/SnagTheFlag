@@ -114,6 +114,7 @@ export class CampaignMenu implements GameModeManager {
                             numTeams: DEFAULT_GAME_SETTINGS.numTeams,
                             maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
                             hasFogOfWar: true,
+                            hasSpawners: true,
                             aiDifficulty: campaignLevel.aiDifficulty,
                         };
                         this.onSelectLevel(campaignLevelIndex, campaignLevel.levelIndex, settings);

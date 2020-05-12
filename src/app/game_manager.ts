@@ -1117,7 +1117,7 @@ export class GameManager implements GameModeManager {
             return new Obstacle(pointFromSerialized(serializedPt));
         });
         this.gameState.spawners = [];
-        if (this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
+        if (this.gameState.settings.hasSpawners) {
             const aiDifficultyToSpawnDelays = new Map([
                 [AiDifficulty.WEAK, 8],
                 [AiDifficulty.MEDIUM, 6],

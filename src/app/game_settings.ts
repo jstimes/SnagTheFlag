@@ -20,7 +20,8 @@ export interface GameSettings {
      */
     maxSpawnDistanceFromFlag: number;
     numTeams: number;
-    hasFogOfWar?: boolean;
+    hasFogOfWar: boolean;
+    hasSpawners: boolean;
 }
 
 const EQUAL_DEFAULT_SQUAD_SIZE = 4;
@@ -31,4 +32,6 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     aiDifficulty: AiDifficulty.WEAK,
     maxSpawnDistanceFromFlag: 8,
     numTeams: 2,
+    hasFogOfWar: false,
+    hasSpawners: false,
 }
