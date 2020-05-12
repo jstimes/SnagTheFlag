@@ -163,6 +163,13 @@ export class Ai {
                 return startMovingAction;
             };
             const thenMove = (gameState: GameState) => {
+                if (gameState.selectableTiles.length === 0) {
+                    this.log(`AI: No selectable tiles when able to move`);
+                    const endTurnAction: EndCharacterTurnAction = {
+                        type: ActionType.END_CHARACTER_TURN,
+                    };
+                    return endTurnAction;
+                }
                 const tileAndDirectHits: Array<{ tile: Point; directHits: number; }> = [];
                 for (const selectableTile of gameState.selectableTiles) {
                     const tileCenterCanvas = getTileCenterCanvas(selectableTile);

@@ -605,6 +605,8 @@ export class GameManager implements GameModeManager {
                 Duration.SHORT);
         }
     }
+
+    // TODO - something doesn't work here in campaign mode.
     private setGameOver(winningTeamIndex: number, subtitle: string): void {
         this.controlMap.clear();
         this.togglePause();
@@ -615,7 +617,7 @@ export class GameManager implements GameModeManager {
             TextType.TITLE,
             Duration.LONG);
         this.hud.setText(
-            `${subtitle}.`,
+            `${subtitle}`,
             TextType.SUBTITLE,
             Duration.LONG);
         const quitKeyString = CONTROLS.getStringForKey(QUIT_KEY);
@@ -1188,7 +1190,11 @@ export class GameManager implements GameModeManager {
                 this.trySelectingCharacter(tile);
             },
         };
+        // TODO - use tab instead of number for squad toggle controls.
         for (const character of squad) {
+            if (character.index >= 9) {
+                continue;
+            }
             // Use 1-based numbers for UI.
             const characterNumber = character.index + 1;
             const key = numberToKey.get(characterNumber);
