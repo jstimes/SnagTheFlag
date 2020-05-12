@@ -244,13 +244,14 @@ export class GameManager implements GameModeManager {
             context.strokeRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
         for (const projectile of this.projectiles) {
-            if (this.shouldRenderProjectile(projectile)) {
+            if (this.shouldRenderProjectileOrParticleSystem(projectile.tileCoords)) {
                 projectile.render();
             }
         }
         for (const particleSystem of this.particleSystems) {
-            // TODO - be consistent with giving context
-            particleSystem.render(this.context);
+            if (this.shouldRenderProjectileOrParticleSystem(particleSystem.tileCoords)) {
+                particleSystem.render(this.context);
+            }
         }
         this.renderFogOfWar(this.context);
         this.hud.render();
@@ -277,19 +278,18 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    private shouldRenderProjectile(projectile: Projectile): boolean {
+    private shouldRenderProjectileOrParticleSystem(tile: Point): boolean {
         if (!this.gameState.isFogOfWarOn()) {
             return true;
         }
-        const projectileTile = projectile.tileCoords;
         if (this.gameState.settings.matchType === MatchType.PLAYER_VS_PLAYER_LOCAL
             || this.gameState.settings.matchType === MatchType.AI_VS_AI) {
             // TODO - implement 'pass device' screen.
-            return this.gameState.isTileVisibleByTeamIndex(projectileTile, this.gameState.currentTeamIndex);
+            return this.gameState.isTileVisibleByTeamIndex(tile, this.gameState.currentTeamIndex);
         }
         // In player vs AI, always render from player perspective
         return this.gameState.isTileVisibleByTeamIndex(
-            projectileTile,
+            tile,
             DEFAULT_HUMAN_TEAM_INDEX);
     }
 
