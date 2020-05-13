@@ -25,6 +25,14 @@ export class Flag {
         this.getTileTopLeft = undefined;
     }
 
+    getCurrentTile(): Point {
+        if (!this.isTaken) {
+            return this.tileCoords;
+        }
+        const tile = Grid.getTileFromCanvasCoords(this.getTileTopLeft!());
+        return tile;
+    }
+
     update(elapsedMs: number) {
 
     }

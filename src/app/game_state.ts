@@ -57,7 +57,8 @@ export class GameState {
             }
         }
         const distToTeamFlag =
-            this.getFlagForTeamIndex(teamIndex).tileCoords.manhattanDistanceTo(tile);
+            this.getFlagForTeamIndex(teamIndex).getCurrentTile()
+                .manhattanDistanceTo(tile);
         if (distToTeamFlag <= DEFAULT_FLAG_VISIBILITY) {
             return true;
         }
