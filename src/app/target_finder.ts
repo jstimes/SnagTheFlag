@@ -38,7 +38,8 @@ export function getProjectileTargetsPath(params: {
     let currentTileCoords = startingTileCoords;
     let currentRay = ray;
     let hasHitCharacter = false;
-    const isTargetACharacter = (target: Target) => characters
+    const isTargetEnemyCharacter = (target: Target) => characters
+        .filter((character) => character.teamIndex !== params.fromTeamIndex)
         .find((character) => character.tileCoords.equals(target.tile)) != null;
 
     while (pathsLeft > 0 && !hasHitCharacter) {
@@ -50,7 +51,7 @@ export function getProjectileTargetsPath(params: {
             characters,
         });
         targets.push(target);
-        hasHitCharacter = isTargetACharacter(target);
+        hasHitCharacter = isTargetEnemyCharacter(target);
         pathsLeft -= 1;
         const newDirection = currentRay.direction
             .reflect(target.normal!);
