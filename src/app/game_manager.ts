@@ -116,6 +116,9 @@ export class GameManager implements GameModeManager {
             .filter((projectile) => !projectile.isDead || !projectile.isTrailGone());
         for (const character of this.gameState.getAliveCharacters()) {
             character.update(elapsedMs);
+            if (character.animationState.isAnimating && this.shouldSkipAnimation(character)) {
+                character.skipAnimation();
+            }
         }
         this.hud.update(elapsedMs);
 
@@ -206,6 +209,17 @@ export class GameManager implements GameModeManager {
         if (!this.isGameOver) {
             this.checkCharacterTurnOver();
         }
+    }
+
+    private shouldSkipAnimation(character: Character): boolean {
+        if (!this.isAiTurn()) {
+            return false;
+        }
+        if (this.gameState.settings.matchType === MatchType.AI_VS_AI) {
+            return true;
+        }
+        // TODO check if ai charcter's path is completely out of sight.
+        return false;
     }
 
     render(): void {

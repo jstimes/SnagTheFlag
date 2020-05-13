@@ -308,6 +308,16 @@ export class Character {
         this.animationState.currentTarget = this.animationState.remainingTargets.shift()!;
     }
 
+    skipAnimation(): void {
+        const remainingTargets = this.animationState.remainingTargets;
+        const finalTarget = remainingTargets.length > 0
+            ? this.animationState.remainingTargets[this.animationState.remainingTargets.length - 1]
+            : this.animationState.currentTarget!;
+        this.animationState.currentCenterCanvas = finalTarget.canvasCoords;
+        this.animationState.remainingTargets = [];
+        this.animationState.isAnimating = false;
+    }
+
     isAlive(): boolean {
         return this.health > 0;
     }
