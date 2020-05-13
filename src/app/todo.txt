@@ -7,27 +7,14 @@ Refactoring/Cleanup
         so it's easy to resize.
 
 MVP features
-    - wait for particle to hit before moving on, character movement
-        - Freeze controls?
-    - back buttons on free play/campaign.
-
-- Rundown:
-    - better char class & action selection interface
-    - fog of war
-        - move game info off character 
-        - use gameobject interface for rendering, get tile coords first
-    - spawners
-    - preset ai character type
-        - select char class action ?
-    - more than 9 chars ?
+    - why don't controls work when AI is playing.
+    - better char class & action selection UI
 
 AI improvements:
     - Use heals/grenades.
-    - Aim random +X%
+    - Defensive mode, eliminate mode
 
 Things to experiment with:
-    - Fog of war
-    - To respawn, or not to respawn.
     - engineers that can turn on turrets
         - or secure new spawners.
     - destructible obstacles

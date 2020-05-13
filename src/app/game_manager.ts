@@ -176,15 +176,21 @@ export class GameManager implements GameModeManager {
                 if (targetCharacter) {
                     const manhattanDistance = targetCharacter.tileCoords
                         .manhattanDistanceTo(finalTarget.tile);
-                    const damage = splashDamage.damage * Math.pow(splashDamage.tilesAwayDamageReduction, manhattanDistance);
+                    const damageReduction = Math.pow(splashDamage.tilesAwayDamageReduction, manhattanDistance);
+                    const damage = splashDamage.damage * damageReduction
                     targetCharacter.health -= damage;
                 }
             }
         } else {
             const targetCharacter = this.gameState.getAliveCharacters()
                 .find((character) => character.tileCoords.equals(finalTarget.tile));
-            if (targetCharacter && targetCharacter !== this.gameState.selectedCharacter!) {
-                // Assumes friendly fire check occurred in 'fire'.
+            if (targetCharacter
+                && targetCharacter !== this.gameState.selectedCharacter!
+                // Avoid edge case ;) where bullet hits wall and
+                // not actually the character at the tile specified
+                && !finalTarget.isTargetGridBorder) {
+
+                // Assumes friendly fire check occurred in 'fireShot'.
                 targetCharacter.health -= projectile.projectileDetails.damage;
             }
             this.particleSystems.push(new ParticleSystem(getBulletParticleSystemParams(hitPositionCanvas)));

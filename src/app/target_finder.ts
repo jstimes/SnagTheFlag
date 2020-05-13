@@ -132,6 +132,7 @@ function getGridBorderTarget(ray: Ray): Target {
     const target: Target = {
         normal: borderNormal!,
         ray,
+        isTargetGridBorder: true,
         canvasCoords: gridBorderCollisionPt!,
         tile: gridBorderCollisionTile!,
         maxDistance: ray.startPt.distanceTo(gridBorderCollisionPt!),
@@ -225,6 +226,7 @@ function getTileTarget(
     if (closestCollisionTile != null) {
         const target: Target = {
             normal: closestTargetNormal!,
+            isTargetGridBorder: false,
             ray,
             tile: closestCollisionTile!,
             canvasCoords: closestCollisionPt!,
