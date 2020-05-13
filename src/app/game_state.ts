@@ -52,7 +52,8 @@ export class GameState {
 
     isTileVisibleByTeamIndex(tile: Point, teamIndex: number): boolean {
         for (const character of this.getCharactersForTeamIndex(teamIndex)) {
-            if (character.tileCoords.manhattanDistanceTo(tile) <= character.settings.maxSight) {
+            if (character.getCurrentTile().manhattanDistanceTo(tile)
+                <= character.settings.maxSight) {
                 return true;
             }
         }

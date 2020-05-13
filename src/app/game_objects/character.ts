@@ -265,6 +265,14 @@ export class Character {
         context.stroke();
     }
 
+    getCurrentTile(): Point {
+        if (!this.animationState.isAnimating) {
+            return this.tileCoords;
+        }
+        return Grid.getTileFromCanvasCoords(
+            this.animationState.currentCenterCanvas);
+    }
+
     moveTo(tileCoords: Point, targetsPath: Target[]): void {
         if (this.isFinishedWithTurn || this.hasMoved) {
             throw new Error(`Already moved.`);
