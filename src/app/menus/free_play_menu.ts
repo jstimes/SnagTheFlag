@@ -9,6 +9,7 @@ import { LEVELS } from 'src/app/level';
 import { ButtonGroup } from 'src/app/ui/button_group';
 import { GameSettings, MatchType, DEFAULT_GAME_SETTINGS, AiDifficulty } from 'src/app/game_settings';
 import { TextBox, TextBoxStyle, TextBoxDimensions } from 'src/app/ui/text_box';
+import { Element } from '../ui/element';
 
 interface ButtonMetadata {
     text: string;
@@ -121,11 +122,13 @@ export class FreePlayMenu implements GameModeManager {
     }
 
     private initSettingsElements(leftMargin: number): void {
-        const headerTopMargin = .2;
+        const headerTopMargin = .18;
         const buttonOffsetX = .04;
         const buttonGroupOffsetY = .04;
         const buttonSize = new Point(.09, .06);
         const headerSize = new Point(.18, .08);
+        const rowLength = 3;
+        const rowOffset = buttonGroupOffsetY / 2;
         const settingsTopMargin =
             headerTopMargin + buttonGroupOffsetY / 2 + headerSize.y;
         const fontSize = 22;
@@ -135,7 +138,7 @@ export class FreePlayMenu implements GameModeManager {
             textColor: '#000000',
         };
         const labelStyle: TextBoxStyle = {
-            color: '#dddddd',
+            color: THEME.uiBackgroundColor,
             fontSize: fontSize - 2,
             textColor: '#000000',
         };
@@ -159,36 +162,32 @@ export class FreePlayMenu implements GameModeManager {
         this.uiManager.addElement(settingsHeader);
 
         const createSettingRowElements = (params: {
-            rowIndex: number;
+            topY: number;
             headerText: string;
             buttonTexts: string[];
             initialButtonIndex: number;
             rows: number;
             onButtonChangeCallback: (selectedIndex: number) => void;
-        }) => {
+        }): Element[] => {
             const labelSize = new Point(.14, .06);
-            const topY = settingsTopMargin
-                + params.rowIndex * (buttonSize.y + buttonGroupOffsetY);
             const labelLeftMargin = leftMargin;
             const header = new TextBox({
                 dimensions: {
                     size: labelSize,
                     text: params.headerText,
-                    topLeft: new Point(labelLeftMargin, topY),
+                    topLeft: new Point(labelLeftMargin, params.topY),
                 },
                 style: labelStyle,
             });
 
             const buttonLeftMargin = labelLeftMargin + labelSize.x + .02;
             const dimensions: ButtonDimensions[] = [];
-            const rowLength = 3;
-            const rowOffset = buttonGroupOffsetY / 2;
             for (let index = 0; index < params.buttonTexts.length; index++) {
                 const column = index % rowLength;
                 const row = Math.floor(index / rowLength);
                 let topLeftX = buttonLeftMargin + column * (buttonOffsetX +
                     buttonSize.y);
-                let topLeftY = topY + row * (rowOffset + buttonSize.y)
+                let topLeftY = params.topY + row * (rowOffset + buttonSize.y)
                 dimensions.push({
                     topLeft: new Point(topLeftX, topLeftY),
                     size: buttonSize,
@@ -220,8 +219,16 @@ export class FreePlayMenu implements GameModeManager {
         const onTeamSizeChangeCallback = (index: number) => {
             this.selectedTeamSizeMap = teamSizeIndexToTeamSizeMap[index];
         };
+        const teamSizeTopY = settingsTopMargin;
+        const matchTypeTopY = teamSizeTopY + buttonSize.y * 2
+            + rowOffset + buttonGroupOffsetY;
+        const aiDifficultyTopY = matchTypeTopY + buttonSize.y
+            + buttonGroupOffsetY;
+        const fogOfWarTopY = aiDifficultyTopY + buttonSize.y
+            + buttonGroupOffsetY;
+        const spawnersTopY = fogOfWarTopY + buttonSize.y + buttonGroupOffsetY;
         const teamSizeElements = createSettingRowElements({
-            rowIndex: 0,
+            topY: teamSizeTopY,
             rows: 2,
             headerText: 'Team size',
             buttonTexts: teamSizeIndexToString,
@@ -246,7 +253,7 @@ export class FreePlayMenu implements GameModeManager {
             this.selectedAiDifficulty = difficulties[index];
         };
         const aiDifficultyElements = createSettingRowElements({
-            rowIndex: 3,
+            topY: aiDifficultyTopY,
             rows: 1,
             headerText: 'Difficulty',
             buttonTexts: difficultyStrings,
@@ -281,7 +288,7 @@ export class FreePlayMenu implements GameModeManager {
             }
         };
         const matchTypeElements = createSettingRowElements({
-            rowIndex: 2,
+            topY: matchTypeTopY,
             rows: 1,
             headerText: 'Match type',
             buttonTexts: matchTypeStrings,
@@ -304,7 +311,7 @@ export class FreePlayMenu implements GameModeManager {
             this.isFogOfWarOn = fogOfWarOptions[index];
         };
         const fogOfWarElements = createSettingRowElements({
-            rowIndex: 4,
+            topY: fogOfWarTopY,
             rows: 1,
             headerText: 'Fog of war',
             buttonTexts: fogOfWarOptionStrings,
@@ -327,7 +334,7 @@ export class FreePlayMenu implements GameModeManager {
             this.hasSpawners = spawnersOptions[index];
         };
         const spawnerElements = createSettingRowElements({
-            rowIndex: 5,
+            topY: spawnersTopY,
             rows: 1,
             headerText: 'Spawners',
             buttonTexts: spawnersOptionStrings,
@@ -340,7 +347,7 @@ export class FreePlayMenu implements GameModeManager {
 
     private initLevelElements(leftMargin: number): void {
         const fontSize = 22;
-        const headerTopMargin = .2;
+        const headerTopMargin = .18;
         const buttonOffsetY = .02;
         const levelElementSize = new Point(.18, .08);
         const buttonTopMargin =
