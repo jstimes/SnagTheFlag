@@ -13,6 +13,7 @@ const BG_COLOR = '#d4c7c7';
 export class ButtonPanel {
 
     private readonly uiManager: UiManager;
+    private buttonGroup?: ButtonGroup;
     private readonly borderWidth: number = 8;
     private readonly leftEdgeCanvas = Grid.GAME_WIDTH;
 
@@ -46,6 +47,18 @@ export class ButtonPanel {
             this.borderWidth, Grid.BUTTON_PANE_HEIGHT);
 
         this.uiManager.render();
+    }
+
+    selectIndex(index: number): void {
+        if (this.buttonGroup === undefined) {
+            throw new Error(`No buttonGroup in selectIndex'`);
+        }
+        this.buttonGroup.select(index);
+    }
+
+    clear(): void {
+        this.buttonGroup = undefined;
+        this.uiManager.removeAll();
     }
 
     addSidebarButtonGroup(headerTextLines: string[], buttonInfos:
@@ -110,11 +123,12 @@ export class ButtonPanel {
         const onChangeCallback = (index: number) => {
             buttonInfos[index].func();
         };
-        this.uiManager.addElement(new ButtonGroup({
+        this.buttonGroup = new ButtonGroup({
             buttons: dimensions,
             buttonStyle,
             initialSelectionIndex: initialSelectionIndex,
             onChangeCallback: onChangeCallback,
-        }));
+        });
+        this.uiManager.addElement(this.buttonGroup);
     }
 }

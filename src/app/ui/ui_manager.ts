@@ -15,7 +15,7 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 export class UiManager {
 
     private readonly context: CanvasRenderingContext2D;
-    private readonly elements: Element[];
+    private elements: Element[];
 
     constructor(context: CanvasRenderingContext2D) {
         this.context = context;
@@ -24,6 +24,10 @@ export class UiManager {
 
     addElement(element: Element): void {
         this.elements.push(element);
+    }
+
+    removeAll(): void {
+        this.elements = [];
     }
 
     removeElement(element: Element): void {

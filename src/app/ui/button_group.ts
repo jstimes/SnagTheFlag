@@ -49,6 +49,13 @@ export class ButtonGroup implements Element {
         this.buttons[this.currentlySelectedIndex].setIsSelected(true);
     }
 
+    select(index: number): void {
+        for (const button of this.buttons) {
+            button.setIsSelected(false);
+        }
+        this.buttons[index].setIsSelected(true);
+    }
+
     readonly render = (context: CanvasRenderingContext2D) => {
         for (const button of this.buttons) {
             button.render(context);

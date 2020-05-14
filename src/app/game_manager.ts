@@ -531,6 +531,9 @@ export class GameManager implements GameModeManager {
                 break;
             case ActionType.SELECT_CHARACTER_CLASS:
                 this.selectedCharacterSettings = action.class;
+                const classIndex = [...keysToCharacterClassType.values()].findIndex(
+                    (clasz) => action.class.type === clasz)!
+                this.buttonPanel.selectIndex(classIndex);
                 break;
             default:
                 throwBadAction(action);
@@ -660,6 +663,8 @@ export class GameManager implements GameModeManager {
     }
 
     private advanceToNextCombatTurn(): void {
+        this.buttonPanel.clear();
+
         // Spawn at end of turns.
         for (const spawner of this.gameState.spawners) {
             if (spawner.teamIndex === this.gameState.currentTeamIndex) {
