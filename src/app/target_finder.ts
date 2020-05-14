@@ -4,7 +4,6 @@ import { Point, containsPoint } from 'src/app/math/point';
 import { Character } from 'src/app/game_objects/character';
 import { Obstacle } from 'src/app/game_objects/obstacle';
 import { Target } from 'src/app/math/target';
-import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid } from 'src/app/grid';
 
 export function getRayForShot(shotInfo: ShotInfo): Ray {
@@ -86,8 +85,8 @@ export function getProjectileTarget(params: {
 function getGridBorderTarget(ray: Ray): Target {
     // Find which game border the ray intersects.
     const topLeftCanvas = new Point(0, 0);
-    const topRightCanvas = topLeftCanvas.add(new Point(RENDER_SETTINGS.canvasWidth, 0));
-    const bottomLeftCanvas = topLeftCanvas.add(new Point(0, RENDER_SETTINGS.canvasHeight));
+    const topRightCanvas = topLeftCanvas.add(new Point(Grid.GAME_WIDTH, 0));
+    const bottomLeftCanvas = topLeftCanvas.add(new Point(0, Grid.GAME_HEIGHT));
     const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
     const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
     const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, 1));

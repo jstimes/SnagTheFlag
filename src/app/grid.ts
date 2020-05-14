@@ -8,9 +8,12 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
  */
 export class Grid {
 
+    static readonly BUTTON_PANE_WIDTH = 160;
+    static readonly GAME_WIDTH = RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH;
+    static readonly GAME_HEIGHT = RENDER_SETTINGS.canvasHeight;
     static readonly TILE_SIZE = 40;
-    static readonly TILES_WIDE = RENDER_SETTINGS.canvasWidth / Grid.TILE_SIZE;
-    static readonly TILES_TALL = RENDER_SETTINGS.canvasHeight / Grid.TILE_SIZE;
+    static readonly TILES_WIDE = Grid.GAME_WIDTH / Grid.TILE_SIZE;
+    static readonly TILES_TALL = Grid.GAME_HEIGHT / Grid.TILE_SIZE;
     static readonly HALF_TILE = new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2);
 
     static getCanvasFromTileCoords(tileCoords: Point): Point {

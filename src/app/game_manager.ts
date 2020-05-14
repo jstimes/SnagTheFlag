@@ -312,6 +312,11 @@ export class GameManager implements GameModeManager {
         }
         this.renderFogOfWar(this.context);
         this.hud.render();
+
+        this.context.fillStyle = '#00000088';
+        this.context.fillRect(
+            RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH, 0,
+            Grid.BUTTON_PANE_WIDTH, RENDER_SETTINGS.canvasHeight);
     }
 
     private shouldRenderCharacter(character: Character): boolean {
