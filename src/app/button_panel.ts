@@ -8,7 +8,7 @@ import { Grid } from './grid';
 import { ButtonGroup } from './ui/button_group';
 import { RENDER_SETTINGS } from './render_settings';
 
-const BG_COLOR = '#d4c7c7';
+const BG_COLOR = '#a68b8b';
 
 export class ButtonPanel {
 
