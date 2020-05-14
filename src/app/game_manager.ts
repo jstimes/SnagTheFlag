@@ -64,6 +64,7 @@ export class GameManager implements GameModeManager {
     private winningTeamIndex: number;
     private hud: Hud;
     private clickHandler: ClickHandler | null = null;
+    private onAnimationDone: (() => void) | null = null;
     private controlMap: ControlMap;
     private gameState: GameState;
 
@@ -130,6 +131,9 @@ export class GameManager implements GameModeManager {
 
         if (this.isAnimating()) {
             return;
+        } else if (this.onAnimationDone != null) {
+            this.onAnimationDone();
+            this.onAnimationDone = null;
         }
 
         if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
@@ -231,10 +235,6 @@ export class GameManager implements GameModeManager {
                 obstacles: this.gameState.obstacles,
             });
             projectile.setNewTargets(newTargets);
-        }
-        this.checkGameOver();
-        if (!this.isGameOver) {
-            this.checkCharacterTurnOver();
         }
     }
 
@@ -413,10 +413,14 @@ export class GameManager implements GameModeManager {
                 const shotInfos = this.gameState.selectedCharacter.shoot();
                 for (const shotInfo of shotInfos) {
                     this.fireShot(shotInfo);
-                    this.setSelectedCharacterState(
-                        SelectedCharacterState.AWAITING);
+                    // Next turn logic runs when projectile dies.
+                    this.onAnimationDone = () => {
+                        this.checkGameOver();
+                        if (!this.isGameOver) {
+                            this.checkCharacterTurnOver();
+                        }
+                    };
                 }
-                // Next turn logic runs when projectile dies.
                 break;
             case ActionType.HEAL:
                 if (this.gameState.selectedCharacter == null) {
@@ -466,11 +470,6 @@ export class GameManager implements GameModeManager {
                     if (this.gameState.selectedCharacterState
                         === SelectedCharacterState.MOVING) {
                         this.handleCharacterMovement(action.tile);
-                        if (this.isGameOver) {
-                            // Flag was snagged.
-                            return;
-                        }
-                        this.checkCharacterTurnOver();
                     } else if (this.gameState.selectedCharacterState
                         === SelectedCharacterState.THROWING_GRENADE) {
                         const grenadeDetails = {
@@ -720,6 +719,13 @@ export class GameManager implements GameModeManager {
         const characterHasFlag =
             character.tileCoords.equals(enemyFlag.tileCoords);
         character.moveTo(toTile, targets);
+        this.onAnimationDone = () => {
+            if (this.isGameOver) {
+                // Flag was snagged.
+                return;
+            }
+            this.checkCharacterTurnOver();
+        };
         if (characterHasFlag) {
             enemyFlag.setIsTaken(() => {
                 return character.animationState.currentCenterCanvas
