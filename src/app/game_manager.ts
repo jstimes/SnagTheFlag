@@ -23,6 +23,7 @@ import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
 import { getGrenadeSmokeParticleSystemParams, getGrenadeBurstParticleSystemParams, getBulletParticleSystemParams, getHealParticleSystemParams } from './particle_system_theme';
 import { Spawner } from './game_objects/spawner';
+import { ButtonPanel } from './button_panel';
 
 interface ClickHandler {
     onClick: (tile: Point) => void;
@@ -63,6 +64,7 @@ export class GameManager implements GameModeManager {
     private isPaused: boolean;
     private winningTeamIndex: number;
     private hud: Hud;
+    private buttonPanel: ButtonPanel;
     private clickHandler: ClickHandler | null = null;
     private onAnimationDone: (() => void) | null = null;
     private controlMap: ControlMap;
@@ -130,9 +132,12 @@ export class GameManager implements GameModeManager {
         this.hud.update(elapsedMs);
 
         this.controlMap.check();
+        this.buttonPanel.mouseMove(CONTROLS.getMouseCanvasCoords());
         if (CONTROLS.hasClick()) {
+            const clickCanvas = CONTROLS.handleClick();
+            this.buttonPanel.tryClick(clickCanvas);
             const mouseTileCoords =
-                Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
+                Grid.getTileFromCanvasCoords(clickCanvas);
             if (this.clickHandler != null) {
                 this.clickHandler.onClick(mouseTileCoords);
             }
@@ -313,10 +318,7 @@ export class GameManager implements GameModeManager {
         this.renderFogOfWar(this.context);
         this.hud.render();
 
-        this.context.fillStyle = '#00000088';
-        this.context.fillRect(
-            RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH, 0,
-            Grid.BUTTON_PANE_WIDTH, RENDER_SETTINGS.canvasHeight);
+        this.buttonPanel.render(this.context);
     }
 
     private shouldRenderCharacter(character: Character): boolean {
@@ -1259,10 +1261,11 @@ export class GameManager implements GameModeManager {
             }
         }
         this.controlMap = new ControlMap();
-        this.addDefaultControls();
-        this.addCharacterClassControls();
         this.hud = new Hud(this.context);
         this.hud.setControlMap(this.controlMap);
+        this.buttonPanel = new ButtonPanel(this.context);
+        this.addDefaultControls();
+        this.addCharacterClassControls();
 
         // 0th team goes first...
         this.gameState.currentTeamIndex = -1;
@@ -1359,9 +1362,10 @@ export class GameManager implements GameModeManager {
     }
 
     private addCharacterClassControls(): void {
+        const sidebarButtonGroup: { key: Key; func: () => void; name: string; }[] = [];
         for (const key of keysToCharacterClassType.keys()) {
             const characterClassType = keysToCharacterClassType.get(key)!;
-            this.controlMap.add({
+            const params = {
                 key,
                 name: characterClassType,
                 func: () => {
@@ -1375,9 +1379,13 @@ export class GameManager implements GameModeManager {
                     this.onAction(selectCharacterClassAction);
                 },
                 eventType: EventType.KeyPress,
-            });
+            };
+            sidebarButtonGroup.push(params);
+            this.controlMap.add(params);
         }
-
+        this.buttonPanel.addSidebarButtonGroup(
+            ['Select Character', 'Class to Place'],
+            sidebarButtonGroup);
     }
 
     private addSwitchSquadMemberControls(): void {

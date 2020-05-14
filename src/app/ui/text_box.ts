@@ -11,6 +11,7 @@ export interface TextBoxDimensions {
     readonly topLeft: Point;
     readonly size: Point;
     readonly text: string;
+    readonly rows?: number;
 }
 
 export interface TextBoxStyle {

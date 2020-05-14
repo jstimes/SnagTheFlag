@@ -9,6 +9,7 @@ import { RENDER_SETTINGS } from 'src/app/render_settings';
 export class Grid {
 
     static readonly BUTTON_PANE_WIDTH = 160;
+    static readonly BUTTON_PANE_HEIGHT = RENDER_SETTINGS.canvasHeight;
     static readonly GAME_WIDTH = RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH;
     static readonly GAME_HEIGHT = RENDER_SETTINGS.canvasHeight;
     static readonly TILE_SIZE = 40;

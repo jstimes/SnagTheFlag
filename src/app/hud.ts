@@ -1,8 +1,8 @@
 import { ControlMap, CONTROLS } from 'src/app/controls';
-import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { THEME } from 'src/app/theme';
 import { Point } from 'src/app/math/point';
 import { lerpColors, hexStringToColor, colorToString } from 'src/app/color';
+import { Grid } from './grid';
 
 /** Determines how long to display titles, subtitles, and toasts. */
 export enum Duration {
@@ -28,15 +28,15 @@ const durationToMs = new Map<Duration, number>([
 const textTypeToRenderSettings = new Map<TextType, TextRenderSettings>([
     [TextType.TITLE, {
         fontSize: 72,
-        topMargin: RENDER_SETTINGS.canvasHeight / 4,
+        topMargin: Grid.GAME_HEIGHT / 4,
     }],
     [TextType.SUBTITLE, {
         fontSize: 48,
-        topMargin: RENDER_SETTINGS.canvasHeight / 2,
+        topMargin: Grid.GAME_HEIGHT / 2,
     }],
     [TextType.TOAST, {
         fontSize: 24,
-        topMargin: 7 * RENDER_SETTINGS.canvasHeight / 8,
+        topMargin: 7 * Grid.GAME_HEIGHT / 8,
     }],
 ]);
 
@@ -166,8 +166,8 @@ export class Hud {
         context.font = `${fontSize}px fantasy`;
 
         let renderTop = new Point(
-            RENDER_SETTINGS.canvasWidth / 64,
-            RENDER_SETTINGS.canvasHeight / 32);
+            Grid.GAME_WIDTH / 64,
+            Grid.GAME_HEIGHT / 32);
         for (const key of this.controlMap!.assignedControls.keys()) {
             const action = CONTROLS.getAssignedControlMap().get(key);
             context.fillText(
@@ -188,7 +188,7 @@ export class Hud {
         this.context.font = `${textRenderSettings.fontSize}px fantasy`;
         const textWidth = this.context.measureText(text).width;
         const textCanvasPosition = new Point(
-            RENDER_SETTINGS.canvasWidth / 2,
+            Grid.GAME_WIDTH / 2,
             textRenderSettings.topMargin);
         this.context.fillText(
             text,
