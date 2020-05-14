@@ -55,10 +55,13 @@ export class ButtonGroup implements Element {
         }
     };
 
-    readonly onClick = (uiCoords: Point) => {
+    readonly onClick = (uiCoords: Point): boolean => {
         for (const button of this.buttons) {
-            button.onClick(uiCoords);
+            if (button.onClick(uiCoords)) {
+                return true;
+            }
         }
+        return false;
     };
 
     readonly onMouseMove = (uiCoords: Point) => {

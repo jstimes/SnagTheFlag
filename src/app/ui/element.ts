@@ -2,8 +2,8 @@ import { Point } from 'src/app/math/point';
 
 
 export interface Element {
-    /** TODO maybe return boolean to know if click was handled. */
-    readonly onClick: (uiCoords: Point) => void;
+    /** Returns whether element handled the click. */
+    readonly onClick: (uiCoords: Point) => boolean;
     readonly onMouseMove: (uiCoords: Point) => void;
     readonly render: (context: CanvasRenderingContext2D) => void;
 }

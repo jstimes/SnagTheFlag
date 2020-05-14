@@ -108,10 +108,12 @@ export class Button implements Element {
         this.isSelected = isSelected;
     }
 
-    readonly onClick = (uiCoords: Point) => {
+    readonly onClick = (uiCoords: Point): boolean => {
         if (this.isInButton(uiCoords)) {
             this.onClickCallback();
+            return true;
         }
+        return false;
     };
 
     readonly onMouseMove = (uiCoords: Point) => {

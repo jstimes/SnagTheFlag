@@ -37,11 +37,14 @@ export class UiManager {
         }
     }
 
-    onClick(canvasCoords: Point): void {
+    onClick(canvasCoords: Point): boolean {
         const uiCoords = this.getUiCoords(canvasCoords);
         for (const element of this.elements) {
-            element.onClick(uiCoords);
+            if (element.onClick(uiCoords)) {
+                return true;
+            }
         }
+        return false;
     }
 
     render(): void {

@@ -28,8 +28,8 @@ export class ButtonPanel {
         this.uiManager.onMouseMove(mouseCanvas);
     }
 
-    tryClick(clickCanvas: Point): void {
-        this.uiManager.onClick(clickCanvas);
+    tryClick(clickCanvas: Point): boolean {
+        return this.uiManager.onClick(clickCanvas);
     }
 
     render(context: CanvasRenderingContext2D): void {

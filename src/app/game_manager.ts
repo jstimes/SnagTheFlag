@@ -135,11 +135,14 @@ export class GameManager implements GameModeManager {
         this.buttonPanel.mouseMove(CONTROLS.getMouseCanvasCoords());
         if (CONTROLS.hasClick()) {
             const clickCanvas = CONTROLS.handleClick();
-            this.buttonPanel.tryClick(clickCanvas);
-            const mouseTileCoords =
-                Grid.getTileFromCanvasCoords(clickCanvas);
-            if (this.clickHandler != null) {
-                this.clickHandler.onClick(mouseTileCoords);
+            const clickedButtonPanel = this.buttonPanel.tryClick(clickCanvas);
+
+            if (!clickedButtonPanel) {
+                const mouseTileCoords =
+                    Grid.getTileFromCanvasCoords(clickCanvas);
+                if (this.clickHandler != null) {
+                    this.clickHandler.onClick(mouseTileCoords);
+                }
             }
         }
 

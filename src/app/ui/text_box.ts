@@ -61,9 +61,9 @@ export class TextBox implements Element {
             boxCenterCanvas.y + fontSize / 4);
     };
 
-    readonly onClick = (uiCoords: Point) => {
+    readonly onClick = (uiCoords: Point): boolean => {
         // No-op
-        return;
+        return false;
     };
 
     readonly onMouseMove = (uiCoords: Point) => {
