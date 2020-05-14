@@ -1,8 +1,8 @@
 import { UiManager } from './ui/ui_manager';
-import { Key, CONTROLS } from './controls';
+import { Key, CONTROLS, ControlParams } from './controls';
 import { Point } from './math/point';
 import { TextBoxStyle, TextBox } from './ui/text_box';
-import { ButtonStyle, ButtonDimensions } from './ui/button';
+import { ButtonStyle, ButtonDimensions, Button } from './ui/button';
 import { THEME } from './theme';
 import { Grid } from './grid';
 import { ButtonGroup } from './ui/button_group';
@@ -16,6 +16,32 @@ export class ButtonPanel {
     private buttonGroup?: ButtonGroup;
     private readonly borderWidth: number = 8;
     private readonly leftEdgeCanvas = Grid.GAME_WIDTH;
+
+    private readonly leftUiCoord =
+        (Grid.GAME_WIDTH + this.borderWidth) / RENDER_SETTINGS.canvasWidth;
+    private readonly widthUi = 1 - this.leftUiCoord;
+    private readonly horizontalMargins = .01;
+    private readonly maxWidth = this.widthUi - (this.horizontalMargins * 2);
+    private readonly leftMargin = this.leftUiCoord + this.horizontalMargins;
+    private readonly maxWidthUi = 1 - this.leftMargin - this.horizontalMargins;
+    private readonly fontSize = 18;
+    private readonly buttonOffsetY = .01;
+    private readonly buttonSize = new Point(this.maxWidth, .06);
+    private readonly headerSize = new Point(this.maxWidth, .025);
+
+    private readonly headerStyle: TextBoxStyle = {
+        color: BG_COLOR,
+        fontSize: this.fontSize,
+        textColor: '#000000',
+    };
+    private readonly buttonStyle: ButtonStyle = {
+        fontSize: this.fontSize,
+        color: '#f7c25e',
+        hoverColor: '#deaf57',
+        selectedColor: '#db9d2a',
+        selectedBorderColor: '#000000',
+        textColor: THEME.buttonTextColor,
+    };
 
     constructor(readonly context: CanvasRenderingContext2D) {
         this.uiManager = new UiManager(context);
@@ -61,60 +87,37 @@ export class ButtonPanel {
         this.uiManager.removeAll();
     }
 
-    addSidebarButtonGroup(headerTextLines: string[], buttonInfos:
-        { key: Key; func: () => void; name: string; }[]): void {
-        const leftUiCoord = (RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH + this.borderWidth)
-            / RENDER_SETTINGS.canvasWidth;
-        const widthUi = 1 - leftUiCoord;
-        const fontSize = 18;
-        const buttonOffsetY = .01;
-
-        const headerStyle: TextBoxStyle = {
-            color: BG_COLOR,
-            fontSize,
-            textColor: '#000000',
-        };
-        const buttonStyle: ButtonStyle = {
-            fontSize,
-            color: '#f7c25e',
-            hoverColor: '#deaf57',
-            selectedColor: '#db9d2a',
-            selectedBorderColor: '#000000',
-            textColor: THEME.buttonTextColor,
-        };
-
-        const horizontalMargins = .01;
-        const maxWidth = widthUi - (horizontalMargins * 2);
-        const buttonSize = new Point(maxWidth, .06);
-        const headerSize = new Point(maxWidth, .025);
-        const leftMargin = leftUiCoord + horizontalMargins;
-        const maxWidthUi = 1 - leftMargin - horizontalMargins;
-        const maxWidthCanvas = maxWidthUi * RENDER_SETTINGS.canvasWidth;
+    configurePanel(params: {
+        headerTextLines: string[];
+        buttonInfos: ControlParams[];
+        isButtonGroup: boolean;
+    }): void {
+        const { headerTextLines, buttonInfos, isButtonGroup } = params;
         const rows = headerTextLines.length;
         let topMargin = .08;
         for (let row = 0; row < rows; row++) {
             const header = new TextBox({
                 dimensions: {
-                    size: headerSize,
+                    size: this.headerSize,
                     text: headerTextLines[row],
-                    topLeft: new Point(leftMargin, topMargin),
+                    topLeft: new Point(this.leftMargin, topMargin),
                 },
-                style: headerStyle,
+                style: this.headerStyle,
             });
             this.uiManager.addElement(header);
-            topMargin += buttonOffsetY + headerSize.y;
+            topMargin += this.buttonOffsetY + this.headerSize.y;
         }
 
         const dimensions: ButtonDimensions[] = [];
         const columnSize = 6;
         for (let buttonIndex = 0; buttonIndex < buttonInfos.length; buttonIndex++) {
             let row = buttonIndex % columnSize;
-            const topLeftY = topMargin + row * buttonOffsetY
-                + row * buttonSize.y;
+            const topLeftY = topMargin + row * this.buttonOffsetY
+                + row * this.buttonSize.y;
             const button = buttonInfos[buttonIndex];
             dimensions.push({
-                topLeft: new Point(leftMargin, topLeftY),
-                size: buttonSize,
+                topLeft: new Point(this.leftMargin, topLeftY),
+                size: this.buttonSize,
                 text: `${button.name} (${CONTROLS.getStringForKey(button.key)})`,
             });
         }
@@ -123,12 +126,23 @@ export class ButtonPanel {
         const onChangeCallback = (index: number) => {
             buttonInfos[index].func();
         };
-        this.buttonGroup = new ButtonGroup({
-            buttons: dimensions,
-            buttonStyle,
-            initialSelectionIndex: initialSelectionIndex,
-            onChangeCallback: onChangeCallback,
-        });
-        this.uiManager.addElement(this.buttonGroup);
+        if (isButtonGroup) {
+            this.buttonGroup = new ButtonGroup({
+                buttons: dimensions,
+                buttonStyle: this.buttonStyle,
+                initialSelectionIndex: initialSelectionIndex,
+                onChangeCallback: onChangeCallback,
+            });
+            this.uiManager.addElement(this.buttonGroup);
+        } else {
+            for (let index = 0; index < buttonInfos.length; index++) {
+                const dimension = dimensions[index];
+                this.uiManager.addElement(new Button({
+                    dimensions: dimension,
+                    style: this.buttonStyle,
+                    onClick: buttonInfos[index].func,
+                }));
+            }
+        }
     }
 }

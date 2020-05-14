@@ -13,13 +13,20 @@ enum KeyPressState {
     DOWN,
 }
 
+export interface ControlParams {
+    readonly key: Key;
+    readonly func: () => void;
+    readonly name: string;
+    readonly eventType: EventType;
+}
+
 export class ControlMap {
     assignedControls: Map<Key, () => void> = new Map();
     keyToEventType: Map<Key, EventType> = new Map();
 
     keyToKeyPressState: Map<Key, KeyPressState> = new Map();
 
-    add(params: { key: Key, name: string, func: () => void, eventType: EventType }) {
+    add(params: ControlParams) {
         this.assignedControls.set(params.key, params.func);
         CONTROLS.addAssignedControl(params.key, params.name);
         this.keyToEventType.set(params.key, params.eventType);

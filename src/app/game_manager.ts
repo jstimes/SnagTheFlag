@@ -1,7 +1,7 @@
 import { RENDER_SETTINGS } from 'src/app/render_settings';
 import { Grid, bfs, pathTo } from 'src/app/grid';
 import { Point, pointFromSerialized, containsPoint } from 'src/app/math/point';
-import { CONTROLS, ControlMap, EventType, Key, numberToKey, numberToOrdinal } from 'src/app/controls';
+import { CONTROLS, ControlMap, ControlParams, EventType, Key, numberToKey, numberToOrdinal } from 'src/app/controls';
 import { THEME } from 'src/app/theme';
 import { LEVELS } from 'src/app/level';
 import { GameSettings, MatchType, AiDifficulty } from 'src/app/game_settings';
@@ -663,8 +663,6 @@ export class GameManager implements GameModeManager {
     }
 
     private advanceToNextCombatTurn(): void {
-        this.buttonPanel.clear();
-
         // Spawn at end of turns.
         for (const spawner of this.gameState.spawners) {
             if (spawner.teamIndex === this.gameState.currentTeamIndex) {
@@ -767,7 +765,6 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    // TODO - something doesn't work here in campaign mode.
     private setGameOver(winningTeamIndex: number, subtitle: string): void {
         this.controlMap.clear();
         this.togglePause();
@@ -1003,33 +1000,57 @@ export class GameManager implements GameModeManager {
                 `before calling setSelectedCharacterState`);
         }
         this.gameState.selectedCharacterState = state;
-        this.controlMap.clear();
-        this.clickHandler = null;
-        this.addDefaultControls();
-        this.addSwitchSquadMemberControls();
-
-        this.controlMap.add({
-            key: END_TURN_KEY,
-            name: 'End character turn',
-            func: () => {
-                if (this.gameState.selectedCharacter == null) {
-                    throw new Error(
-                        `There's no selected character when ending turn.`);
-                }
-                const action: EndCharacterTurnAction = {
-                    type: ActionType.END_CHARACTER_TURN,
-                };
-                this.onAction(action);
-            },
-            eventType: EventType.KeyPress,
-        });
 
         switch (state) {
             case SelectedCharacterState.AWAITING:
                 this.gameState.selectableTiles = [];
                 this.gameState.selectedCharacter.cancelAiming();
+                break;
+            case SelectedCharacterState.MOVING:
+                this.gameState.selectableTiles =
+                    this.getAvailableTilesForCharacterMovement();
+                break;
+            case SelectedCharacterState.AIMING:
+                this.gameState.selectedCharacter.startAiming();
+                break;
+            case SelectedCharacterState.THROWING_GRENADE:
+                this.gameState.selectableTiles =
+                    this.getAvailableTilesForThrowingGrenade();
+                break;
+            default:
+                throw new Error(`Unknown selected character state`);
+        }
+
+        if (this.isAiTurn()) {
+            this.controlMap.clear();
+            this.addDefaultControls();
+            this.clickHandler = null;
+        } else {
+            this.addControlsForSelectedCharacterState();
+        }
+    }
+
+    addControlsForSelectedCharacterState(): void {
+        console.log("Adding controls");
+        if (this.gameState.selectedCharacter == null
+            || this.gameState.selectedCharacterState == null) {
+            throw new Error(
+                `There needs to be a selected character ` +
+                `before calling setSelectedCharacterState`);
+        }
+        this.buttonPanel.clear();
+        this.controlMap.clear();
+        this.clickHandler = null;
+        this.addDefaultControls();
+        this.addSwitchSquadMemberControls();
+
+        const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
+        const buttonInfos: ControlParams[] = [];
+
+        switch (this.gameState.selectedCharacterState) {
+            case SelectedCharacterState.AWAITING:
                 if (!this.gameState.selectedCharacter.hasMoved) {
-                    this.controlMap.add({
+                    buttonInfos.push({
                         key: MOVE_KEY,
                         name: 'Move',
                         func: () => {
@@ -1043,7 +1064,7 @@ export class GameManager implements GameModeManager {
                     });
                 }
                 if (this.gameState.selectedCharacter.canShoot()) {
-                    this.controlMap.add({
+                    buttonInfos.push({
                         key: TOGGLE_AIM_KEY,
                         name: 'Aim',
                         func: () => {
@@ -1060,7 +1081,7 @@ export class GameManager implements GameModeManager {
                     this.gameState.selectedCharacter.extraAbilities) {
                     switch (extraAbility.abilityType) {
                         case CharacterAbilityType.HEAL:
-                            this.controlMap.add({
+                            buttonInfos.push({
                                 key: HEAL_KEY,
                                 name: 'Heal',
                                 func: () => {
@@ -1074,7 +1095,7 @@ export class GameManager implements GameModeManager {
                             });
                             break;
                         case CharacterAbilityType.THROW_GRENADE:
-                            this.controlMap.add({
+                            buttonInfos.push({
                                 key: TOGGLE_THROW_GRENADE_KEY,
                                 name: 'Throw grenade',
                                 func: () => {
@@ -1091,14 +1112,12 @@ export class GameManager implements GameModeManager {
                 }
                 break;
             case SelectedCharacterState.MOVING:
-                this.gameState.selectableTiles =
-                    this.getAvailableTilesForCharacterMovement();
                 this.clickHandler = {
                     onClick: (tile: Point) => {
                         this.tryMovingSelectedCharacter(tile);
                     },
                 };
-                this.controlMap.add({
+                buttonInfos.push({
                     key: MOVE_KEY,
                     name: 'Cancel Move',
                     func: () => {
@@ -1112,8 +1131,7 @@ export class GameManager implements GameModeManager {
                 });
                 break;
             case SelectedCharacterState.AIMING:
-                this.gameState.selectedCharacter.startAiming();
-                this.controlMap.add({
+                buttonInfos.push({
                     key: TOGGLE_AIM_KEY,
                     name: 'Stop Aiming',
                     func: () => {
@@ -1129,10 +1147,9 @@ export class GameManager implements GameModeManager {
                     },
                     eventType: EventType.KeyPress,
                 });
-                const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
-                this.controlMap.add({
+                buttonInfos.push({
                     key: AIM_COUNTERCLOCKWISE_KEY,
-                    name: 'Aim counterclockwise',
+                    name: 'Aim CCW',
                     func: () => {
                         if (this.gameState.selectedCharacter == null) {
                             throw new Error(
@@ -1149,9 +1166,9 @@ export class GameManager implements GameModeManager {
                     },
                     eventType: EventType.KeyDown,
                 });
-                this.controlMap.add({
+                buttonInfos.push({
                     key: AIM_CLOCKWISE_KEY,
-                    name: 'Aim clockwise',
+                    name: 'Aim CC',
                     func: () => {
                         if (this.gameState.selectedCharacter == null) {
                             throw new Error(
@@ -1168,7 +1185,7 @@ export class GameManager implements GameModeManager {
                     },
                     eventType: EventType.KeyDown,
                 });
-                this.controlMap.add({
+                buttonInfos.push({
                     key: SHOOT_KEY,
                     name: 'Fire',
                     func: () => {
@@ -1185,16 +1202,14 @@ export class GameManager implements GameModeManager {
                 });
                 break;
             case SelectedCharacterState.THROWING_GRENADE:
-                this.gameState.selectableTiles =
-                    this.getAvailableTilesForThrowingGrenade();
                 this.clickHandler = {
                     onClick: (tile: Point) => {
                         this.tryThrowingGrenade(tile);
                     },
                 };
-                this.controlMap.add({
+                buttonInfos.push({
                     key: TOGGLE_THROW_GRENADE_KEY,
-                    name: 'Cancel throwing grenade',
+                    name: 'Cancel',
                     func: () => {
                         const action: SelectCharacterStateAction = {
                             type: ActionType.SELECT_CHARACTER_STATE,
@@ -1208,13 +1223,28 @@ export class GameManager implements GameModeManager {
             default:
                 throw new Error(`Unknown selected character state`);
         }
-
-        // TODO - very hackE.
-        // should separate game state update from control update :O
-        if (this.isAiTurn()) {
-            this.controlMap.clear();
-            this.addDefaultControls();
-            this.clickHandler = null;
+        buttonInfos.push({
+            key: END_TURN_KEY,
+            name: 'End character turn',
+            func: () => {
+                if (this.gameState.selectedCharacter == null) {
+                    throw new Error(
+                        `There's no selected character when ending turn.`);
+                }
+                const action: EndCharacterTurnAction = {
+                    type: ActionType.END_CHARACTER_TURN,
+                };
+                this.onAction(action);
+            },
+            eventType: EventType.KeyPress,
+        });
+        this.buttonPanel.configurePanel({
+            headerTextLines: ['Available actions'],
+            buttonInfos,
+            isButtonGroup: false,
+        });
+        for (const buttonParam of buttonInfos) {
+            this.controlMap.add(buttonParam);
         }
     }
 
@@ -1370,10 +1400,10 @@ export class GameManager implements GameModeManager {
     }
 
     private addCharacterClassControls(): void {
-        const sidebarButtonGroup: { key: Key; func: () => void; name: string; }[] = [];
+        const buttons: ControlParams[] = [];
         for (const key of keysToCharacterClassType.keys()) {
             const characterClassType = keysToCharacterClassType.get(key)!;
-            const params = {
+            const params: ControlParams = {
                 key,
                 name: characterClassType,
                 func: () => {
@@ -1388,12 +1418,14 @@ export class GameManager implements GameModeManager {
                 },
                 eventType: EventType.KeyPress,
             };
-            sidebarButtonGroup.push(params);
+            buttons.push(params);
             this.controlMap.add(params);
         }
-        this.buttonPanel.addSidebarButtonGroup(
-            ['Select Character', 'Class to Place'],
-            sidebarButtonGroup);
+        this.buttonPanel.configurePanel({
+            headerTextLines: ['Select Character', 'Class to Place'],
+            buttonInfos: buttons,
+            isButtonGroup: true,
+        });
     }
 
     private addSwitchSquadMemberControls(): void {

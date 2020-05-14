@@ -8,7 +8,7 @@ export interface RenderSettings {
 
 function createDefaultRenderSettings(): RenderSettings {
     const canvasHeight = 800;
-    const canvasWidth = 960;
+    const canvasWidth = 1040;
     const frameRate = 60;
     const msBetweenRenders = 1000 / frameRate;
     return {

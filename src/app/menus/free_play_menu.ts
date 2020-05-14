@@ -292,7 +292,7 @@ export class FreePlayMenu implements GameModeManager {
             rows: 1,
             headerText: 'Match type',
             buttonTexts: matchTypeStrings,
-            initialButtonIndex: 0,
+            initialButtonIndex: 1,
             onButtonChangeCallback: onChangeCallback,
         });
         this.uiManager.addElement(matchTypeElements[0]);
@@ -315,7 +315,7 @@ export class FreePlayMenu implements GameModeManager {
             rows: 1,
             headerText: 'Fog of war',
             buttonTexts: fogOfWarOptionStrings,
-            initialButtonIndex: 0,
+            initialButtonIndex: 1,
             onButtonChangeCallback: onFogOfWarChangeCallback,
         });
         this.uiManager.addElement(fogOfWarElements[0]);
@@ -338,7 +338,7 @@ export class FreePlayMenu implements GameModeManager {
             rows: 1,
             headerText: 'Spawners',
             buttonTexts: spawnersOptionStrings,
-            initialButtonIndex: 0,
+            initialButtonIndex: 1,
             onButtonChangeCallback: onSpawnersChangeCallback,
         });
         this.uiManager.addElement(spawnerElements[0]);
