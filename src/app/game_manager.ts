@@ -129,9 +129,16 @@ export class GameManager implements GameModeManager {
         }
         this.hud.update(elapsedMs);
 
-        if (this.isAnimating()) {
-            return;
-        } else if (this.onAnimationDone != null) {
+        this.controlMap.check();
+        if (CONTROLS.hasClick()) {
+            const mouseTileCoords =
+                Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
+            if (this.clickHandler != null) {
+                this.clickHandler.onClick(mouseTileCoords);
+            }
+        }
+
+        if (!this.isAnimating() && this.onAnimationDone != null) {
             this.onAnimationDone();
             this.onAnimationDone = null;
         }
@@ -145,19 +152,7 @@ export class GameManager implements GameModeManager {
             return;
         }
 
-        this.controlMap.check();
-        if (CONTROLS.hasClick()) {
-            const mouseTileCoords =
-                Grid.getTileFromCanvasCoords(CONTROLS.handleClick());
-            if (this.clickHandler != null) {
-                this.clickHandler.onClick(mouseTileCoords);
-            }
-        }
-        if (this.isGameOver) {
-            return;
-        }
-
-        if (this.isAiTurn()) {
+        if (this.isAiTurn() && !this.isAnimating()) {
             const nextAction = this.getCurrentTurnAi()
                 .getNextAction(this.getGameState());
             this.onAction(nextAction);
@@ -414,12 +409,12 @@ export class GameManager implements GameModeManager {
                 for (const shotInfo of shotInfos) {
                     this.fireShot(shotInfo);
                     // Next turn logic runs when projectile dies.
-                    this.onAnimationDone = () => {
+                    this.addOnAnimationDoneCallback(() => {
                         this.checkGameOver();
                         if (!this.isGameOver) {
                             this.checkCharacterTurnOver();
                         }
-                    };
+                    });
                 }
                 break;
             case ActionType.HEAL:
@@ -619,6 +614,9 @@ export class GameManager implements GameModeManager {
     }
 
     private isAiTurn(): boolean {
+        if (this.isGameOver) {
+            return false;
+        }
         return this.teamIndexToIsAi[this.gameState.currentTeamIndex];
     }
 
@@ -702,6 +700,13 @@ export class GameManager implements GameModeManager {
         return this.gameState;
     }
 
+    private addOnAnimationDoneCallback(callback: () => void): void {
+        this.onAnimationDone = callback;
+        this.controlMap.clear();
+        this.addDefaultControls();
+        this.clickHandler = null;
+    }
+
     private handleCharacterMovement(toTile: Point): void {
         const character = this.gameState.selectedCharacter!;
         const manhattandDistanceAway =
@@ -719,26 +724,25 @@ export class GameManager implements GameModeManager {
         const characterHasFlag =
             character.tileCoords.equals(enemyFlag.tileCoords);
         character.moveTo(toTile, targets);
-        this.onAnimationDone = () => {
-            if (this.isGameOver) {
-                // Flag was snagged.
-                return;
-            }
-            this.checkCharacterTurnOver();
-        };
-        if (characterHasFlag) {
-            enemyFlag.setIsTaken(() => {
-                return character.animationState.currentCenterCanvas
-                    .subtract(Grid.HALF_TILE);
-            });
-            enemyFlag.tileCoords = toTile;
+        this.addOnAnimationDoneCallback(() => {
             if (enemyFlag.tileCoords
                 .equals(this.gameState.getActiveTeamFlag().tileCoords)) {
                 this.setGameOver(
                     this.gameState.currentTeamIndex,
                     `${this.gameState.getActiveTeamName()} team has snagged ` +
                     `the flag.`);
+                return;
             }
+            this.checkCharacterTurnOver();
+        });
+
+        if (characterHasFlag) {
+            enemyFlag.setIsTaken(() => {
+                return character.animationState.currentCenterCanvas
+                    .subtract(Grid.HALF_TILE);
+            });
+            enemyFlag.tileCoords = toTile;
+
         } else if (enemyFlag.tileCoords.equals(toTile)) {
             this.hud.setText(
                 `${this.gameState.getActiveTeamName()} team has taken ` +
