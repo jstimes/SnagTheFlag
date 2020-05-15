@@ -3,8 +3,9 @@ import { ButtonPanel } from './button_panel';
 import { Point } from './math/point';
 import { GameState, SelectedCharacterState } from './game_state';
 import { SelectCharacterStateAction, ActionType, Action, HealAction, AimAction, EndCharacterTurnAction, ShootAction, SelectTileAction, SelectCharacterClassAction, SelectCharacterAction } from './actions';
-import { CharacterAbilityType, ClassType, CHARACTER_CLASSES } from './character_settings';
+import { CharacterAbilityType, ClassType, CHARACTER_CLASSES, CharacterSettings, CharacterAbility } from './character_settings';
 import { Grid } from './grid';
+import { Gun, ProjectileDetailsType } from './shot_info';
 
 interface ClickHandler {
     onClick: (tile: Point) => void;
@@ -472,15 +473,16 @@ export class InputManager {
                     const selectCharacterClassAction:
                         SelectCharacterClassAction = {
                         type: ActionType.SELECT_CHARACTER_CLASS,
-                        class: CHARACTER_CLASSES.find((settings) => {
-                            return settings.type === characterClassType;
-                        })!
+                        class: getCharacterClassForType(characterClassType),
                     };
                     this.delegate.onAction(selectCharacterClassAction);
                     const classIndex =
                         [...KEYS_TO_CHARACTER_CLASS_TYPE.values()].findIndex(
                             (clasz) => characterClassType === clasz)!
                     this.buttonPanel.selectIndex(classIndex);
+                    const description =
+                        getDescriptionForClass(characterClassType);
+                    this.buttonPanel.setDescription(description);
                 },
                 eventType: EventType.KeyPress,
             };
@@ -492,6 +494,8 @@ export class InputManager {
             buttonInfos: buttons,
             isButtonGroup: true,
         });
+        this.buttonPanel.setDescription(
+            getDescriptionForClass(CHARACTER_CLASSES[0].type));
     }
 
     private togglePause(): void {
@@ -506,4 +510,83 @@ export class InputManager {
             this.controlMap.remove(RESTART_KEY);
         }
     }
+}
+
+function getCharacterClassForType(characterClassType: ClassType): CharacterSettings {
+    return CHARACTER_CLASSES.find((settings) => {
+        return settings.type === characterClassType;
+    })!
+}
+
+function getDescriptionForClass(characterClassType: ClassType): string[] {
+    const characterClass = getCharacterClassForType(characterClassType);
+    return [
+        `HP: ${characterClass.maxHealth}`,
+        `Moves: ${characterClass.maxMovesPerTurn}`,
+        `Sight: ${characterClass.maxSight}`,
+        ``,
+        `Gun:`,
+        ...getDescriptionForGun(characterClass.gun).map(line => '  ' + line),
+        ``,
+        'Abilities:',
+        ...getDescriptionsForExtraActions([...characterClass.extraActions])
+            .map(line => '  ' + line),
+    ];
+}
+
+function getDescriptionForGun(gun: Gun): string[] {
+    let projectileDetails: string[] = [];
+    if (gun.projectileDetails.type === ProjectileDetailsType.BULLET) {
+        const sprayDetails = gun.spray ? `(x${gun.spray.projectiles})` : ``;
+        projectileDetails = [
+            `Projectile type: bullet`,
+            `Damage: ${gun.projectileDetails.damage}` + sprayDetails,
+            `Max ricochets: ${gun.projectileDetails.numRicochets}`,
+        ];
+    } else {
+        projectileDetails = [
+            `Projectile type: explosive`,
+            `Damage: ${gun.projectileDetails.damage}`,
+            `Damage radius: ` +
+            `${gun.projectileDetails.damageManhattanDistanceRadius}`,
+            `Max ricochets: ${gun.projectileDetails.numRicochets}`,
+        ];
+    }
+    const text = [
+        ...projectileDetails,
+    ];
+    if (!gun.canFireAfterMoving) {
+        text.push(`Can't shoot after moving`);
+    }
+    return text;
+}
+
+function getDescriptionsForExtraActions(
+    extraAbilities: CharacterAbility[]): string[] {
+    const lines: string[] = [];
+    for (const extraAbility of extraAbilities) {
+        lines.push('');
+        if (extraAbility.abilityType === CharacterAbilityType.HEAL) {
+            lines.push(
+                `Heal`,
+                `  Heal amount: ${extraAbility.healAmount}`,
+            );
+        } else {
+            lines.push(
+                `Grenade`,
+                `  Damage: ${extraAbility.splashDamage.damage}`,
+                `  Damage radius: ${extraAbility.splashDamage.damageManhattanDistanceRadius}`,
+                `  Range: ${extraAbility.maxManhattanDistance}`);
+        }
+        lines.push(`  Max uses: ${extraAbility.maxUses}`);
+        if (extraAbility.maxUses > 1) {
+            lines.push(`  Cooldown turns: ${extraAbility.cooldownTurns}`);
+        }
+        if (extraAbility.isFree) {
+            lines.push(`  Can also shoot`);
+        } else {
+            lines.push(`  Can't use and shoot`);
+        }
+    }
+    return lines;
 }

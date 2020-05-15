@@ -46,7 +46,7 @@ export class GameManager implements GameModeManager {
     private gameState: GameState;
 
     private selectedCharacterSettings:
-        CharacterSettings = ASSAULT_CHARACTER_SETTINGS;
+        CharacterSettings = CHARACTER_CLASSES[0];
     private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
 

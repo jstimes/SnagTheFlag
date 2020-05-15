@@ -14,6 +14,7 @@ export class ButtonPanel {
 
     private readonly uiManager: UiManager;
     private buttonGroup?: ButtonGroup;
+    private descriptionTextBoxes?: TextBox[];
     private bottomButtons?: Button[];
 
     private readonly borderWidth: number = 8;
@@ -26,6 +27,7 @@ export class ButtonPanel {
     private readonly leftMargin = this.leftUiCoord + this.horizontalMargins;
     private readonly maxWidthUi = 1 - this.leftMargin - this.horizontalMargins;
     private readonly fontSize = 18;
+    private readonly descriptionFontSize = 14;
     private readonly buttonOffsetY = .01;
     private readonly buttonSize = new Point(this.maxWidth, .06);
     private readonly headerSize = new Point(this.maxWidth, .025);
@@ -88,6 +90,15 @@ export class ButtonPanel {
         this.uiManager.removeAll();
     }
 
+    clearDescription(): void {
+        if (this.descriptionTextBoxes == null) {
+            return;
+        }
+        for (const textBox of this.descriptionTextBoxes) {
+            this.uiManager.removeElement(textBox);
+        }
+    }
+
     configurePanel(params: {
         headerTextLines: string[];
         buttonInfos: ControlParams[];
@@ -95,7 +106,7 @@ export class ButtonPanel {
     }): void {
         const { headerTextLines, buttonInfos, isButtonGroup } = params;
         const rows = headerTextLines.length;
-        let topMargin = .08;
+        let topMargin = .02;
         for (let row = 0; row < rows; row++) {
             const header = new TextBox({
                 dimensions: {
@@ -144,6 +155,35 @@ export class ButtonPanel {
                     onClick: buttonInfos[index].func,
                 }));
             }
+        }
+    }
+
+    setDescription(textLines: string[]): void {
+        let topMargin = .38;
+        this.clearDescription();
+        this.descriptionTextBoxes = [];
+        const descriptionStyle: TextBoxStyle = {
+            fontSize: this.descriptionFontSize,
+            color: this.headerStyle.color,
+            textColor: this.headerStyle.textColor,
+        };
+        for (let row = 0; row < textLines.length; row++) {
+            const text = textLines[row];
+            this.context.font = `${this.descriptionFontSize}px fantasy`;
+            const width = this.context.measureText(text).width
+                / RENDER_SETTINGS.canvasWidth;
+            const size = new Point(width, this.headerSize.y);
+            const header = new TextBox({
+                dimensions: {
+                    size,
+                    text,
+                    topLeft: new Point(this.leftMargin, topMargin),
+                },
+                style: descriptionStyle,
+            });
+            this.descriptionTextBoxes.push(header);
+            this.uiManager.addElement(header);
+            topMargin += this.headerSize.y - .004;
         }
     }
 

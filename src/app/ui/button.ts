@@ -121,17 +121,23 @@ export class Button implements Element {
     };
 
     private isInButton(uiCoords: Point): boolean {
-        const isX = uiCoords.x >= this.topLeft.x && uiCoords.x <= (this.topLeft.x + this.size.x);
-        const isY = uiCoords.y >= this.topLeft.y && uiCoords.y <= (this.topLeft.y + this.size.y);
+        const isX = uiCoords.x >= this.topLeft.x
+            && uiCoords.x <= (this.topLeft.x + this.size.x);
+        const isY = uiCoords.y >= this.topLeft.y
+            && uiCoords.y <= (this.topLeft.y + this.size.y);
         return isX && isY;
     }
 
     /** UI Coords. */
     private getButtonCenter(): Point {
-        return new Point(this.topLeft.x + this.size.x / 2, this.topLeft.y + this.size.y / 2);
+        return new Point(
+            this.topLeft.x + this.size.x / 2,
+            this.topLeft.y + this.size.y / 2);
     }
 
     private getCanvasCoords(uiCoords: Point): Point {
-        return new Point(uiCoords.x * RENDER_SETTINGS.canvasWidth, uiCoords.y * RENDER_SETTINGS.canvasHeight);
+        return new Point(
+            uiCoords.x * RENDER_SETTINGS.canvasWidth,
+            uiCoords.y * RENDER_SETTINGS.canvasHeight);
     }
 }
