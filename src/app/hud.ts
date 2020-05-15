@@ -43,7 +43,6 @@ const textTypeToRenderSettings = new Map<TextType, TextRenderSettings>([
 export class Hud {
 
     private readonly context: CanvasRenderingContext2D;
-    private controlMap?: ControlMap;
     private isShowingControlMap: boolean;
 
     private titleText?: string;
@@ -78,11 +77,7 @@ export class Hud {
         }
     }
 
-    // TODO - lerp color to fade out.
     render(): void {
-        if (this.isShowingControlMap && this.controlMap != null) {
-            this.renderControls();
-        }
         if (this.titleMsLeft > 0) {
             if (!this.titleText) {
                 throw new Error(`Expected title text to set when titleMsLeft > 0`);
@@ -110,15 +105,6 @@ export class Hud {
                 textTypeToRenderSettings.get(TextType.TOAST)!,
                 this.toastMsLeft / durationToMs.get(this.toastDuration)!);
         }
-    }
-
-    setControlMap(controlMap?: ControlMap): void {
-        this.controlMap = controlMap;
-        this.isShowingControlMap = true;
-    }
-
-    toggleShowControlMap(): void {
-        this.isShowingControlMap = !this.isShowingControlMap;
     }
 
     setText(text: string, textType: TextType, duration: Duration): void {
@@ -156,26 +142,6 @@ export class Hud {
                 this.toastText = '';
                 this.toastMsLeft = 0;
                 break;
-        }
-    }
-
-    private renderControls(): void {
-        const context = this.context;
-        context.fillStyle = THEME.hudTextColor;
-        const fontSize = 18;
-        context.font = `${fontSize}px fantasy`;
-
-        let renderTop = new Point(
-            Grid.GAME_WIDTH / 64,
-            Grid.GAME_HEIGHT / 32);
-        for (const key of this.controlMap!.assignedControls.keys()) {
-            const action = CONTROLS.getAssignedControlMap().get(key);
-            context.fillText(
-                `${CONTROLS.getStringForKey(key)} - ${action}`,
-                renderTop.x,
-                renderTop.y);
-
-            renderTop = renderTop.add(new Point(0, fontSize + 4));
         }
     }
 

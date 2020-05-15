@@ -23,33 +23,10 @@ import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
 import { getGrenadeSmokeParticleSystemParams, getGrenadeBurstParticleSystemParams, getBulletParticleSystemParams, getHealParticleSystemParams } from './particle_system_theme';
 import { Spawner } from './game_objects/spawner';
-import { ButtonPanel } from './button_panel';
-
-interface ClickHandler {
-    onClick: (tile: Point) => void;
-}
+import { InputManager } from './input_manager';
 
 const ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS = false;
 const DEFAULT_HUMAN_TEAM_INDEX = 0;
-
-const PAUSE_KEY = Key.P;
-const QUIT_KEY = Key.Q;
-const RESTART_KEY = Key.R;
-const MOVE_KEY = Key.M;
-/** Used to start and cancel shooting, but doesn't fire the shot.  */
-const TOGGLE_AIM_KEY = Key.A;
-const AIM_COUNTERCLOCKWISE_KEY = Key.S;
-const AIM_CLOCKWISE_KEY = Key.D;
-const SHOOT_KEY = Key.F;
-const HEAL_KEY = Key.H;
-const TOGGLE_THROW_GRENADE_KEY = Key.T;
-const END_TURN_KEY = Key.E;
-const keysToCharacterClassType: Map<Key, ClassType> = new Map([
-    [Key.J, ClassType.SCOUT],
-    [Key.K, ClassType.ASSAULT],
-    [Key.L, ClassType.SNIPER],
-    [Key.I, ClassType.DEMOLITION],
-]);
 
 export class GameManager implements GameModeManager {
 
@@ -64,10 +41,8 @@ export class GameManager implements GameModeManager {
     private isPaused: boolean;
     private winningTeamIndex: number;
     private hud: Hud;
-    private buttonPanel: ButtonPanel;
-    private clickHandler: ClickHandler | null = null;
+    private inputManager: InputManager;
     private onAnimationDone: (() => void) | null = null;
-    private controlMap: ControlMap;
     private gameState: GameState;
 
     private selectedCharacterSettings:
@@ -104,15 +79,20 @@ export class GameManager implements GameModeManager {
     }
 
     update(elapsedMs: number): void {
-        if (this.isPaused) {
-            this.controlMap.check();
-            this.buttonPanel.mouseMove(CONTROLS.getMouseCanvasCoords());
-            if (CONTROLS.hasClick()) {
-                const clickCanvas = CONTROLS.handleClick();
-                const clickedButtonPanel = this.buttonPanel.tryClick(clickCanvas);
-            }
+        this.inputManager.update(elapsedMs);
+        if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
+            && this.gameState.getActiveSquad()
+                .filter(character => !character.isTurnOver()).length === 0) {
+            // Should automatically skip turn with delay 
+            // when team is out of characters but need update 
+            // loop to run for spawners...
             return;
         }
+
+        if (this.isPaused) {
+            return;
+        }
+
         for (const particleSystem of this.particleSystems) {
             particleSystem.update(elapsedMs);
         }
@@ -136,33 +116,9 @@ export class GameManager implements GameModeManager {
         }
         this.hud.update(elapsedMs);
 
-        this.controlMap.check();
-        this.buttonPanel.mouseMove(CONTROLS.getMouseCanvasCoords());
-        if (CONTROLS.hasClick()) {
-            const clickCanvas = CONTROLS.handleClick();
-            const clickedButtonPanel = this.buttonPanel.tryClick(clickCanvas);
-
-            if (!clickedButtonPanel) {
-                const mouseTileCoords =
-                    Grid.getTileFromCanvasCoords(clickCanvas);
-                if (this.clickHandler != null) {
-                    this.clickHandler.onClick(mouseTileCoords);
-                }
-            }
-        }
-
         if (!this.isAnimating() && this.onAnimationDone != null) {
             this.onAnimationDone();
             this.onAnimationDone = null;
-        }
-
-        if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
-            && this.gameState.getActiveSquad()
-                .filter(character => !character.isTurnOver()).length === 0) {
-            // Should automatically skip turn with delay 
-            // when team is out of characters but need update 
-            // loop to run for spawners...
-            return;
         }
 
         if (this.isAiTurn() && !this.isAnimating()) {
@@ -325,8 +281,7 @@ export class GameManager implements GameModeManager {
         }
         this.renderFogOfWar(this.context);
         this.hud.render();
-
-        this.buttonPanel.render(this.context);
+        this.inputManager.render();
     }
 
     private shouldRenderCharacter(character: Character): boolean {
@@ -404,9 +359,7 @@ export class GameManager implements GameModeManager {
     }
 
     destroy(): void {
-        if (this.controlMap) {
-            this.controlMap.clear();
-        }
+        if (this.inputManager) this.inputManager.clear();
     }
 
     onAction(action: Action): void {
@@ -424,12 +377,8 @@ export class GameManager implements GameModeManager {
                 for (const shotInfo of shotInfos) {
                     this.fireShot(shotInfo);
                     // Next turn logic runs when projectile dies.
-                    this.addOnAnimationDoneCallback(() => {
-                        this.checkGameOver();
-                        if (!this.isGameOver) {
-                            this.checkCharacterTurnOver();
-                        }
-                    });
+                    this.addOnAnimationDoneCallback(
+                        this.onProjectileAnimationOver);
                 }
                 break;
             case ActionType.HEAL:
@@ -507,7 +456,6 @@ export class GameManager implements GameModeManager {
                         // Placed all characters, end turn.
                         this.nextTurn();
                     } else {
-                        // MUTATE
                         this.gameState.selectableTiles =
                             this.gameState.selectableTiles
                                 .filter((availableTile) => {
@@ -536,9 +484,6 @@ export class GameManager implements GameModeManager {
                 break;
             case ActionType.SELECT_CHARACTER_CLASS:
                 this.selectedCharacterSettings = action.class;
-                const classIndex = [...keysToCharacterClassType.values()].findIndex(
-                    (clasz) => action.class.type === clasz)!
-                this.buttonPanel.selectIndex(classIndex);
                 break;
             default:
                 throwBadAction(action);
@@ -611,7 +556,6 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    // MUTATE
     private nextTurn(): void {
         if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             if (this.gameState.currentTeamIndex + 1 < this.gameSettings.numTeams) {
@@ -623,11 +567,6 @@ export class GameManager implements GameModeManager {
             }
         } else {
             this.advanceToNextCombatTurn();
-        }
-
-        if (!this.isAiTurn()) {
-            this.initControlsForGameState();
-            return;
         }
     }
 
@@ -650,20 +589,10 @@ export class GameManager implements GameModeManager {
             `Place squad members (${teamMaxSquadSize} remaining) `,
             TextType.SUBTITLE,
             Duration.LONG);
-    }
-
-    private initControlsForGameState(): void {
-        const isAi = this.teamIndexToIsAi[this.gameState.currentTeamIndex];
-        if (isAi) {
-            return;
-        }
-        if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            this.clickHandler = {
-                onClick: (tile: Point) => {
-                    this.tryPlacingCharacter(tile);
-                }
-            };
-            return;
+        if (!this.isAiTurn()) {
+            this.inputManager.initForCharacterPlacement();
+        } else {
+            this.inputManager.initDefaultControls();
         }
     }
 
@@ -703,10 +632,6 @@ export class GameManager implements GameModeManager {
         this.setSelectedCharacter(this.gameState.getFirstCharacterIndex());
         this.hud.setText(
             `${teamName} team turn`, TextType.TITLE, Duration.LONG);
-        this.hud.setText(
-            `Move squad members`,
-            TextType.SUBTITLE,
-            Duration.LONG);
     }
 
     private getCurrentTurnAi(): Ai {
@@ -720,9 +645,7 @@ export class GameManager implements GameModeManager {
 
     private addOnAnimationDoneCallback(callback: () => void): void {
         this.onAnimationDone = callback;
-        this.controlMap.clear();
-        this.addDefaultControls();
-        this.clickHandler = null;
+        this.inputManager.initDefaultControls();
     }
 
     private handleCharacterMovement(toTile: Point): void {
@@ -771,7 +694,7 @@ export class GameManager implements GameModeManager {
     }
 
     private setGameOver(winningTeamIndex: number, subtitle: string): void {
-        this.controlMap.clear();
+        this.inputManager.initGameOverControls();
         this.togglePause();
         this.isGameOver = true;
         this.winningTeamIndex = winningTeamIndex;
@@ -782,12 +705,6 @@ export class GameManager implements GameModeManager {
         this.hud.setText(
             `${subtitle}`,
             TextType.SUBTITLE,
-            Duration.LONG);
-        const quitKeyString = CONTROLS.getStringForKey(QUIT_KEY);
-        const restartKey = CONTROLS.getStringForKey(RESTART_KEY);
-        this.hud.setText(
-            `Press ${quitKeyString} to quit, ${restartKey} to restart`,
-            TextType.TOAST,
             Duration.LONG);
     }
 
@@ -846,66 +763,15 @@ export class GameManager implements GameModeManager {
             fromTeamIndex: shotInfo.fromTeamIndex,
         });
         this.projectiles.push(proj);
+        this.addOnAnimationDoneCallback(this.onProjectileAnimationOver);
     }
 
-    private tryPlacingCharacter(tileCoords: Point): void {
-        if (!this.gameState.selectableTiles
-            .find((tile) => tile.equals(tileCoords))) {
-            this.hud.setText(
-                `Can't place character here`,
-                TextType.TOAST, Duration.SHORT);
-            return;
+    private onProjectileAnimationOver = () => {
+        this.checkGameOver();
+        if (!this.isGameOver) {
+            this.checkCharacterTurnOver();
         }
-
-        const placeCharacterAction: SelectTileAction = {
-            type: ActionType.SELECT_TILE,
-            tile: tileCoords,
-        };
-        this.onAction(placeCharacterAction);
-    }
-
-    private tryMovingSelectedCharacter(tileCoords: Point): void {
-        if (!this.gameState.selectableTiles
-            .find((tile) => tile.equals(tileCoords))) {
-            this.hud.setText(
-                `Can't move character here`,
-                TextType.TOAST, Duration.SHORT);
-            return;
-        }
-
-        const selectTileAction: SelectTileAction = {
-            type: ActionType.SELECT_TILE,
-            tile: tileCoords,
-        };
-        this.onAction(selectTileAction);
-    }
-
-    private trySelectingCharacter(tileCoords: Point): void {
-        const squad = this.gameState.getActiveSquad();
-        const squadMemeberAtTile =
-            squad.find((character) => character.tileCoords.equals(tileCoords));
-        if (squadMemeberAtTile && !squadMemeberAtTile.isTurnOver()) {
-            const selectCharacterAction: SelectCharacterAction = {
-                type: ActionType.SELECT_CHARACTER,
-                characterIndex: squadMemeberAtTile.index,
-            };
-            this.onAction(selectCharacterAction);
-        }
-    }
-
-    private tryThrowingGrenade(tileCoords: Point): void {
-        if (!this.gameState.selectableTiles
-            .find((tile) => tile.equals(tileCoords))) {
-            this.hud.setText(
-                `Can't throw grenade here`, TextType.TOAST, Duration.SHORT);
-            return;
-        }
-        const action: SelectTileAction = {
-            type: ActionType.SELECT_TILE,
-            tile: tileCoords,
-        };
-        this.onAction(action);
-    }
+    };
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
         const flagCoords = this.gameState.getActiveTeamFlag().tileCoords;
@@ -983,7 +849,6 @@ export class GameManager implements GameModeManager {
         return availableTiles;
     }
 
-    // MUTATE
     private setSelectedCharacter(index: number): void {
         const character = this.gameState.getActiveSquad()
             .find((character) => character.index === index)!;
@@ -997,7 +862,6 @@ export class GameManager implements GameModeManager {
         this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
     }
 
-    // MUTATE
     private setSelectedCharacterState(state: SelectedCharacterState) {
         if (this.gameState.selectedCharacter == null) {
             throw new Error(
@@ -1027,233 +891,9 @@ export class GameManager implements GameModeManager {
         }
 
         if (this.isAiTurn()) {
-            this.controlMap.clear();
-            this.addDefaultControls();
-            this.clickHandler = null;
+            this.inputManager.initDefaultControls();
         } else {
-            this.addControlsForSelectedCharacterState();
-        }
-    }
-
-    addControlsForSelectedCharacterState(): void {
-        console.log("Adding controls");
-        if (this.gameState.selectedCharacter == null
-            || this.gameState.selectedCharacterState == null) {
-            throw new Error(
-                `There needs to be a selected character ` +
-                `before calling setSelectedCharacterState`);
-        }
-        this.buttonPanel.clear();
-        this.controlMap.clear();
-        this.clickHandler = null;
-        this.addDefaultControls();
-        this.addSwitchSquadMemberControls();
-
-        const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
-        const buttonInfos: ControlParams[] = [];
-        let headerTextLines: string[] = [];
-        switch (this.gameState.selectedCharacterState) {
-            case SelectedCharacterState.AWAITING:
-                headerTextLines = ['Available actions'];
-                if (!this.gameState.selectedCharacter.hasMoved) {
-                    buttonInfos.push({
-                        key: MOVE_KEY,
-                        name: 'Move',
-                        func: () => {
-                            const action: SelectCharacterStateAction = {
-                                type: ActionType.SELECT_CHARACTER_STATE,
-                                state: SelectedCharacterState.MOVING,
-                            };
-                            this.onAction(action);
-                        },
-                        eventType: EventType.KeyPress,
-                    });
-                }
-                if (this.gameState.selectedCharacter.canShoot()) {
-                    buttonInfos.push({
-                        key: TOGGLE_AIM_KEY,
-                        name: 'Aim',
-                        func: () => {
-                            const action: SelectCharacterStateAction = {
-                                type: ActionType.SELECT_CHARACTER_STATE,
-                                state: SelectedCharacterState.AIMING,
-                            };
-                            this.onAction(action);
-                        },
-                        eventType: EventType.KeyPress,
-                    });
-                }
-                for (const extraAbility of
-                    this.gameState.selectedCharacter.extraAbilities) {
-                    switch (extraAbility.abilityType) {
-                        case CharacterAbilityType.HEAL:
-                            buttonInfos.push({
-                                key: HEAL_KEY,
-                                name: 'Heal',
-                                func: () => {
-                                    const healAction: HealAction = {
-                                        type: ActionType.HEAL,
-                                        healAmount: extraAbility.healAmount,
-                                    };
-                                    this.onAction(healAction);
-                                },
-                                eventType: EventType.KeyPress,
-                            });
-                            break;
-                        case CharacterAbilityType.THROW_GRENADE:
-                            buttonInfos.push({
-                                key: TOGGLE_THROW_GRENADE_KEY,
-                                name: 'Throw grenade',
-                                func: () => {
-                                    const action: SelectCharacterStateAction = {
-                                        type: ActionType.SELECT_CHARACTER_STATE,
-                                        state: SelectedCharacterState.THROWING_GRENADE,
-                                    };
-                                    this.onAction(action);
-                                },
-                                eventType: EventType.KeyPress,
-                            });
-                            break;
-                    }
-                }
-                break;
-            case SelectedCharacterState.MOVING:
-                headerTextLines = ['Select a destination'];
-                this.clickHandler = {
-                    onClick: (tile: Point) => {
-                        this.tryMovingSelectedCharacter(tile);
-                    },
-                };
-                buttonInfos.push({
-                    key: MOVE_KEY,
-                    name: 'Cancel Move',
-                    func: () => {
-                        const action: SelectCharacterStateAction = {
-                            type: ActionType.SELECT_CHARACTER_STATE,
-                            state: SelectedCharacterState.AWAITING,
-                        };
-                        this.onAction(action);
-                    },
-                    eventType: EventType.KeyPress,
-                });
-                break;
-            case SelectedCharacterState.AIMING:
-                headerTextLines = ['Adjust aim and fire'];
-                buttonInfos.push({
-                    key: TOGGLE_AIM_KEY,
-                    name: 'Stop Aiming',
-                    func: () => {
-                        if (this.gameState.selectedCharacter == null) {
-                            throw new Error(
-                                `There's no selected character when canceling shooting.`);
-                        }
-                        const action: SelectCharacterStateAction = {
-                            type: ActionType.SELECT_CHARACTER_STATE,
-                            state: SelectedCharacterState.AWAITING,
-                        };
-                        this.onAction(action);
-                    },
-                    eventType: EventType.KeyPress,
-                });
-                buttonInfos.push({
-                    key: AIM_COUNTERCLOCKWISE_KEY,
-                    name: 'Aim CCW',
-                    func: () => {
-                        if (this.gameState.selectedCharacter == null) {
-                            throw new Error(
-                                `There's no selected character when aiming CCW.`);
-                        }
-                        const newAim =
-                            this.gameState.selectedCharacter.getAim()
-                            - AIM_ANGLE_RADIANS_DELTA;
-                        const aimAction: AimAction = {
-                            type: ActionType.AIM,
-                            aimAngleClockwiseRadians: newAim,
-                        }
-                        this.onAction(aimAction);
-                    },
-                    eventType: EventType.KeyDown,
-                });
-                buttonInfos.push({
-                    key: AIM_CLOCKWISE_KEY,
-                    name: 'Aim CC',
-                    func: () => {
-                        if (this.gameState.selectedCharacter == null) {
-                            throw new Error(
-                                `There's no selected character when aiming CC.`);
-                        }
-                        const newAim =
-                            this.gameState.selectedCharacter.getAim()
-                            + AIM_ANGLE_RADIANS_DELTA;
-                        const aimAction: AimAction = {
-                            type: ActionType.AIM,
-                            aimAngleClockwiseRadians: newAim,
-                        }
-                        this.onAction(aimAction);
-                    },
-                    eventType: EventType.KeyDown,
-                });
-                buttonInfos.push({
-                    key: SHOOT_KEY,
-                    name: 'Fire',
-                    func: () => {
-                        if (this.gameState.selectedCharacter == null) {
-                            throw new Error(
-                                `There's no selected character when canceling shooting.`);
-                        }
-                        const fireAction: ShootAction = {
-                            type: ActionType.SHOOT,
-                        };
-                        this.onAction(fireAction);
-                    },
-                    eventType: EventType.KeyPress,
-                });
-                break;
-            case SelectedCharacterState.THROWING_GRENADE:
-                headerTextLines = ['Select grenade target'];
-                this.clickHandler = {
-                    onClick: (tile: Point) => {
-                        this.tryThrowingGrenade(tile);
-                    },
-                };
-                buttonInfos.push({
-                    key: TOGGLE_THROW_GRENADE_KEY,
-                    name: 'Cancel',
-                    func: () => {
-                        const action: SelectCharacterStateAction = {
-                            type: ActionType.SELECT_CHARACTER_STATE,
-                            state: SelectedCharacterState.AWAITING,
-                        };
-                        this.onAction(action);
-                    },
-                    eventType: EventType.KeyPress,
-                });
-                break;
-            default:
-                throw new Error(`Unknown selected character state`);
-        }
-        buttonInfos.push({
-            key: END_TURN_KEY,
-            name: 'End character turn',
-            func: () => {
-                if (this.gameState.selectedCharacter == null) {
-                    throw new Error(
-                        `There's no selected character when ending turn.`);
-                }
-                const action: EndCharacterTurnAction = {
-                    type: ActionType.END_CHARACTER_TURN,
-                };
-                this.onAction(action);
-            },
-            eventType: EventType.KeyPress,
-        });
-        this.buttonPanel.configurePanel({
-            headerTextLines,
-            buttonInfos,
-            isButtonGroup: false,
-        });
-        for (const buttonParam of buttonInfos) {
-            this.controlMap.add(buttonParam);
+            this.inputManager.initForSelectedCharacterState();
         }
     }
 
@@ -1277,7 +917,6 @@ export class GameManager implements GameModeManager {
             || potentialSpawner != null;
     }
 
-    // MUTATE
     private resetGame = (): void => {
         this.destroy();
         this.gameState = new GameState(this.gameSettings);
@@ -1307,12 +946,18 @@ export class GameManager implements GameModeManager {
                 }));
             }
         }
-        this.controlMap = new ControlMap();
         this.hud = new Hud(this.context);
-        this.hud.setControlMap(this.controlMap);
-        this.buttonPanel = new ButtonPanel(this.context);
-        this.addDefaultControls();
-        this.addCharacterClassControls();
+        this.inputManager = new InputManager(this.context, {
+            isPaused: () => this.isPaused,
+            getGameState: () => this.getGameState(),
+            onAction: (action: Action) => { this.onAction(action); },
+            onRestart: () => { this.resetGame(); },
+            onQuit: () => { this.onExitGameCallback(-1 /* no winner*/); },
+            onTogglePause: () => { this.togglePause(); },
+            setToastText: (text: string) => {
+                this.hud.setText(text, TextType.TOAST, Duration.SHORT);
+            },
+        });
 
         // 0th team goes first...
         this.gameState.currentTeamIndex = -1;
@@ -1351,140 +996,17 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    private addDefaultControls(): void {
-        const params = {
-            key: PAUSE_KEY,
-            name: 'Pause',
-            func: () => { this.togglePause(); },
-            eventType: EventType.KeyPress,
-        };
-        this.controlMap.add(params);
-        this.buttonPanel.setBottomButtons([params]);
-
-        // this.controlMap.add({
-        //     key: Key.QUESTION_MARK,
-        //     name: 'Show/Hide controls',
-        //     func: () => { this.hud.toggleShowControlMap(); },
-        //     eventType: EventType.KeyPress,
-        // });
-    }
-
-    private addQuitAndRestartControls(): void {
-        this.controlMap.remove(PAUSE_KEY);
-        const params = [{
-            key: PAUSE_KEY,
-            name: 'Resume',
-            func: () => {
-                this.togglePause();
-                this.controlMap.remove(PAUSE_KEY);
-                this.addDefaultControls();
-            },
-            eventType: EventType.KeyPress,
-        },
-        {
-            key: RESTART_KEY,
-            name: 'Restart',
-            func: this.resetGame,
-            eventType: EventType.KeyPress,
-        },
-        {
-            key: QUIT_KEY,
-            name: 'Quit',
-            func: () => {
-                this.onExitGameCallback(this.winningTeamIndex);
-            },
-            eventType: EventType.KeyPress,
-        }];
-        for (const param of params) {
-            this.controlMap.add(param);
-        }
-        this.buttonPanel.setBottomButtons(params);
-    }
-
     private togglePause(): void {
         this.isPaused = !this.isPaused;
         if (this.isPaused) {
-            this.addQuitAndRestartControls();
             this.hud.setText(
                 'PAUSED',
                 TextType.TITLE,
                 Duration.SHORT
             );
-            this.hud.setText(
-                `Press ${CONTROLS.getStringForKey(QUIT_KEY)} to quit;` +
-                ` ${CONTROLS.getStringForKey(RESTART_KEY)} to restart`,
-                TextType.TOAST,
-                Duration.SHORT,
-            );
-            this.hud.setControlMap(new ControlMap());
         } else {
             this.hud.clearText(TextType.TITLE);
             this.hud.clearText(TextType.TOAST);
-            this.controlMap.remove(QUIT_KEY);
-            this.controlMap.remove(RESTART_KEY);
-            this.hud.setControlMap(this.controlMap);
-        }
-    }
-
-    private addCharacterClassControls(): void {
-        const buttons: ControlParams[] = [];
-        for (const key of keysToCharacterClassType.keys()) {
-            const characterClassType = keysToCharacterClassType.get(key)!;
-            const params: ControlParams = {
-                key,
-                name: characterClassType,
-                func: () => {
-                    const selectCharacterClassAction:
-                        SelectCharacterClassAction = {
-                        type: ActionType.SELECT_CHARACTER_CLASS,
-                        class: CHARACTER_CLASSES.find((settings) => {
-                            return settings.type === characterClassType;
-                        })!
-                    };
-                    this.onAction(selectCharacterClassAction);
-                },
-                eventType: EventType.KeyPress,
-            };
-            buttons.push(params);
-            this.controlMap.add(params);
-        }
-        this.buttonPanel.configurePanel({
-            headerTextLines: ['Select Character', 'Class to Place'],
-            buttonInfos: buttons,
-            isButtonGroup: true,
-        });
-    }
-
-    private addSwitchSquadMemberControls(): void {
-        const squad = this.gameState.getActiveSquad();
-        this.clickHandler = {
-            onClick: (tile: Point) => {
-                this.trySelectingCharacter(tile);
-            },
-        };
-        // TODO - use tab instead of number for squad toggle controls.
-        for (const character of squad) {
-            if (character.index >= 9) {
-                continue;
-            }
-            // Use 1-based numbers for UI.
-            const characterNumber = character.index + 1;
-            const key = numberToKey.get(characterNumber);
-            if (key == null) {
-                throw new Error(`Not enough keys for all character numbers!`);
-            }
-            this.controlMap.add({
-                key,
-                name: `Select ${numberToOrdinal.get(characterNumber)} character`,
-                func: () => {
-                    const selectCharacterAction: SelectCharacterAction = {
-                        type: ActionType.SELECT_CHARACTER,
-                        characterIndex: character.index,
-                    };
-                    this.onAction(selectCharacterAction);
-                },
-                eventType: EventType.KeyPress,
-            });
         }
     }
 }
