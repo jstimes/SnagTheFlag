@@ -3,9 +3,10 @@ import { ButtonPanel } from './button_panel';
 import { Point } from './math/point';
 import { GameState, SelectedCharacterState } from './game_state';
 import { SelectCharacterStateAction, ActionType, Action, HealAction, AimAction, EndCharacterTurnAction, ShootAction, SelectTileAction, SelectCharacterClassAction, SelectCharacterAction } from './actions';
-import { CharacterAbilityType, ClassType, CHARACTER_CLASSES, CharacterSettings, CharacterAbility } from './character_settings';
+import { CharacterAbilityType, ClassType, CHARACTER_CLASSES, CharacterSettings, CharacterAbility, CharacterAbilityState } from './character_settings';
 import { Grid } from './grid';
 import { Gun, ProjectileDetailsType } from './shot_info';
+import { Character } from './game_objects/character';
 
 interface ClickHandler {
     onClick: (tile: Point) => void;
@@ -128,6 +129,10 @@ export class InputManager {
         let headerTextLines: string[] = [];
         switch (gameState.selectedCharacterState) {
             case SelectedCharacterState.AWAITING:
+
+                this.buttonPanel
+                    .setDescription(
+                        getDescriptionForCharacter(gameState.selectedCharacter));
                 headerTextLines = ['Available actions'];
                 if (!gameState.selectedCharacter.hasMoved) {
                     buttonInfos.push({
@@ -518,6 +523,25 @@ function getCharacterClassForType(characterClassType: ClassType): CharacterSetti
     })!
 }
 
+function getDescriptionForCharacter(character: Character): string[] {
+    const lines: string[] = [];
+    getCharacterClassForType(character.settings.type);
+    lines.push(
+        `HP: ${character.health / character.settings.maxHealth}`,
+        `Moves: ${character.settings.maxMovesPerTurn}`,
+        `Sight: ${character.settings.maxSight}`,
+        ``,
+        `Gun:`,
+        ...getDescriptionForGun(character.settings.gun)
+            .map(line => '  ' + line),
+        ``,
+        'Abilities:',
+        ...getDescriptionsForExtraAbilityStates(character)
+            .map(line => '  ' + line),
+    );
+    return lines;
+}
+
 function getDescriptionForClass(characterClassType: ClassType): string[] {
     const characterClass = getCharacterClassForType(characterClassType);
     return [
@@ -566,27 +590,65 @@ function getDescriptionsForExtraActions(
     const lines: string[] = [];
     for (const extraAbility of extraAbilities) {
         lines.push('');
-        if (extraAbility.abilityType === CharacterAbilityType.HEAL) {
-            lines.push(
-                `Heal`,
-                `  Heal amount: ${extraAbility.healAmount}`,
-            );
-        } else {
-            lines.push(
-                `Grenade`,
-                `  Damage: ${extraAbility.splashDamage.damage}`,
-                `  Damage radius: ${extraAbility.splashDamage.damageManhattanDistanceRadius}`,
-                `  Range: ${extraAbility.maxManhattanDistance}`);
+        lines.push(...getExtraAbilityDescription(extraAbility));
+    }
+    return lines;
+}
+
+function getDescriptionsForExtraAbilityStates(
+    character: Character): string[] {
+
+    const lines: string[] = [];
+    const typeToState = character.characterAbilityTypeToAbilityState;
+    for (const extraAbilityType of typeToState.keys()) {
+        const state = typeToState.get(extraAbilityType)!;
+        if (state.usesLeft == null || state.usesLeft <= 0) {
+            continue;
         }
-        lines.push(`  Max uses: ${extraAbility.maxUses}`);
-        if (extraAbility.maxUses > 1) {
-            lines.push(`  Cooldown turns: ${extraAbility.cooldownTurns}`);
+        const extraAbility = [...character.settings.extraActions]
+            .find((ability) => ability.abilityType === extraAbilityType)!;
+        const extraAbilityDescription =
+            getExtraAbilityDescription(extraAbility);
+        for (let row = 0; row < extraAbilityDescription.length; row++) {
+            const line = extraAbilityDescription[row];
+            if (line.indexOf('Max uses') > 0) {
+                extraAbilityDescription[row] = `  Uses left: ${state.usesLeft}`;
+            } else if (line.indexOf('Cooldown turns') > 0) {
+                if (state.cooldownTurnsLeft > 0) {
+                    extraAbilityDescription[row] =
+                        `  Cooling down (${state.cooldownTurnsLeft} turns til ready)`;
+                } else {
+                    extraAbilityDescription[row] = `  Ready to use`;
+                }
+            }
         }
-        if (extraAbility.isFree) {
-            lines.push(`  Can also shoot`);
-        } else {
-            lines.push(`  Can't use and shoot`);
-        }
+        lines.push(...extraAbilityDescription);
+    }
+    return lines;
+}
+
+function getExtraAbilityDescription(extraAbility: CharacterAbility): string[] {
+    const lines: string[] = [];
+    if (extraAbility.abilityType === CharacterAbilityType.HEAL) {
+        lines.push(
+            `Heal`,
+            `  Heal amount: ${extraAbility.healAmount}`,
+        );
+    } else {
+        lines.push(
+            `Grenade`,
+            `  Damage: ${extraAbility.splashDamage.damage}`,
+            `  Damage radius: ${extraAbility.splashDamage.damageManhattanDistanceRadius}`,
+            `  Range: ${extraAbility.maxManhattanDistance}`);
+    }
+    lines.push(`  Max uses: ${extraAbility.maxUses}`);
+    if (extraAbility.maxUses > 1) {
+        lines.push(`  Cooldown turns: ${extraAbility.cooldownTurns}`);
+    }
+    if (extraAbility.isFree) {
+        lines.push(`  Can also shoot`);
+    } else {
+        lines.push(`  Can't use and shoot`);
     }
     return lines;
 }

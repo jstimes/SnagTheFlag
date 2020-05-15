@@ -59,6 +59,11 @@ export class TextBox implements Element {
             this.text,
             boxCenterCanvas.x - textWidth / 2,
             boxCenterCanvas.y + fontSize / 4);
+
+        // Border.
+        // context.strokeStyle = '#dd000a';
+        // context.strokeRect(topLeftCanvas.x, topLeftCanvas.y, 
+        //     sizeCanvas.x, sizeCanvas.y);
     };
 
     readonly onClick = (uiCoords: Point): boolean => {

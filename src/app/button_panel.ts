@@ -87,16 +87,9 @@ export class ButtonPanel {
 
     clear(): void {
         this.buttonGroup = undefined;
+        this.clearBottomButtons();
+        this.clearDescription();
         this.uiManager.removeAll();
-    }
-
-    clearDescription(): void {
-        if (this.descriptionTextBoxes == null) {
-            return;
-        }
-        for (const textBox of this.descriptionTextBoxes) {
-            this.uiManager.removeElement(textBox);
-        }
     }
 
     configurePanel(params: {
@@ -159,9 +152,8 @@ export class ButtonPanel {
     }
 
     setDescription(textLines: string[]): void {
-        let topMargin = .38;
+        let topMargin = .4;
         this.clearDescription();
-        this.descriptionTextBoxes = [];
         const descriptionStyle: TextBoxStyle = {
             fontSize: this.descriptionFontSize,
             color: this.headerStyle.color,
@@ -181,19 +173,25 @@ export class ButtonPanel {
                 },
                 style: descriptionStyle,
             });
-            this.descriptionTextBoxes.push(header);
+            this.descriptionTextBoxes!.push(header);
             this.uiManager.addElement(header);
             topMargin += this.headerSize.y - .004;
         }
     }
 
-    setBottomButtons(params: ControlParams[]): void {
-        if (this.bottomButtons != null && this.bottomButtons.length > 0) {
-            for (const button of this.bottomButtons) {
-                this.uiManager.removeElement(button);
-            }
+    private clearDescription(): void {
+        if (this.descriptionTextBoxes == null) {
+            this.descriptionTextBoxes = [];
+            return;
         }
-        this.bottomButtons = [];
+        for (const textBox of this.descriptionTextBoxes) {
+            this.uiManager.removeElement(textBox);
+        }
+        this.descriptionTextBoxes = [];
+    }
+
+    setBottomButtons(params: ControlParams[]): void {
+        this.clearBottomButtons();
         let topY = 1 + (-this.buttonOffsetY - this.buttonSize.y) * params.length;
         for (const param of params) {
             const dimensions = {
@@ -207,8 +205,17 @@ export class ButtonPanel {
                 onClick: param.func,
             });
             this.uiManager.addElement(button);
-            this.bottomButtons.push(button);
+            this.bottomButtons!.push(button);
             topY += (this.buttonOffsetY + this.buttonSize.y);
         }
+    }
+
+    private clearBottomButtons(): void {
+        if (this.bottomButtons != null && this.bottomButtons.length > 0) {
+            for (const button of this.bottomButtons) {
+                this.uiManager.removeElement(button);
+            }
+        }
+        this.bottomButtons = [];
     }
 }
