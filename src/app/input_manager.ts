@@ -527,7 +527,7 @@ function getDescriptionForCharacter(character: Character): string[] {
     const lines: string[] = [];
     getCharacterClassForType(character.settings.type);
     lines.push(
-        `HP: ${character.health / character.settings.maxHealth}`,
+        `HP: ${character.health} / ${character.settings.maxHealth}`,
         `Moves: ${character.settings.maxMovesPerTurn}`,
         `Sight: ${character.settings.maxSight}`,
         ``,
