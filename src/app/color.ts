@@ -32,7 +32,8 @@ export function hexStringToColor(hex: string): Color {
 }
 
 export function rgbaToColor(r: number, g: number, b: number, a: number): Color {
-    if (r > 255 || g > 255 || b > 255 || a > 1 || r < 0 || g < 0 || b < 0 || a < 0) {
+    if (r > 255 || g > 255 || b > 255 || a > 1
+        || r < 0 || g < 0 || b < 0 || a < 0) {
         throw new Error(`Invalid rgbaToColor params: ${r}, ${g}, ${b}, ${a}`);
     }
     return { r, g, b, a };

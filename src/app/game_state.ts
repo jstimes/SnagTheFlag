@@ -80,7 +80,8 @@ export class GameState {
     }
 
     getFirstCharacterIndex(): number {
-        const squad = this.getActiveSquad().filter((character) => !character.isTurnOver());
+        const squad = this.getActiveSquad()
+            .filter((character) => !character.isTurnOver());
         if (squad.length === 0) {
             throw new Error(`No more characters alive - should be game over?`);
         }
@@ -105,7 +106,8 @@ export class GameState {
             case 1:
                 return 'Red';
             default:
-                throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
+                throw new Error(
+                    `Unsupported number of teams: ${this.currentTeamIndex}`);
         }
     }
 
@@ -116,39 +118,47 @@ export class GameState {
             case 0:
                 return 'Red';
             default:
-                throw new Error(`Unsupported number of teams: ${this.currentTeamIndex}`);
+                throw new Error(
+                    `Unsupported number of teams: ${this.currentTeamIndex}`);
         }
     }
 
     getActiveSquad(): Character[] {
-        return this.getAliveCharacters().filter((character) => character.teamIndex === this.currentTeamIndex)
+        return this.getAliveCharacters()
+            .filter((character) => character.teamIndex === this.currentTeamIndex);
     }
 
     getEnemyCharacters(): Character[] {
-        return this.getAliveCharacters().filter((character) => character.teamIndex !== this.currentTeamIndex);
+        return this.getAliveCharacters()
+            .filter((character) => character.teamIndex !== this.currentTeamIndex);
     }
 
     getActiveTeamFlag(): Flag {
-        return this.flags.find((flag) => flag.teamIndex === this.currentTeamIndex)!;
+        return this.flags
+            .find((flag) => flag.teamIndex === this.currentTeamIndex)!;
     }
 
     getEnemyFlag(): Flag {
-        return this.flags.find((flag) => flag.teamIndex !== this.currentTeamIndex)!;
+        return this.flags
+            .find((flag) => flag.teamIndex !== this.currentTeamIndex)!;
     }
 
     tileHasObstacle(tile: Point): boolean {
-        return this.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
+        return this.obstacles
+            .find((obstacle) => obstacle.tileCoords.equals(tile)) != null;
     }
 
     enemyHasFlag(): boolean {
         const teamFlagCoords = this.getActiveTeamFlag().tileCoords;
-        return this.getEnemyCharacters().find((character) => character.tileCoords.equals(teamFlagCoords)) != null;
+        return this.getEnemyCharacters()
+            .find((character) => character.tileCoords.equals(teamFlagCoords)) != null;
     }
 
 
     teamHasFlag(): boolean {
         const enemyFlagCoords = this.getEnemyFlag().tileCoords;
-        return this.getActiveSquad().find((character) => character.tileCoords.equals(enemyFlagCoords)) != null;
+        return this.getActiveSquad()
+            .find((character) => character.tileCoords.equals(enemyFlagCoords)) != null;
     }
 
     getPath({ from, to }: { from: Point; to: Point }): Point[] {

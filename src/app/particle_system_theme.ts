@@ -2,7 +2,8 @@ import { Point } from './math/point';
 import { ParticleSystemParams, ParticleShape } from 'src/app/game_objects/particle_system';
 import { Grid } from './grid';
 
-export function getBulletParticleSystemParams(startPositionCanvas: Point): ParticleSystemParams {
+export function getBulletParticleSystemParams(startPositionCanvas: Point):
+    ParticleSystemParams {
     return {
         startPositionCanvas,
         particleCount: 60,
@@ -18,7 +19,8 @@ export function getBulletParticleSystemParams(startPositionCanvas: Point): Parti
     };
 };
 
-export function getGrenadeSmokeParticleSystemParams(startPositionCanvas: Point): ParticleSystemParams {
+export function getGrenadeSmokeParticleSystemParams(startPositionCanvas: Point):
+    ParticleSystemParams {
     return {
         startPositionCanvas,
         particleCount: 160,
@@ -34,7 +36,8 @@ export function getGrenadeSmokeParticleSystemParams(startPositionCanvas: Point):
     };
 };
 
-export function getGrenadeBurstParticleSystemParams(startPositionCanvas: Point): ParticleSystemParams {
+export function getGrenadeBurstParticleSystemParams(startPositionCanvas: Point):
+    ParticleSystemParams {
     return {
         startPositionCanvas,
         particleCount: 100,
@@ -50,7 +53,8 @@ export function getGrenadeBurstParticleSystemParams(startPositionCanvas: Point):
     };
 };
 
-export function getHealParticleSystemParams(startPositionCanvas: Point): ParticleSystemParams {
+export function getHealParticleSystemParams(startPositionCanvas: Point):
+    ParticleSystemParams {
     return {
         startPositionCanvas,
         particleCount: 12,

@@ -80,7 +80,8 @@ export class Hud {
     render(): void {
         if (this.titleMsLeft > 0) {
             if (!this.titleText) {
-                throw new Error(`Expected title text to set when titleMsLeft > 0`);
+                throw new Error(
+                    `Expected title text to set when titleMsLeft > 0`);
             }
             this.renderText(
                 this.titleText,
@@ -89,7 +90,8 @@ export class Hud {
         }
         if (this.subtitleMsLeft > 0) {
             if (!this.subtitleText) {
-                throw new Error(`Expected subtitle text to set when subtitleMsLeft > 0`);
+                throw new Error(
+                    `Expected subtitle text to set when subtitleMsLeft > 0`);
             }
             this.renderText(
                 this.subtitleText,
@@ -98,7 +100,8 @@ export class Hud {
         }
         if (this.toastMsLeft > 0) {
             if (!this.toastText) {
-                throw new Error(`Expected toastText text to set when toastMsLeft > 0`);
+                throw new Error
+                    (`Expected toastText text to set when toastMsLeft > 0`);
             }
             this.renderText(
                 this.toastText,
@@ -146,7 +149,9 @@ export class Hud {
     }
 
     private renderText(
-        text: string, textRenderSettings: TextRenderSettings, percentTimeLeft: number): void {
+        text: string,
+        textRenderSettings: TextRenderSettings,
+        percentTimeLeft: number): void {
 
         const fadedColor = hexStringToColor(THEME.hudTextColor);
         fadedColor.a = percentTimeLeft;

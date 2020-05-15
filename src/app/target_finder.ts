@@ -15,7 +15,8 @@ export function getRayForShot(shotInfo: ShotInfo): Ray {
     return ray;
 }
 
-export function getRayForShot2(fromCanvasCoords: Point, aimAngleRadiansClockwise: number): Ray {
+export function getRayForShot2(
+    fromCanvasCoords: Point, aimAngleRadiansClockwise: number): Ray {
     return new Ray(
         fromCanvasCoords,
         new Point(
@@ -31,7 +32,12 @@ export function getProjectileTargetsPath(params: {
     characters: Character[];
     obstacles: Obstacle[];
 }): Target[] {
-    const { ray, fromTeamIndex, startingTileCoords, numRicochets, characters, obstacles } = params;
+    const { ray,
+        fromTeamIndex,
+        startingTileCoords,
+        numRicochets,
+        characters,
+        obstacles } = params;
     const targets: Target[] = [];
     let pathsLeft = numRicochets + 1;
     let currentTileCoords = startingTileCoords;
@@ -88,11 +94,19 @@ function getGridBorderTarget(ray: Ray): Target {
     const topRightCanvas = topLeftCanvas.add(new Point(Grid.GAME_WIDTH, 0));
     const bottomLeftCanvas = topLeftCanvas.add(new Point(0, Grid.GAME_HEIGHT));
     const bottomRightCanvas = topRightCanvas.add(bottomLeftCanvas);
-    const leftBorderSegment = new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
-    const topBorderSegment = new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, 1));
-    const rightBorderSegment = new LineSegment(topRightCanvas, bottomRightCanvas, new Point(-1, 0));
-    const bottomBorderSegment = new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, -1));
-    const borders = [leftBorderSegment, topBorderSegment, rightBorderSegment, bottomBorderSegment];
+    const leftBorderSegment =
+        new LineSegment(topLeftCanvas, bottomLeftCanvas, new Point(1, 0));
+    const topBorderSegment =
+        new LineSegment(topLeftCanvas, topRightCanvas, new Point(0, 1));
+    const rightBorderSegment =
+        new LineSegment(topRightCanvas, bottomRightCanvas, new Point(-1, 0));
+    const bottomBorderSegment =
+        new LineSegment(bottomLeftCanvas, bottomRightCanvas, new Point(0, -1));
+    const borders = [
+        leftBorderSegment,
+        topBorderSegment,
+        rightBorderSegment,
+        bottomBorderSegment];
     let gridBorderCollisionPt: Point | null = null;
     let gridBorderCollisionTile: Point | null = null;
     let borderNormal: Point | null = null;
@@ -103,7 +117,8 @@ function getGridBorderTarget(ray: Ray): Target {
             // Move out from edge a little to accurately get tile.
             const offset = borderNormal.multiplyScaler(Grid.TILE_SIZE * .05);
             gridBorderCollisionPt = collisionResult.collisionPt!.add(offset);
-            gridBorderCollisionTile = Grid.getTileFromCanvasCoords(gridBorderCollisionPt);
+            gridBorderCollisionTile =
+                Grid.getTileFromCanvasCoords(gridBorderCollisionPt);
             break;
         }
     }
@@ -121,13 +136,17 @@ function getGridBorderTarget(ray: Ray): Target {
     // Ensure projectile stays in Grid bounds.
     const inset = Grid.TILE_SIZE * .05;
     if (hitCorner(topLeftCanvas)) {
-        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(inset, inset));
+        gridBorderCollisionPt =
+            gridBorderCollisionPt.add(new Point(inset, inset));
     } else if (hitCorner(topRightCanvas)) {
-        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(-inset, inset));
+        gridBorderCollisionPt =
+            gridBorderCollisionPt.add(new Point(-inset, inset));
     } else if (hitCorner(bottomLeftCanvas)) {
-        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(inset, -inset));
+        gridBorderCollisionPt =
+            gridBorderCollisionPt.add(new Point(inset, -inset));
     } else if (hitCorner(bottomRightCanvas)) {
-        gridBorderCollisionPt = gridBorderCollisionPt.add(new Point(-inset, -inset));
+        gridBorderCollisionPt =
+            gridBorderCollisionPt.add(new Point(-inset, -inset));
     }
     const target: Target = {
         normal: borderNormal!,
@@ -165,7 +184,8 @@ function getTileTarget(
             .map((obstacle) => obstacle.tileCoords)
             .concat(params.characters.map((character) => character.tileCoords));
     while (curDistance < params.maxDistance) {
-        const curTile = Grid.getTileFromCanvasCoords(params.ray.pointAtDistance(curDistance));
+        const curTile = Grid.getTileFromCanvasCoords(
+            params.ray.pointAtDistance(curDistance));
         const tilesToCheck =
             [curTile]
                 .concat(Grid.getAdjacentTiles(curTile))
@@ -177,14 +197,19 @@ function getTileTarget(
                 continue;
             }
             // Either an obstacle or player in tile.
-            const obstacle = params.obstacles.find((obstacle) => obstacle.tileCoords.equals(tile));
+            const obstacle = params.obstacles
+                .find((obstacle) => obstacle.tileCoords.equals(tile));
             if (obstacle) {
                 // Omit edges on opposite side of obstacle.
-                const edges = obstacle.getEdges().filter((edge) => edge.normal.dot(ray.direction) <= 0);
+                const edges = obstacle.getEdges()
+                    .filter((edge) => edge.normal.dot(ray.direction) <= 0);
                 for (const edge of edges) {
-                    const collisionResult = detectRayLineSegmentCollision(ray, edge);
+                    const collisionResult =
+                        detectRayLineSegmentCollision(ray, edge);
                     if (collisionResult.isCollision) {
-                        const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
+                        const distance =
+                            ray.startPt
+                                .distanceTo(collisionResult.collisionPt!);
                         if (distance < closestCollisionDistance) {
                             closestCollisionDistance = distance;
                             closestCollisionTile = tile;
@@ -197,7 +222,8 @@ function getTileTarget(
                 const character = params.characters
                     .find((character) => character.tileCoords.equals(tile));
                 if (!character) {
-                    throw new Error(`Tile is occupied but no obstacle or character...`);
+                    throw new Error(
+                        `Tile is occupied but no obstacle or character...`);
                 }
                 if (character.teamIndex === params.fromTeamIndex) {
                     // TODO - allow friendly fire?
@@ -205,9 +231,12 @@ function getTileTarget(
                 }
                 // Approximate with bounding box for now.
                 for (const edge of character.getEdges()) {
-                    const collisionResult = detectRayLineSegmentCollision(ray, edge);
+                    const collisionResult =
+                        detectRayLineSegmentCollision(ray, edge);
                     if (collisionResult.isCollision) {
-                        const distance = ray.startPt.distanceTo(collisionResult.collisionPt!);
+                        const distance =
+                            ray.startPt
+                                .distanceTo(collisionResult.collisionPt!);
                         if (distance < closestCollisionDistance) {
                             closestCollisionDistance = distance;
                             closestCollisionTile = tile;

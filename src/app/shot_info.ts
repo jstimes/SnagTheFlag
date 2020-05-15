@@ -42,8 +42,9 @@ export interface SplashDamage extends BaseProjectileDetails {
     /** Tiles away from target that will be hit by grenade. */
     readonly damageManhattanDistanceRadius: number;
     /** 
-     * If a target is within damageManhattanDistanceRadius from the grenade's target tile,
-     * the damange dealt to the target is (damage - pow(tilesAwayDamageReduction, <tiles_away>)).
+     * If a target is within damageManhattanDistanceRadius from the grenade's 
+     * target tile, the damange dealt to the target is 
+     * (damage - pow(tilesAwayDamageReduction, <tiles_away>)).
      * Should be in range (0, 1).
      */
     readonly tilesAwayDamageReduction: number;

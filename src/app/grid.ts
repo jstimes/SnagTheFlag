@@ -10,12 +10,14 @@ export class Grid {
 
     static readonly BUTTON_PANE_WIDTH = 240;
     static readonly BUTTON_PANE_HEIGHT = RENDER_SETTINGS.canvasHeight;
-    static readonly GAME_WIDTH = RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH;
+    static readonly GAME_WIDTH =
+        RENDER_SETTINGS.canvasWidth - Grid.BUTTON_PANE_WIDTH;
     static readonly GAME_HEIGHT = RENDER_SETTINGS.canvasHeight;
     static readonly TILE_SIZE = 40;
     static readonly TILES_WIDE = Grid.GAME_WIDTH / Grid.TILE_SIZE;
     static readonly TILES_TALL = Grid.GAME_HEIGHT / Grid.TILE_SIZE;
-    static readonly HALF_TILE = new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2);
+    static readonly HALF_TILE =
+        new Point(Grid.TILE_SIZE / 2, Grid.TILE_SIZE / 2);
 
     static getCanvasFromTileCoords(tileCoords: Point): Point {
         return new Point(
@@ -123,7 +125,8 @@ export function pathTo(params: {
         if (!canGoThrough(queuedTile.coords)) {
             continue;
         }
-        if (isAvailable(queuedTile.coords) && !pathedTiles.has(queuedTile.coords.toString())) {
+        if (isAvailable(queuedTile.coords)
+            && !pathedTiles.has(queuedTile.coords.toString())) {
             pathedTiles.set(queuedTile.coords.toString(), queuedTile);
         }
         if (queuedTile.coords.equals(endTile)) {
@@ -131,9 +134,12 @@ export function pathTo(params: {
             break;
         }
         for (const adjacentTile of Grid.getAdjacentTiles(queuedTile.coords)) {
-            const alreadyVisitedAdjacentTile = pathedTiles.has(adjacentTile.toString());
-            const alreadyQueued = queue.find((pathed) => pathed.coords.equals(adjacentTile)) != null;
-            if (!alreadyVisitedAdjacentTile && !alreadyQueued && isAvailable(adjacentTile)) {
+            const alreadyVisitedAdjacentTile =
+                pathedTiles.has(adjacentTile.toString());
+            const alreadyQueued =
+                queue.find((pathed) => pathed.coords.equals(adjacentTile)) != null;
+            if (!alreadyVisitedAdjacentTile
+                && !alreadyQueued && isAvailable(adjacentTile)) {
                 queue.push({
                     parent: queuedTile.coords,
                     coords: adjacentTile,
@@ -169,7 +175,8 @@ export function getTilesOnLineBetween(a: Point, b: Point): Point[] {
 
     let points: Point[] = [];
 
-    // Add .5 to the endpoints because we actually want to go from tile center to tile center.
+    // Add .5 to the endpoints because we actually want to go 
+    // from tile center to tile center.
     const halfTileCoord = new Point(.5, .5);
     const aPlusHalf = a.add(halfTileCoord);
     const bPlusHalf = b.add(halfTileCoord);

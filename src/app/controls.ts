@@ -70,10 +70,12 @@ export class ControlMap {
                     switch (currentState) {
                         case KeyPressState.DOWN:
                             this.assignedControls.get(key)!();
-                            this.keyToKeyPressState.set(key, KeyPressState.READY);
+                            this.keyToKeyPressState.set(
+                                key, KeyPressState.READY);
                             break;
                         case KeyPressState.NOT_STARTED:
-                            this.keyToKeyPressState.set(key, KeyPressState.READY);
+                            this.keyToKeyPressState.set(
+                                key, KeyPressState.READY);
                             break;
                         default:
                             break;
@@ -136,7 +138,9 @@ class Controls {
 
     handleClick(): Point {
         if (!this.hasClick()) {
-            throw new Error(`Must check hasClick before handleClick, or click already handled.`);
+            throw new Error(
+                `Must check hasClick before handleClick, ` +
+                `or click already handled.`);
         }
         this.hasClickInternal = false;
         return this.mouseCanvasCoords;
@@ -154,7 +158,8 @@ class Controls {
         const isDown = this.keyMap.get(key);
         if (isDown == null) {
             throw new Error(
-                `Called isKeyDown for unmapped key: ${this.getStringForKey(key)}`);
+                `Called isKeyDown for unmapped key: ` +
+                `${this.getStringForKey(key)}`);
         }
         return isDown;
     }

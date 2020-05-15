@@ -47,10 +47,16 @@ export class LevelCreator {
         if (!this.isTileOccupied(mouseTileCoords)) {
             switch (this.placementMode) {
                 case PlacementMode.BLUE_FLAG:
-                    this.blueFlag = new Flag({ tileCoords: mouseTileCoords, teamIndex: 0 });
+                    this.blueFlag = new Flag({
+                        tileCoords: mouseTileCoords,
+                        teamIndex: 0,
+                    });
                     break;
                 case PlacementMode.RED_FLAG:
-                    this.redFlag = new Flag({ tileCoords: mouseTileCoords, teamIndex: 1 });
+                    this.redFlag = new Flag({
+                        tileCoords: mouseTileCoords,
+                        teamIndex: 1,
+                    });
                     break;
                 case PlacementMode.OBSTACLE:
                     const obstacle = new Obstacle(mouseTileCoords);
@@ -63,31 +69,40 @@ export class LevelCreator {
     }
 
     private isTileOccupied(tileCoords: Point): boolean {
-        if (this.redFlag != null && this.redFlag.tileCoords.equals(tileCoords)) {
+        if (this.redFlag != null
+            && this.redFlag.tileCoords.equals(tileCoords)) {
             return true;
         }
-        if (this.blueFlag != null && this.blueFlag.tileCoords.equals(tileCoords)) {
+        if (this.blueFlag != null
+            && this.blueFlag.tileCoords.equals(tileCoords)) {
             return true;
         }
-        const obstacle = this.obstacles.find((obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
+        const obstacle = this.obstacles
+            .find((obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
         return obstacle != null;
     }
 
     private removeObjectInTile(tileCoords: Point): void {
-        if (this.redFlag != null && this.redFlag.tileCoords.equals(tileCoords)) {
+        if (this.redFlag != null
+            && this.redFlag.tileCoords.equals(tileCoords)) {
             this.redFlag = undefined;
         }
-        if (this.blueFlag != null && this.blueFlag.tileCoords.equals(tileCoords)) {
+        if (this.blueFlag != null
+            && this.blueFlag.tileCoords.equals(tileCoords)) {
             this.blueFlag = undefined;
         }
-        this.obstacles = this.obstacles.filter((obstacle: Obstacle) => !obstacle.tileCoords.equals(tileCoords));
+        this.obstacles =
+            this.obstacles
+                .filter((obstacle: Obstacle) => !obstacle.tileCoords.equals(tileCoords));
     }
 
     render(): void {
         const context = this.context;
         context.fillStyle = THEME.gridBackgroundColor;
-        context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
-        context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        context.clearRect(0, 0,
+            RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        context.fillRect(0, 0,
+            RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
 
         // Draw grid lines.
         for (let i = 0; i < Grid.TILES_WIDE; i++) {
@@ -115,11 +130,15 @@ export class LevelCreator {
             context.stroke();
         }
 
-        const mouseTileCoords = Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
-        const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
-        if (this.placementMode !== PlacementMode.ERASE && !this.isTileOccupied(mouseTileCoords)) {
+        const mouseTileCoords =
+            Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
+        const tileCanvasTopLeft =
+            Grid.getCanvasFromTileCoords(mouseTileCoords);
+        if (this.placementMode !== PlacementMode.ERASE
+            && !this.isTileOccupied(mouseTileCoords)) {
             // Indicate hovered tile.
-            const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(mouseTileCoords);
+            const tileCanvasTopLeft =
+                Grid.getCanvasFromTileCoords(mouseTileCoords);
             let hoverColor = THEME.obstacleColor;
             if (this.placementMode === PlacementMode.RED_FLAG) {
                 hoverColor = THEME.redFlagColor;
@@ -130,7 +149,9 @@ export class LevelCreator {
             const fillColor = hexStringToColor(hoverColor);
             fillColor.a = hoverAlpha;
             context.fillStyle = colorToString(fillColor);
-            context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+            context.fillRect(
+                tileCanvasTopLeft.x, tileCanvasTopLeft.y,
+                Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
 
         for (const obstacle of this.obstacles) {
@@ -143,9 +164,12 @@ export class LevelCreator {
             this.blueFlag.render(this.context);
         }
 
-        if (this.placementMode === PlacementMode.ERASE && this.isTileOccupied(mouseTileCoords)) {
+        if (this.placementMode === PlacementMode.ERASE
+            && this.isTileOccupied(mouseTileCoords)) {
             context.fillStyle = '#000000';
-            context.fillRect(tileCanvasTopLeft.x, tileCanvasTopLeft.y, Grid.TILE_SIZE, Grid.TILE_SIZE);
+            context.fillRect(
+                tileCanvasTopLeft.x, tileCanvasTopLeft.y,
+                Grid.TILE_SIZE, Grid.TILE_SIZE);
         }
 
         this.renderControls();

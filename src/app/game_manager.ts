@@ -543,7 +543,7 @@ export class GameManager implements GameModeManager {
     /** 
      * Checks if there's another squad 
      * member still active, or advances turn if not. 
-     * */
+     */
     private onCharacterTurnOver(): void {
         const squad = this.gameState.getActiveSquad();
         const activeSquadMember = squad.find((character: Character) => {
