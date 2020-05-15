@@ -80,14 +80,6 @@ export class GameManager implements GameModeManager {
 
     update(elapsedMs: number): void {
         this.inputManager.update(elapsedMs);
-        if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
-            && this.gameState.getActiveSquad()
-                .filter(character => !character.isTurnOver()).length === 0) {
-            // Should automatically skip turn with delay 
-            // when team is out of characters but need update 
-            // loop to run for spawners...
-            return;
-        }
 
         if (this.isPaused) {
             return;
@@ -99,7 +91,6 @@ export class GameManager implements GameModeManager {
         this.particleSystems = this.particleSystems
             .filter((particleSystem) => particleSystem.isAlive);
 
-        let hasFiringProjectiles = false;
         for (const projectile of this.projectiles) {
             this.updateProjectile(elapsedMs, projectile);
         }
@@ -119,6 +110,15 @@ export class GameManager implements GameModeManager {
         if (!this.isAnimating() && this.onAnimationDone != null) {
             this.onAnimationDone();
             this.onAnimationDone = null;
+        }
+
+        if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
+            && this.gameState.getActiveSquad()
+                .filter(character => !character.isTurnOver()).length === 0) {
+            // Should automatically skip turn with delay 
+            // when team is out of characters but need update 
+            // loop to run for spawners...
+            return;
         }
 
         if (this.isAiTurn() && !this.isAnimating()) {
