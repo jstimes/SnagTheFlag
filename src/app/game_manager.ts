@@ -106,6 +106,11 @@ export class GameManager implements GameModeManager {
     update(elapsedMs: number): void {
         if (this.isPaused) {
             this.controlMap.check();
+            this.buttonPanel.mouseMove(CONTROLS.getMouseCanvasCoords());
+            if (CONTROLS.hasClick()) {
+                const clickCanvas = CONTROLS.handleClick();
+                const clickedButtonPanel = this.buttonPanel.tryClick(clickCanvas);
+            }
             return;
         }
         for (const particleSystem of this.particleSystems) {
@@ -1046,9 +1051,10 @@ export class GameManager implements GameModeManager {
 
         const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
         const buttonInfos: ControlParams[] = [];
-
+        let headerTextLines: string[] = [];
         switch (this.gameState.selectedCharacterState) {
             case SelectedCharacterState.AWAITING:
+                headerTextLines = ['Available actions'];
                 if (!this.gameState.selectedCharacter.hasMoved) {
                     buttonInfos.push({
                         key: MOVE_KEY,
@@ -1112,6 +1118,7 @@ export class GameManager implements GameModeManager {
                 }
                 break;
             case SelectedCharacterState.MOVING:
+                headerTextLines = ['Select a destination'];
                 this.clickHandler = {
                     onClick: (tile: Point) => {
                         this.tryMovingSelectedCharacter(tile);
@@ -1131,6 +1138,7 @@ export class GameManager implements GameModeManager {
                 });
                 break;
             case SelectedCharacterState.AIMING:
+                headerTextLines = ['Adjust aim and fire'];
                 buttonInfos.push({
                     key: TOGGLE_AIM_KEY,
                     name: 'Stop Aiming',
@@ -1202,6 +1210,7 @@ export class GameManager implements GameModeManager {
                 });
                 break;
             case SelectedCharacterState.THROWING_GRENADE:
+                headerTextLines = ['Select grenade target'];
                 this.clickHandler = {
                     onClick: (tile: Point) => {
                         this.tryThrowingGrenade(tile);
@@ -1239,7 +1248,7 @@ export class GameManager implements GameModeManager {
             eventType: EventType.KeyPress,
         });
         this.buttonPanel.configurePanel({
-            headerTextLines: ['Available actions'],
+            headerTextLines,
             buttonInfos,
             isButtonGroup: false,
         });
@@ -1343,18 +1352,53 @@ export class GameManager implements GameModeManager {
     }
 
     private addDefaultControls(): void {
-        this.controlMap.add({
+        const params = {
             key: PAUSE_KEY,
             name: 'Pause',
             func: () => { this.togglePause(); },
             eventType: EventType.KeyPress,
-        });
-        this.controlMap.add({
-            key: Key.QUESTION_MARK,
-            name: 'Show/Hide controls',
-            func: () => { this.hud.toggleShowControlMap(); },
+        };
+        this.controlMap.add(params);
+        this.buttonPanel.setBottomButtons([params]);
+
+        // this.controlMap.add({
+        //     key: Key.QUESTION_MARK,
+        //     name: 'Show/Hide controls',
+        //     func: () => { this.hud.toggleShowControlMap(); },
+        //     eventType: EventType.KeyPress,
+        // });
+    }
+
+    private addQuitAndRestartControls(): void {
+        this.controlMap.remove(PAUSE_KEY);
+        const params = [{
+            key: PAUSE_KEY,
+            name: 'Resume',
+            func: () => {
+                this.togglePause();
+                this.controlMap.remove(PAUSE_KEY);
+                this.addDefaultControls();
+            },
             eventType: EventType.KeyPress,
-        });
+        },
+        {
+            key: RESTART_KEY,
+            name: 'Restart',
+            func: this.resetGame,
+            eventType: EventType.KeyPress,
+        },
+        {
+            key: QUIT_KEY,
+            name: 'Quit',
+            func: () => {
+                this.onExitGameCallback(this.winningTeamIndex);
+            },
+            eventType: EventType.KeyPress,
+        }];
+        for (const param of params) {
+            this.controlMap.add(param);
+        }
+        this.buttonPanel.setBottomButtons(params);
     }
 
     private togglePause(): void {
@@ -1380,23 +1424,6 @@ export class GameManager implements GameModeManager {
             this.controlMap.remove(RESTART_KEY);
             this.hud.setControlMap(this.controlMap);
         }
-    }
-
-    private addQuitAndRestartControls(): void {
-        this.controlMap.add({
-            key: QUIT_KEY,
-            name: 'Quit',
-            func: () => {
-                this.onExitGameCallback(this.winningTeamIndex);
-            },
-            eventType: EventType.KeyPress,
-        });
-        this.controlMap.add({
-            key: RESTART_KEY,
-            name: 'Restart',
-            func: this.resetGame,
-            eventType: EventType.KeyPress,
-        });
     }
 
     private addCharacterClassControls(): void {

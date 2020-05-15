@@ -14,9 +14,10 @@ export class ButtonPanel {
 
     private readonly uiManager: UiManager;
     private buttonGroup?: ButtonGroup;
+    private bottomButtons?: Button[];
+
     private readonly borderWidth: number = 8;
     private readonly leftEdgeCanvas = Grid.GAME_WIDTH;
-
     private readonly leftUiCoord =
         (Grid.GAME_WIDTH + this.borderWidth) / RENDER_SETTINGS.canvasWidth;
     private readonly widthUi = 1 - this.leftUiCoord;
@@ -143,6 +144,31 @@ export class ButtonPanel {
                     onClick: buttonInfos[index].func,
                 }));
             }
+        }
+    }
+
+    setBottomButtons(params: ControlParams[]): void {
+        if (this.bottomButtons != null && this.bottomButtons.length > 0) {
+            for (const button of this.bottomButtons) {
+                this.uiManager.removeElement(button);
+            }
+        }
+        this.bottomButtons = [];
+        let topY = 1 + (-this.buttonOffsetY - this.buttonSize.y) * params.length;
+        for (const param of params) {
+            const dimensions = {
+                topLeft: new Point(this.leftMargin, topY),
+                size: this.buttonSize,
+                text: `${param.name} (${CONTROLS.getStringForKey(param.key)})`,
+            };
+            const button = new Button({
+                dimensions,
+                style: this.buttonStyle,
+                onClick: param.func,
+            });
+            this.uiManager.addElement(button);
+            this.bottomButtons.push(button);
+            topY += (this.buttonOffsetY + this.buttonSize.y);
         }
     }
 }
