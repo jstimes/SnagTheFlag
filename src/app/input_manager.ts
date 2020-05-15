@@ -526,7 +526,7 @@ function getDescriptionForCharacter(character: Character): string[] {
     const lines: string[] = [];
     getCharacterClassForType(character.settings.type);
     lines.push(
-        `HP: ${character.health} / ${character.settings.maxHealth}`,
+        `HP: ${Math.round(character.health)} / ${character.settings.maxHealth}`,
         `Moves: ${character.settings.maxMovesPerTurn}`,
         `Sight: ${character.settings.maxSight}`,
         ``,
@@ -604,6 +604,7 @@ function getDescriptionsForExtraAbilityStates(
         if (state.usesLeft == null || state.usesLeft <= 0) {
             continue;
         }
+        lines.push('');
         const extraAbility = [...character.settings.extraActions]
             .find((ability) => ability.abilityType === extraAbilityType)!;
         const extraAbilityDescription =

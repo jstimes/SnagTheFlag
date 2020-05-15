@@ -27,9 +27,9 @@ export class ButtonPanel {
     private readonly leftMargin = this.leftUiCoord + this.horizontalMargins;
     private readonly maxWidthUi = 1 - this.leftMargin - this.horizontalMargins;
     private readonly fontSize = 18;
-    private readonly descriptionFontSize = 14;
+    private readonly descriptionFontSize = 16;
     private readonly buttonOffsetY = .01;
-    private readonly buttonSize = new Point(this.maxWidth, .06);
+    private readonly buttonSize = new Point(this.maxWidth, .05);
     private readonly headerSize = new Point(this.maxWidth, .025);
 
     private buttonGroupBottomMargin: number;
@@ -156,7 +156,8 @@ export class ButtonPanel {
     }
 
     setDescription(textLines: string[]): void {
-        const buttonsBottom = this.buttonGroupBottomMargin + this.buttonOffsetY;
+        const buttonsBottom = this.buttonGroupBottomMargin
+            + this.buttonOffsetY * 2;
         let topMargin = buttonsBottom;
         this.clearDescription();
         const descriptionStyle: TextBoxStyle = {
@@ -180,7 +181,7 @@ export class ButtonPanel {
             });
             this.descriptionTextBoxes!.push(header);
             this.uiManager.addElement(header);
-            topMargin += this.headerSize.y - .004;
+            topMargin += this.headerSize.y - .002;
         }
     }
 

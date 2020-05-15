@@ -6,10 +6,6 @@ Refactoring/Cleanup
     - Make every render size in terms of Grid.TILE_SIZE
         so it's easy to resize.
 
-MVP features
-    - why don't controls work when AI is playing.
-    - better char class & action selection UI
-
 AI improvements:
     - Use heals/grenades.
     - Defensive mode, eliminate mode
