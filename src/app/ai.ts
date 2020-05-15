@@ -13,6 +13,8 @@ interface AiSettings {
     /** If true, simply chooses any optimal tile instead of always the first. */
     readonly randomizeMovement: boolean;
     readonly maxAngleRandomization: number;
+
+    // Just delete... ?
     readonly ignoresFogOfWar: boolean;
     readonly characterClass: CharacterSettings;
 }
@@ -34,7 +36,7 @@ const MEDIUM_AI_SETTINGS: AiSettings = {
 const STRONG_AI_SETTINGS: AiSettings = {
     randomizeMovement: true,
     maxAngleRandomization: 0,
-    ignoresFogOfWar: true,
+    ignoresFogOfWar: false,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
 };
 
@@ -89,12 +91,15 @@ export class Ai {
         if (gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
             return this.placeCharacter(gameState);
         }
-        if (gameState.selectedCharacter == null || gameState.selectedCharacterState == null) {
+        if (gameState.selectedCharacter == null
+            || gameState.selectedCharacterState == null) {
             throw new Error('Expected a selected character and state');
         }
         const selectedCharacter = gameState.selectedCharacter;
         const selectedCharacterState = gameState.selectedCharacterState;
-        const isFlagCarrier = selectedCharacter.tileCoords.equals(gameState.getEnemyFlag().tileCoords);
+        const isFlagCarrier =
+            selectedCharacter.tileCoords
+                .equals(gameState.getEnemyFlag().tileCoords);
         if (isFlagCarrier && !selectedCharacter.hasMoved) {
             return this.getActionsForFlagCarrrier(selectedCharacter, gameState);
         }
@@ -103,10 +108,12 @@ export class Ai {
         }
         if (!selectedCharacter.hasShot) {
             const characterCenter = getTileCenterCanvas(selectedCharacter.tileCoords);
-            const possibleShots = this.getEnemyTargetsInDirectSight(characterCenter, gameState);
+            const possibleShots =
+                this.getEnemyTargetsInDirectSight(characterCenter, gameState);
             if (possibleShots.length > 0) {
                 return this.getShootSequence(
-                    this.getBestShot(selectedCharacter.tileCoords, gameState, possibleShots));
+                    this.getBestShot(
+                        selectedCharacter.tileCoords, gameState, possibleShots));
             }
         }
         const endTurn = (gameState) => {
@@ -130,7 +137,8 @@ export class Ai {
         const thenSelectTile = (gameState: GameState) => {
             const safestTiles: Point[] = [];
             for (const tile of gameState.selectableTiles) {
-                const tileCenterCanvas = Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
+                const tileCenterCanvas =
+                    Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
                 if (this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length === 0) {
                     safestTiles.push(tile);
                 }
@@ -158,15 +166,21 @@ export class Ai {
         return [selectCharacterClass, thenSelectTile];
     }
 
-    private getHasntMovedNorShot(character: Character, gameState: GameState): OnGetNextAction[] {
-        const currentCharacterCenterCanvas = getTileCenterCanvas(character.tileCoords);
-        const possibleShots = this.getEnemyTargetsInDirectSight(currentCharacterCenterCanvas, gameState);
+    private getHasntMovedNorShot(character: Character, gameState: GameState):
+        OnGetNextAction[] {
+        const currentCharacterCenterCanvas =
+            getTileCenterCanvas(character.tileCoords);
+        const possibleShots = this.getEnemyTargetsInDirectSight(
+            currentCharacterCenterCanvas, gameState);
         if (possibleShots.length > 0) {
-            const shoot = this.getShootSequence(this.getBestShot(character.tileCoords, gameState, possibleShots));
+            const shoot = this.getShootSequence(
+                this.getBestShot(
+                    character.tileCoords, gameState, possibleShots));
             const targetTile = gameState.enemyHasFlag()
                 ? gameState.getActiveTeamFlag().tileCoords
                 : gameState.getEnemyFlag().tileCoords;
-            const safeMove = this.getSafeMoveTowardsLocation(character, targetTile);
+            const safeMove =
+                this.getSafeMoveTowardsLocation(character, targetTile);
             return shoot.concat(safeMove);
         } else {
             const startMoving = (gameState) => {
@@ -187,11 +201,17 @@ export class Ai {
                 const tileAndDirectHits: Array<{ tile: Point; directHits: number; }> = [];
                 for (const selectableTile of gameState.selectableTiles) {
                     const tileCenterCanvas = getTileCenterCanvas(selectableTile);
-                    const directHitDetails = this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState);
-                    tileAndDirectHits.push({ tile: selectableTile, directHits: directHitDetails.length });
+                    const directHitDetails =
+                        this.getEnemyTargetsInDirectSight(
+                            tileCenterCanvas, gameState);
+                    tileAndDirectHits.push({
+                        tile: selectableTile,
+                        directHits: directHitDetails.length,
+                    });
                 }
                 let optimalTiles: Point[] = [];
-                const bestTileAndHits = tileAndDirectHits.filter((tileAndHit) => tileAndHit.directHits === 1);
+                const bestTileAndHits = tileAndDirectHits
+                    .filter((tileAndHit) => tileAndHit.directHits === 1);
                 if (bestTileAndHits.length > 0) {
                     optimalTiles = bestTileAndHits.map(obj => obj.tile);
                 } else {
@@ -199,7 +219,8 @@ export class Ai {
                     const targetTile = gameState.enemyHasFlag()
                         ? gameState.getActiveTeamFlag().tileCoords
                         : gameState.getEnemyFlag().tileCoords;
-                    optimalTiles = this.getClosestSelectableTileToLocationWithFewestDirectHits(targetTile, gameState);
+                    optimalTiles =
+                        this.getClosestSelectableTileToLocationWithFewestDirectHits(targetTile, gameState);
                 }
                 let selection = optimalTiles[0];
                 if (this.settings.randomizeMovement) {
@@ -215,13 +236,15 @@ export class Ai {
         }
     }
 
-    private getActionsForFlagCarrrier(character: Character, gameState: GameState): OnGetNextAction[] {
+    private getActionsForFlagCarrrier(
+        character: Character, gameState: GameState): OnGetNextAction[] {
         // TODO - need to differentiate flag starting spot and flag current spot.
         const teamFlagTile = gameState.getActiveTeamFlag().tileCoords;
         return this.getSafeMoveTowardsLocation(character, teamFlagTile);
     }
 
-    private getSafeMoveTowardsLocation(character: Character, tileLocation: Point): OnGetNextAction[] {
+    private getSafeMoveTowardsLocation(
+        character: Character, tileLocation: Point): OnGetNextAction[] {
         const startMoving = (gameState) => {
             const startMovingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
@@ -230,7 +253,8 @@ export class Ai {
             return startMovingAction;
         };
         const thenMove = (gameState) => {
-            const bestTiles = this.getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation, gameState);
+            const bestTiles =
+                this.getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation, gameState);
             let selection = bestTiles[0];
             if (this.settings.randomizeMovement) {
                 selection = randomElement(bestTiles);
@@ -244,7 +268,8 @@ export class Ai {
         return [startMoving, thenMove];
     }
 
-    private getClosestSelectableTileToLocationWithFewestDirectHits(tileLocation: Point, gameState: GameState): Point[] {
+    private getClosestSelectableTileToLocationWithFewestDirectHits(
+        tileLocation: Point, gameState: GameState): Point[] {
         let bestTile = {
             tile: gameState.selectableTiles[0],
             distance: 10000,
@@ -252,11 +277,14 @@ export class Ai {
         };
         let optimalTiles: Point[] = [];
         for (const selectableTile of gameState.selectableTiles) {
-            const pathToLocation = getPathToLocation(selectableTile, tileLocation, gameState);
+            const pathToLocation =
+                getPathToLocation(selectableTile, tileLocation, gameState);
             const tileCenterCanvas = getTileCenterCanvas(selectableTile)
-            const directHits = this.getEnemyTargetsInDirectSight(tileCenterCanvas, gameState).length;
+            const directHits = this.getEnemyTargetsInDirectSight(
+                tileCenterCanvas, gameState).length;
             if (directHits < bestTile.directHits
-                || (directHits === bestTile.directHits && pathToLocation.length < bestTile.distance)) {
+                || (directHits === bestTile.directHits
+                    && pathToLocation.length < bestTile.distance)) {
                 bestTile.tile = selectableTile;
                 bestTile.distance = pathToLocation.length;
                 bestTile.directHits = directHits;
@@ -269,7 +297,9 @@ export class Ai {
         return optimalTiles;
     }
 
-    private getBestShot(fromTile: Point, gameState: GameState, shots: ShotDetails[]): ShotDetails {
+    private getBestShot(
+        fromTile: Point, gameState: GameState, shots: ShotDetails[]):
+        ShotDetails {
         // Best is flag carrier. 
         for (const shot of shots) {
             if (shot.target.tile.equals(gameState.getActiveTeamFlag().tileCoords)) {
@@ -284,13 +314,16 @@ export class Ai {
             const targetCharacter = enemyCharacters
                 .find((character) => character.tileCoords.equals(shot.target.tile));
             if (targetCharacter == null) {
-                throw new Error(`Expected a character at shot: ${JSON.stringify(shot)}`);
+                throw new Error(
+                    `Expected a character at shot: ${JSON.stringify(shot)}`);
             }
             const targetHealth = targetCharacter.health;
-            const distance = targetCharacter.tileCoords.manhattanDistanceTo(fromTile);
+            const distance =
+                targetCharacter.tileCoords.manhattanDistanceTo(fromTile);
             if ((best == null)
                 || (targetHealth < best.targetHealth)
-                || (targetHealth === best.targetHealth && distance < best.distance)) {
+                || (targetHealth === best.targetHealth
+                    && distance < best.distance)) {
                 best = { shot, distance, targetHealth };
             }
         }
@@ -313,7 +346,8 @@ export class Ai {
                 Math.random()
                 * this.settings.maxAngleRandomization
                 * - this.settings.maxAngleRandomization / 2;
-            const aim = shotDetails.aimAngleClockwiseRadians + randomAimAdjustment;
+            const aim =
+                shotDetails.aimAngleClockwiseRadians + randomAimAdjustment;
             const takeAimAction: AimAction = {
                 type: ActionType.AIM,
                 aimAngleClockwiseRadians: aim,
@@ -333,17 +367,20 @@ export class Ai {
         ];
     }
 
-    private getEnemyTargetsInDirectSight(fromCanvas: Point, gameState: GameState): ShotDetails[] {
+    private getEnemyTargetsInDirectSight(
+        fromCanvas: Point, gameState: GameState): ShotDetails[] {
         const fromTile = Grid.getTileFromCanvasCoords(fromCanvas);
         const shots: ShotDetails[] = [];
         for (const enemy of gameState.getEnemyCharacters()) {
             if (!this.settings.ignoresFogOfWar
-                && !gameState.isTileVisibleByTeamIndex(enemy.tileCoords, this.teamIndex)) {
+                && !gameState.isTileVisibleByTeamIndex(
+                    enemy.tileCoords, this.teamIndex)) {
                 continue;
             }
             const enemyCenter = getTileCenterCanvas(enemy.tileCoords);
             const direction = enemyCenter.subtract(fromCanvas).normalize();
-            const aimAngleClockwiseRadians = direction.getPointRotationRadians();
+            const aimAngleClockwiseRadians =
+                direction.getPointRotationRadians();
             const target = getProjectileTarget({
                 ray: getRayForShot2(fromCanvas, aimAngleClockwiseRadians),
                 characters: gameState.getAliveCharacters(),
@@ -385,7 +422,8 @@ function getTileClosestTo(tiles: Point[], to: Point): Point {
     return closestTile;
 }
 
-function getPathToLocation(startTile: Point, tileLocation: Point, gameState: GameState): Point[] {
+function getPathToLocation(
+    startTile: Point, tileLocation: Point, gameState: GameState): Point[] {
     return gameState.getPath({
         from: startTile,
         to: tileLocation,

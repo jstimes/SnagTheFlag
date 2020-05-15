@@ -15,6 +15,7 @@ Things to experiment with:
         - or secure new spawners.
     - destructible obstacles
         - classic explosive barrels
+    - completely dark FoW?
     - pickups
     - Teleport pads
 

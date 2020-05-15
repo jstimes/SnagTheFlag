@@ -9,7 +9,7 @@ interface CampaignLevel {
     readonly aiDifficulty: AiDifficulty;
 }
 
-const UNLOCK_ALL = false;
+const UNLOCK_ALL = true;
 
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     // Level 1
@@ -74,8 +74,8 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
         levelIndex: 7,
         levelName: 'Or be snagged...',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
-        isUnlocked: true,
-        aiDifficulty: AiDifficulty.STRONG,
+        isUnlocked: UNLOCK_ALL,
+        aiDifficulty: AiDifficulty.MEDIUM,
     },
     // Level 9
     {

@@ -45,8 +45,7 @@ export class GameManager implements GameModeManager {
     private onAnimationDone: (() => void) | null = null;
     private gameState: GameState;
 
-    private selectedCharacterSettings:
-        CharacterSettings = CHARACTER_CLASSES[0];
+    private selectedCharacterSettings: CharacterSettings;
     private projectiles: Projectile[];
     private particleSystems: ParticleSystem[];
 
@@ -925,6 +924,7 @@ export class GameManager implements GameModeManager {
         this.isPaused = false;
         this.winningTeamIndex = -1;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
+        this.selectedCharacterSettings = CHARACTER_CLASSES[0];
         this.gameState.characters = [];
         this.projectiles = [];
         this.particleSystems = [];
@@ -952,7 +952,7 @@ export class GameManager implements GameModeManager {
             getGameState: () => this.getGameState(),
             onAction: (action: Action) => { this.onAction(action); },
             onRestart: () => { this.resetGame(); },
-            onQuit: () => { this.onExitGameCallback(-1 /* no winner*/); },
+            onQuit: () => { this.onExitGameCallback(this.winningTeamIndex); },
             onTogglePause: () => { this.togglePause(); },
             setToastText: (text: string) => {
                 this.hud.setText(text, TextType.TOAST, Duration.SHORT);
