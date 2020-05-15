@@ -129,10 +129,6 @@ export class InputManager {
         let headerTextLines: string[] = [];
         switch (gameState.selectedCharacterState) {
             case SelectedCharacterState.AWAITING:
-
-                this.buttonPanel
-                    .setDescription(
-                        getDescriptionForCharacter(gameState.selectedCharacter));
                 headerTextLines = ['Available actions'];
                 if (!gameState.selectedCharacter.hasMoved) {
                     buttonInfos.push({
@@ -331,6 +327,9 @@ export class InputManager {
             buttonInfos,
             isButtonGroup: false,
         });
+        this.buttonPanel
+            .setDescription(
+                getDescriptionForCharacter(gameState.selectedCharacter));
         for (const buttonParam of buttonInfos) {
             this.controlMap.add(buttonParam);
         }

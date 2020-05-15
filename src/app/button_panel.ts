@@ -32,6 +32,8 @@ export class ButtonPanel {
     private readonly buttonSize = new Point(this.maxWidth, .06);
     private readonly headerSize = new Point(this.maxWidth, .025);
 
+    private buttonGroupBottomMargin: number;
+
     private readonly headerStyle: TextBoxStyle = {
         color: BG_COLOR,
         fontSize: this.fontSize,
@@ -149,10 +151,13 @@ export class ButtonPanel {
                 }));
             }
         }
+        const lastButton = dimensions[dimensions.length - 1];
+        this.buttonGroupBottomMargin = lastButton.topLeft.y + lastButton.size.y;
     }
 
     setDescription(textLines: string[]): void {
-        let topMargin = .4;
+        const buttonsBottom = this.buttonGroupBottomMargin + this.buttonOffsetY;
+        let topMargin = buttonsBottom;
         this.clearDescription();
         const descriptionStyle: TextBoxStyle = {
             fontSize: this.descriptionFontSize,
