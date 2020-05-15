@@ -18,7 +18,10 @@ interface ButtonMetadata {
 export class CampaignMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
-    private readonly onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => void;
+    private readonly onSelectLevel:
+        (campaignLevelIndex: number,
+            levelIndex: number,
+            gameSettings: GameSettings) => void;
     private readonly onBack: () => void;
     private readonly uiManager: UiManager;
 
@@ -26,7 +29,10 @@ export class CampaignMenu implements GameModeManager {
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         callbacks: {
-            readonly onSelectLevel: (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => void;
+            readonly onSelectLevel:
+            (campaignLevelIndex: number,
+                levelIndex: number,
+                gameSettings: GameSettings) => void;
             onBack: () => void;
         }) {
 
@@ -49,8 +55,10 @@ export class CampaignMenu implements GameModeManager {
 
     render(): void {
         this.context.fillStyle = THEME.uiBackgroundColor;
-        this.context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
-        this.context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.clearRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.fillRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.renderTitleText();
         this.uiManager.render();
     }
@@ -82,15 +90,21 @@ export class CampaignMenu implements GameModeManager {
         };
 
         const middleColumnLeftMargin = .5 - elementSize.x / 2;
-        const leftColumnLeftMargin = middleColumnLeftMargin - elementSize.x - .1;
-        const rightColumnLeftMargin = middleColumnLeftMargin + elementSize.x + .1;
+        const leftColumnLeftMargin =
+            middleColumnLeftMargin - elementSize.x - .1;
+        const rightColumnLeftMargin =
+            middleColumnLeftMargin + elementSize.x + .1;
 
         const columns = 3;
         const columnSize = CAMPAIGN_LEVELS.length / columns;
-        for (let campaignLevelIndex = 0; campaignLevelIndex < CAMPAIGN_LEVELS.length; campaignLevelIndex++) {
+        for (let campaignLevelIndex = 0;
+            campaignLevelIndex < CAMPAIGN_LEVELS.length;
+            campaignLevelIndex++) {
+
             const column = Math.floor(campaignLevelIndex / columnSize);
             const row = campaignLevelIndex % columnSize;
-            const topLeftY = buttonTopMargin + row * buttonOffsetY + row * elementSize.y;
+            const topLeftY = buttonTopMargin + row * buttonOffsetY
+                + row * elementSize.y;
             const campaignLevel = CAMPAIGN_LEVELS[campaignLevelIndex];
             let leftMargin = leftColumnLeftMargin;
             if (column === 1) {
@@ -101,7 +115,9 @@ export class CampaignMenu implements GameModeManager {
             const dimensions = {
                 topLeft: new Point(leftMargin, topLeftY),
                 size: elementSize,
-                text: campaignLevel.isUnlocked ? campaignLevel.levelName : 'Locked',
+                text: campaignLevel.isUnlocked
+                    ? campaignLevel.levelName
+                    : 'Locked',
             };
             if (campaignLevel.isUnlocked) {
                 this.uiManager.addElement(new Button({
@@ -110,14 +126,19 @@ export class CampaignMenu implements GameModeManager {
                     onClick: () => {
                         const settings: GameSettings = {
                             matchType: MatchType.PLAYER_VS_AI,
-                            teamIndexToSquadSize: campaignLevel.teamIndexToSquadSize,
+                            teamIndexToSquadSize:
+                                campaignLevel.teamIndexToSquadSize,
                             numTeams: DEFAULT_GAME_SETTINGS.numTeams,
-                            maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                            maxSpawnDistanceFromFlag:
+                                DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
                             hasFogOfWar: true,
                             hasSpawners: true,
                             aiDifficulty: campaignLevel.aiDifficulty,
                         };
-                        this.onSelectLevel(campaignLevelIndex, campaignLevel.levelIndex, settings);
+                        this.onSelectLevel(
+                            campaignLevelIndex,
+                            campaignLevel.levelIndex,
+                            settings);
                     },
                 }));
             } else {

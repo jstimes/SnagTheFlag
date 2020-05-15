@@ -83,7 +83,11 @@ export class AppComponent {
       });
   }
 
-  private initGame(levelIndex: number, gameSettings: GameSettings, onExitGameCallback: (winningTeamIndex: number) => void): void {
+  private initGame(
+    levelIndex: number,
+    gameSettings: GameSettings,
+    onExitGameCallback: (winningTeamIndex: number) => void): void {
+
     this.gameState = GameState.GAME;
     this.gameStateManager = new GameManager(
       this.canvas,
@@ -126,24 +130,28 @@ export class AppComponent {
     this.gameStateManager.destroy();
   }
 
-  private readonly onSelectFreePlayLevel = (levelIndex: number, gameSettings: GameSettings) => {
-    this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
-      this.tearDownCurrentGameState();
-      this.initFreePlayMenu();
-    });
-  };
+  private readonly onSelectFreePlayLevel =
+    (levelIndex: number, gameSettings: GameSettings) => {
+      this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+        this.tearDownCurrentGameState();
+        this.initFreePlayMenu();
+      });
+    };
 
-  private readonly onSelectCampaignLevel = (campaignLevelIndex: number, levelIndex: number, gameSettings: GameSettings) => {
-    this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
-      if (winningTeamIndex === 0) {
-        if (campaignLevelIndex < CAMPAIGN_LEVELS.length + 1) {
-          CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
+  private readonly onSelectCampaignLevel =
+    (campaignLevelIndex: number,
+      levelIndex: number,
+      gameSettings: GameSettings) => {
+      this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
+        if (winningTeamIndex === 0) {
+          if (campaignLevelIndex < CAMPAIGN_LEVELS.length - 1) {
+            CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
+          }
         }
-      }
-      this.tearDownCurrentGameState();
-      this.initCampaignMenu();
-    });
-  };
+        this.tearDownCurrentGameState();
+        this.initCampaignMenu();
+      });
+    };
 
   private readonly onBack = () => {
     this.tearDownCurrentGameState();
