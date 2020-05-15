@@ -11,7 +11,10 @@ export class Ray {
 }
 
 export class LineSegment {
-    constructor(readonly startPt: Point, readonly endPt: Point, readonly normal: Point) { }
+    constructor(
+        readonly startPt: Point,
+        readonly endPt: Point,
+        readonly normal: Point) { }
 }
 
 interface RayLineSegmentCollisionResult {
@@ -19,7 +22,8 @@ interface RayLineSegmentCollisionResult {
     collisionPt?: Point;
 }
 
-function old_detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment): RayLineSegmentCollisionResult {
+function old_detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment):
+    RayLineSegmentCollisionResult {
     // startPt + time * direction = startPt + k * (endPt - startPt)
     // V + t * D = P1 + k * (P2 - P1)
     const d = ray.direction;
@@ -77,7 +81,8 @@ class Line {
     }
 }
 
-export function detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment): RayLineSegmentCollisionResult {
+export function detectRayLineSegmentCollision(
+    ray: Ray, lineSegment: LineSegment): RayLineSegmentCollisionResult {
     const v = ray.startPt;
     const d = ray.direction;
     const dNormal = d.getNormalVectorClockwise();
@@ -105,13 +110,15 @@ export function detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment
         const y = segmentLine.getYvalueAtX(v.x);
         intersectionPt = new Point(v.x, y);
     } else {
-        // Neither lines are vertical, solve normally for intersection point of two lines.
+        // Neither lines are vertical, solve normally for intersection 
+        // point of two lines.
         // y1 = m1 x1 + b1, y2 = m2 x2 + b2
         // At intersection, y1 = y2, x1 = x2:
         // m1 x + b1 = m2 x + b2
         // (m1 - m2) x = b2 - b1
         // x = (b2 - b1) / (m1 - m2)
-        const intersectionX = (segmentLine.b - rayLine.b) / (rayLine.m - segmentLine.m);
+        const intersectionX =
+            (segmentLine.b - rayLine.b) / (rayLine.m - segmentLine.m);
         const intersectionY = rayLine.getYvalueAtX(intersectionX);
         intersectionPt = new Point(intersectionX, intersectionY);
     }

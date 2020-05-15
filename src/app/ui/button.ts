@@ -72,7 +72,8 @@ export class Button implements Element {
         const topLeftCanvas = this.getCanvasCoords(this.topLeft);
         const sizeCanvas = this.getCanvasCoords(this.size);
         context.fillStyle = this.getFillColor();
-        context.fillRect(topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
+        context.fillRect(
+            topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
 
         context.fillStyle = this.textColor;
         const fontSize = this.fontSize;
@@ -93,7 +94,8 @@ export class Button implements Element {
                 `Selected border color should be set when button is selected`);
         }
         context.strokeStyle = this.selectedBorderColor;
-        context.strokeRect(topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
+        context.strokeRect(
+            topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
     };
 
     private getFillColor(): string {

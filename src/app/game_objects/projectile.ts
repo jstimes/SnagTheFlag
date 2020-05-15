@@ -44,7 +44,9 @@ export class Projectile {
             throw new Error(`Created a projectile with no targets`);
         }
         this.setNewTargets(params.targets);
-        this.tileCoords = Grid.getTileFromCanvasCoords(this.animationState.currentTarget!.ray.startPt);
+        this.tileCoords =
+            Grid.getTileFromCanvasCoords(
+                this.animationState.currentTarget!.ray.startPt);
         this.trails = [{
             ray: this.animationState.currentTarget!.ray,
             distance: 0,
@@ -58,7 +60,9 @@ export class Projectile {
     update(elapsedMs: number): void {
         const currentTarget = this.animationState.currentTarget!;
         const direction = currentTarget.ray.direction;
-        const positionUpdate = direction.multiplyScaler(this.animationState.movementSpeedMs * elapsedMs);
+        const positionUpdate =
+            direction.multiplyScaler(
+                this.animationState.movementSpeedMs * elapsedMs);
         const distanceUpdate = positionUpdate.getMagnitude();
         for (const trail of this.trails) {
             trail.distance += distanceUpdate;
@@ -67,9 +71,12 @@ export class Projectile {
         if (!this.animationState.isAnimating) {
             return;
         }
-        this.animationState.currentCenterCanvas = this.animationState.currentCenterCanvas
-            .add(positionUpdate);
-        this.tileCoords = Grid.getTileFromCanvasCoords(this.animationState.currentCenterCanvas);
+        this.animationState.currentCenterCanvas =
+            this.animationState.currentCenterCanvas
+                .add(positionUpdate);
+        this.tileCoords =
+            Grid.getTileFromCanvasCoords(
+                this.animationState.currentCenterCanvas);
         const totalDistanceTravelled = currentTarget.ray.startPt
             .distanceTo(this.animationState.currentCenterCanvas);
         if (totalDistanceTravelled < currentTarget.maxDistance) {
@@ -83,7 +90,8 @@ export class Projectile {
             return;
         }
 
-        this.animationState.currentTarget = this.animationState.remainingTargets.shift()!;
+        this.animationState.currentTarget =
+            this.animationState.remainingTargets.shift()!;
         this.trails.push({
             ray: this.animationState.currentTarget.ray,
             distance: 0,
@@ -99,7 +107,9 @@ export class Projectile {
     setNewTargets(targets: Target[]): void {
         const firstTarget = targets.shift()!;
         const remainingTargets = targets;
-        const currentCenterCanvas = this.animationState != null ? this.animationState.currentCenterCanvas : firstTarget.ray.startPt;
+        const currentCenterCanvas = this.animationState != null
+            ? this.animationState.currentCenterCanvas
+            : firstTarget.ray.startPt;
         this.animationState = {
             movementSpeedMs: this.projectileDetails.projectileSpeed,
             currentCenterCanvas,
@@ -114,7 +124,9 @@ export class Projectile {
     }
 
     getNumRicochetsLeft(): number {
-        return this.projectileDetails.type === ProjectileDetailsType.BULLET ? this.projectileDetails.numRicochets - this.timesRicocheted : 0;
+        return this.projectileDetails.type === ProjectileDetailsType.BULLET
+            ? this.projectileDetails.numRicochets - this.timesRicocheted
+            : 0;
     }
 
     setIsDead(): void {
@@ -122,7 +134,10 @@ export class Projectile {
     }
 
     isTrailGone(): boolean {
-        return this.trails.every((trail) => trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE);
+        return this.trails
+            .every((trail) => {
+                return trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE;
+            });
     }
 
     render(): void {
@@ -136,16 +151,20 @@ export class Projectile {
         }
 
         for (const trail of this.trails) {
-            if (trail.distance < projecileLength || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
+            if (trail.distance < projecileLength
+                || trail.distance > trail.maxDistance + MAX_TRAIL_DISTANCE) {
                 continue;
             }
             const bacwardsDirection = trail.ray.direction.multiplyScaler(-1);
             let overshotDistance = 0;
-            const trailGradientStartPointCanvas = trail.ray.pointAtDistance(trail.distance);
+            const trailGradientStartPointCanvas =
+                trail.ray.pointAtDistance(trail.distance);
             let trailRenderStartPointCanvas = trailGradientStartPointCanvas;
             if (trail.distance > trail.maxDistance) {
-                overshotDistance = MAX_TRAIL_DISTANCE - (trail.distance - trail.maxDistance);
-                trailRenderStartPointCanvas = trail.ray.pointAtDistance(trail.maxDistance);
+                overshotDistance =
+                    MAX_TRAIL_DISTANCE - (trail.distance - trail.maxDistance);
+                trailRenderStartPointCanvas =
+                    trail.ray.pointAtDistance(trail.maxDistance);
             }
             let trailDistance = Math.min(
                 MAX_TRAIL_DISTANCE,
@@ -154,8 +173,10 @@ export class Projectile {
             const trailFadePointCanvas = trailGradientStartPointCanvas.add(
                 bacwardsDirection.multiplyScaler(trailDistance));
             const gradient = context.createLinearGradient(
-                trailGradientStartPointCanvas.x, trailGradientStartPointCanvas.y,
-                trailFadePointCanvas.x, trailFadePointCanvas.y);
+                trailGradientStartPointCanvas.x,
+                trailGradientStartPointCanvas.y,
+                trailFadePointCanvas.x,
+                trailFadePointCanvas.y);
             const fullColor = THEME.projectileTrailColor;
             const fadedColor = `${THEME.projectileTrailColor}00`;
             gradient.addColorStop(0, fullColor);
@@ -164,7 +185,8 @@ export class Projectile {
             // Draw trail.
             context.strokeStyle = gradient;
             context.beginPath();
-            context.moveTo(trailRenderStartPointCanvas.x, trailRenderStartPointCanvas.y);
+            context.moveTo(
+                trailRenderStartPointCanvas.x, trailRenderStartPointCanvas.y);
             context.lineTo(trailFadePointCanvas.x, trailFadePointCanvas.y);
             context.closePath();
             context.stroke();
@@ -180,7 +202,12 @@ export class Projectile {
             case ProjectileShapeType.CIRCLE:
                 const radius = shape.radius;
                 context.beginPath();
-                context.arc(currentPointCanvas.x, currentPointCanvas.y, radius, 0, TWO_PI);
+                context.arc(
+                    currentPointCanvas.x,
+                    currentPointCanvas.y,
+                    radius,
+                    0,
+                    TWO_PI);
                 context.closePath();
                 context.fill();
                 break;
@@ -192,10 +219,14 @@ export class Projectile {
                 const rightOffset = direction.multiplyScaler(size.x / 2);
                 const topOffset = directionNormal.multiplyScaler(-size.y / 2);
                 const bottomOffset = directionNormal.multiplyScaler(size.y / 2);
-                const topLeft = currentPointCanvas.add(leftOffset).add(topOffset);
-                const topRight = currentPointCanvas.add(rightOffset).add(topOffset);
-                const bottomRight = currentPointCanvas.add(rightOffset).add(bottomOffset);
-                const bottomLeft = currentPointCanvas.add(leftOffset).add(bottomOffset);
+                const topLeft =
+                    currentPointCanvas.add(leftOffset).add(topOffset);
+                const topRight =
+                    currentPointCanvas.add(rightOffset).add(topOffset);
+                const bottomRight =
+                    currentPointCanvas.add(rightOffset).add(bottomOffset);
+                const bottomLeft =
+                    currentPointCanvas.add(leftOffset).add(bottomOffset);
                 context.beginPath();
                 context.moveTo(topLeft.x, topLeft.y);
                 context.lineTo(topRight.x, topRight.y);

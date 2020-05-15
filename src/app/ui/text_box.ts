@@ -48,7 +48,8 @@ export class TextBox implements Element {
         const topLeftCanvas = this.getCanvasCoords(this.topLeft);
         const sizeCanvas = this.getCanvasCoords(this.size);
         context.fillStyle = this.color
-        context.fillRect(topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
+        context.fillRect(
+            topLeftCanvas.x, topLeftCanvas.y, sizeCanvas.x, sizeCanvas.y);
 
         context.fillStyle = this.textColor;
         const fontSize = this.fontSize;
@@ -82,6 +83,8 @@ export class TextBox implements Element {
     }
 
     private getCanvasCoords(uiCoords: Point): Point {
-        return new Point(uiCoords.x * RENDER_SETTINGS.canvasWidth, uiCoords.y * RENDER_SETTINGS.canvasHeight);
+        return new Point(
+            uiCoords.x * RENDER_SETTINGS.canvasWidth,
+            uiCoords.y * RENDER_SETTINGS.canvasHeight);
     }
 }

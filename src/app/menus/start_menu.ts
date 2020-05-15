@@ -48,8 +48,10 @@ export class StartMenu implements GameModeManager {
 
     render(): void {
         this.context.fillStyle = THEME.uiBackgroundColor;
-        this.context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
-        this.context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.clearRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.fillRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.renderTitleText();
         this.uiManager.render();
     }
@@ -71,8 +73,12 @@ export class StartMenu implements GameModeManager {
             { text: 'Free play', callback: this.onFreePlay },
             { text: 'Create Level', callback: this.onCreateLevel },
         ];
-        for (let buttonIndex = 0; buttonIndex < buttonMetadatas.length; buttonIndex++) {
-            const topLeftY = topMargin + buttonIndex * buttonOffsetY + buttonIndex * buttonSize.y;
+        for (let buttonIndex = 0;
+            buttonIndex < buttonMetadatas.length;
+            buttonIndex++) {
+
+            const topLeftY = topMargin + buttonIndex * buttonOffsetY
+                + buttonIndex * buttonSize.y;
             const buttonMetadata = buttonMetadatas[buttonIndex];
             const button = new Button({
                 dimensions: {

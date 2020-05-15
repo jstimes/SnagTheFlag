@@ -19,7 +19,8 @@ interface ButtonMetadata {
 export class FreePlayMenu implements GameModeManager {
     private readonly canvas: HTMLCanvasElement;
     private readonly context: CanvasRenderingContext2D;
-    private readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
+    private readonly onSelectLevel:
+        (levelIndex: number, gameSettings: GameSettings) => void;
     private readonly onBack: () => void;
     private readonly uiManager: UiManager;
     private selectedLevelIndex: number;
@@ -33,7 +34,8 @@ export class FreePlayMenu implements GameModeManager {
         canvas: HTMLCanvasElement,
         context: CanvasRenderingContext2D,
         callbacks: {
-            readonly onSelectLevel: (levelIndex: number, gameSettings: GameSettings) => void;
+            readonly onSelectLevel:
+            (levelIndex: number, gameSettings: GameSettings) => void;
             onBack: () => void;
         }) {
 
@@ -60,8 +62,10 @@ export class FreePlayMenu implements GameModeManager {
 
     render(): void {
         this.context.fillStyle = THEME.uiBackgroundColor;
-        this.context.clearRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
-        this.context.fillRect(0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.clearRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+        this.context.fillRect(
+            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
         this.renderTitleText();
         this.uiManager.render();
     }
@@ -109,7 +113,8 @@ export class FreePlayMenu implements GameModeManager {
                 const settings: GameSettings = {
                     matchType: this.selectedMatchType,
                     teamIndexToSquadSize: this.selectedTeamSizeMap,
-                    maxSpawnDistanceFromFlag: DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                    maxSpawnDistanceFromFlag:
+                        DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
                     numTeams: DEFAULT_GAME_SETTINGS.numTeams,
                     hasFogOfWar: this.isFogOfWarOn,
                     aiDifficulty: this.selectedAiDifficulty,
@@ -281,7 +286,8 @@ export class FreePlayMenu implements GameModeManager {
                 previousMatchType !== MatchType.PLAYER_VS_PLAYER_LOCAL) {
                 this.uiManager.removeElement(aiDifficultyElements[0]);
                 this.uiManager.removeElement(aiDifficultyElements[1]);
-            } else if (this.selectedMatchType !== MatchType.PLAYER_VS_PLAYER_LOCAL
+            } else if (
+                this.selectedMatchType !== MatchType.PLAYER_VS_PLAYER_LOCAL
                 && previousMatchType === MatchType.PLAYER_VS_PLAYER_LOCAL) {
                 this.uiManager.addElement(aiDifficultyElements[0]);
                 this.uiManager.addElement(aiDifficultyElements[1]);

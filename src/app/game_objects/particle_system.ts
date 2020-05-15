@@ -71,21 +71,31 @@ export class ParticleSystem {
         this.params = params;
         this.particles = [];
 
-        // Make the particles. All start at some position, but have different direction.
+        // Make the particles. All start at same position, 
+        // but have different direction.
         this.isAlive = true;
-        this.tileCoords = Grid.getTileFromCanvasCoords(params.startPositionCanvas);
+        this.tileCoords =
+            Grid.getTileFromCanvasCoords(params.startPositionCanvas);
 
         const deltaTheta = TWO_PI / params.particleCount;
         for (let i = 0; i < params.particleCount; i++) {
             const theta = i * deltaTheta;
-            const direction = new Point(Math.cos(theta), Math.sin(theta)).normalize();
-            const speed = lerp(params.minParticleSpeed, params.maxParticleSpeed, Math.random());
-            const lifetimeMs = lerp(params.minLifetimeMs, params.maxLifetimeMs, Math.random());
+            const direction =
+                new Point(Math.cos(theta), Math.sin(theta)).normalize();
+            const speed = lerp(
+                params.minParticleSpeed,
+                params.maxParticleSpeed,
+                Math.random());
+            const lifetimeMs = lerp(
+                params.minLifetimeMs,
+                params.maxLifetimeMs,
+                Math.random());
             const color = lerpColors(
                 hexStringToColor(params.colorA),
                 hexStringToColor(params.colorB),
                 Math.random());
-            const radius = lerp(params.minRadius, params.maxRadius, Math.random());
+            const radius =
+                lerp(params.minRadius, params.maxRadius, Math.random());
             // Only give ellipses a rotation.
             const rotationRadians = this.params.shape === ParticleShape.ELLIPSE
                 ? direction.getPointRotationRadians()
@@ -169,10 +179,18 @@ export class ParticleSystem {
                     context.fillStyle = particle.color;
                     const radius = particle.radius;
                     const halfThickness = radius / 4;
-                    const horizontalStart = particle.canvasPosition.subtract(new Point(radius, halfThickness));
-                    context.fillRect(horizontalStart.x, horizontalStart.y, radius * 2, halfThickness * 2);
-                    const verticalStart = particle.canvasPosition.subtract(new Point(halfThickness, radius));
-                    context.fillRect(verticalStart.x, verticalStart.y, halfThickness * 2, radius * 2);
+                    const horizontalStart =
+                        particle.canvasPosition
+                            .subtract(new Point(radius, halfThickness));
+                    context.fillRect(
+                        horizontalStart.x, horizontalStart.y,
+                        radius * 2, halfThickness * 2);
+                    const verticalStart =
+                        particle.canvasPosition
+                            .subtract(new Point(halfThickness, radius));
+                    context.fillRect(
+                        verticalStart.x, verticalStart.y,
+                        halfThickness * 2, radius * 2);
                     break;
             }
 

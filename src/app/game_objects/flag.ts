@@ -10,7 +10,8 @@ export class Flag {
     private isTaken: boolean;
     private getTileTopLeft?: () => Point;
 
-    constructor({ tileCoords, teamIndex }: { tileCoords: Point; teamIndex: number }) {
+    constructor({ tileCoords, teamIndex }:
+        { tileCoords: Point; teamIndex: number }) {
         this.tileCoords = tileCoords;
         this.teamIndex = teamIndex;
     }
@@ -57,7 +58,9 @@ export class Flag {
         // Flag.
         const rightMargin = leftMargin;
         const height = Grid.TILE_SIZE * .36;
-        context.fillStyle = this.teamIndex === 0 ? THEME.blueFlagColor : THEME.redFlagColor;
+        context.fillStyle = this.teamIndex === 0
+            ? THEME.blueFlagColor
+            : THEME.redFlagColor;
         context.fillRect(
             tileCanvasTopLeft.x + leftMargin + flagPoleWidth,
             tileCanvasTopLeft.y + topMargin,
