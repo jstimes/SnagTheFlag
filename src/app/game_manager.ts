@@ -24,6 +24,7 @@ import { AnimationState } from 'src/app/animation_state';
 import { getGrenadeSmokeParticleSystemParams, getGrenadeBurstParticleSystemParams, getBulletParticleSystemParams, getHealParticleSystemParams } from './particle_system_theme';
 import { Spawner } from './game_objects/spawner';
 import { InputManager } from './input_manager';
+import { LOGGER, LogType } from './logger';
 
 const ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS = false;
 const DEFAULT_HUMAN_TEAM_INDEX = 0;
@@ -721,6 +722,10 @@ export class GameManager implements GameModeManager {
             characters: this.gameState.getAliveCharacters(),
             obstacles: this.gameState.obstacles,
         });
+
+        LOGGER.log(
+            LogType.TARGET_FINDING,
+            `Targets: ${JSON.stringify(targetsPath)}`);
         this.projectiles.push(new Projectile({
             context: this.context,
             projectileDetails: shotInfo.projectileDetails,

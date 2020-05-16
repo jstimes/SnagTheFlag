@@ -43,9 +43,15 @@ export function getProjectileTargetsPath(params: {
     let currentTileCoords = startingTileCoords;
     let currentRay = ray;
     let hasHitCharacter = false;
-    const isTargetEnemyCharacter = (target: Target) => characters
-        .filter((character) => character.teamIndex !== params.fromTeamIndex)
-        .find((character) => character.tileCoords.equals(target.tile)) != null;
+    const isTargetEnemyCharacter = (target: Target) => {
+        return characters
+            .filter((character) => {
+                return character.teamIndex !== params.fromTeamIndex;
+            })
+            .find((character) => {
+                return character.tileCoords.equals(target.tile);
+            }) != null;
+    };
 
     while (pathsLeft > 0 && !hasHitCharacter) {
         const target = getProjectileTarget({
@@ -62,8 +68,14 @@ export function getProjectileTargetsPath(params: {
             .reflect(target.normal!);
         currentRay = new Ray(target.canvasCoords, newDirection);
         currentTileCoords = target.tile;
+        if (target.isTargetGridBorder) {
+            hasHitCharacter = false;
+            currentTileCoords =
+                Grid.getTileFromCanvasCoords(
+                    target.canvasCoords.add(
+                        target.normal!.multiplyScaler(-Grid.TILE_SIZE / 2)));
+        }
     }
-
     return targets;
 }
 

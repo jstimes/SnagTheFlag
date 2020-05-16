@@ -8,6 +8,7 @@ import { Target } from './math/target';
 import { CharacterSettings, ASSAULT_CHARACTER_SETTINGS, SCOUT_CHARACTER_SETTINGS } from './character_settings';
 import { AiDifficulty } from './game_settings';
 import { randomElement } from './math/random';
+import { LOGGER, LogType } from 'src/app/logger';
 
 interface AiSettings {
     /** If true, simply chooses any optimal tile instead of always the first. */
@@ -54,7 +55,6 @@ interface ShotDetails {
 type OnGetNextAction = (gameState: GameState) => Action;
 
 const POST_ANIMATION_DELAY = 500;
-const IS_LOGGING = false;
 
 export class Ai {
 
@@ -399,9 +399,7 @@ export class Ai {
     }
 
     private log(message: string) {
-        if (IS_LOGGING) {
-            console.log(message);
-        }
+        LOGGER.log(LogType.AI, message);
     }
 }
 
