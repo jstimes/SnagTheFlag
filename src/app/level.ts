@@ -196,7 +196,7 @@ const arena: Level = {
 
 export const LEVELS: Level[] = [
     // TEST
-    blank,
+    // blank,
 
     // 0
     diagonal,

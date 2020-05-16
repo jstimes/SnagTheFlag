@@ -18,7 +18,7 @@ import { Character } from 'src/app/game_objects/character';
 import { Ai } from 'src/app/ai';
 import { GamePhase, SelectedCharacterState, GameState } from 'src/app/game_state';
 import { GameModeManager } from 'src/app/game_mode_manager';
-import { getRayForShot, getProjectileTargetsPath } from 'src/app/target_finder';
+import { getRayForShot, getProjectileTargetsPath, mapTilePathToTargetsPath } from 'src/app/target_finder';
 import { Target } from 'src/app/math/target';
 import { AnimationState } from 'src/app/animation_state';
 import { getGrenadeSmokeParticleSystemParams, getGrenadeBurstParticleSystemParams, getBulletParticleSystemParams, getHealParticleSystemParams } from './particle_system_theme';
@@ -75,7 +75,9 @@ export class GameManager implements GameModeManager {
             ...this.gameState.getAliveCharacters(),
             ...this.projectiles];
         return animatables
-            .some((animatable) => animatable.animationState.isAnimating);
+            .some((animatable) => {
+                return animatable.animationState.isAnimating;
+            });
     }
 
     update(elapsedMs: number): void {
@@ -114,7 +116,9 @@ export class GameManager implements GameModeManager {
 
         if (this.gameState.gamePhase !== GamePhase.CHARACTER_PLACEMENT
             && this.gameState.getActiveSquad()
-                .filter(character => !character.isTurnOver()).length === 0) {
+                .filter(character => {
+                    return !character.isTurnOver();
+                }).length === 0) {
             // Should automatically skip turn with delay 
             // when team is out of characters but need update 
             // loop to run for spawners...
@@ -169,7 +173,9 @@ export class GameManager implements GameModeManager {
             }
         } else {
             const targetCharacter = this.gameState.getAliveCharacters()
-                .find((character) => character.tileCoords.equals(finalTarget.tile));
+                .find((character) => {
+                    return character.tileCoords.equals(finalTarget.tile);
+                });
             if (targetCharacter
                 && targetCharacter !== this.gameState.selectedCharacter!
                 // Avoid edge case ;) where bullet hits wall and
@@ -217,9 +223,13 @@ export class GameManager implements GameModeManager {
         const context = this.context;
         context.fillStyle = THEME.gridBackgroundColor;
         context.clearRect(
-            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+            0, 0,
+            RENDER_SETTINGS.canvasWidth,
+            RENDER_SETTINGS.canvasHeight);
         context.fillRect(
-            0, 0, RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+            0, 0,
+            RENDER_SETTINGS.canvasWidth,
+            RENDER_SETTINGS.canvasHeight);
 
         if (this.gameState.selectableTiles != null
             && this.gameState.selectableTiles.length) {
@@ -235,7 +245,8 @@ export class GameManager implements GameModeManager {
             }
             // Indicate hovered tile.
             const mouseTileCoords =
-                Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
+                Grid.getTileFromCanvasCoords(
+                    CONTROLS.getMouseCanvasCoords());
             if (this.gameState.selectableTiles
                 .find((tile) => tile.equals(mouseTileCoords))) {
                 const tileCanvasTopLeft =
@@ -260,7 +271,8 @@ export class GameManager implements GameModeManager {
         for (const spawner of this.gameState.spawners) {
             spawner.render(this.context);
         }
-        if (this.gameState.selectedCharacter != null && !this.isAiTurn()) {
+        if (this.gameState.selectedCharacter != null
+            && !this.isAiTurn()) {
             const tileCanvasTopLeft = Grid.getCanvasFromTileCoords(
                 this.gameState.selectedCharacter.tileCoords);
             context.strokeStyle = THEME.selectedCharacterOutlineColor;
@@ -339,7 +351,8 @@ export class GameManager implements GameModeManager {
         }
         if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT
             && !this.isAiTurn()) {
-            visibleTiles = visibleTiles.concat(this.gameState.selectableTiles);
+            visibleTiles = visibleTiles
+                .concat(this.gameState.selectableTiles);
         }
         context.fillStyle = THEME.fogColor;
         for (let x = 0; x < Grid.TILES_WIDE; x++) {
@@ -501,7 +514,9 @@ export class GameManager implements GameModeManager {
                 ...params,
                 characters: this.gameState.getAliveCharacters()
                     .filter((character) => {
-                        return this.gameState.isTileVisibleByTeamIndex(character.tileCoords, this.gameState.currentTeamIndex);
+                        return this.gameState.isTileVisibleByTeamIndex(
+                            character.tileCoords,
+                            this.gameState.currentTeamIndex);
                     }),
                 obstacles: this.gameState.obstacles,
             });
@@ -512,8 +527,11 @@ export class GameManager implements GameModeManager {
         if (!ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS
             && this.gameState.spawners.length > 0) {
             // TODO - assumes spawners only appear for ai
-            if (this.gameState.getCharactersForTeamIndex(DEFAULT_HUMAN_TEAM_INDEX).length
-                !== 0) {
+            const numHumanCharacters =
+                this.gameState.getCharactersForTeamIndex(
+                    DEFAULT_HUMAN_TEAM_INDEX)
+                    .length;
+            if (numHumanCharacters !== 0) {
                 return;
             }
         }
@@ -526,7 +544,8 @@ export class GameManager implements GameModeManager {
         else if (this.gameState.getActiveSquad().length === 0) {
             winningTeam = this.gameState.getEnemyTeamName();
             winningTeamIndex =
-                (1 + this.gameState.currentTeamIndex) % this.gameSettings.numTeams;
+                (1 + this.gameState.currentTeamIndex)
+                % this.gameSettings.numTeams;
         }
         if (winningTeam != null) {
             this.setGameOver(
@@ -539,7 +558,8 @@ export class GameManager implements GameModeManager {
         if (this.gameState.selectedCharacter!.isTurnOver()) {
             this.onCharacterTurnOver();
         } else {
-            this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+            this.setSelectedCharacterState(
+                SelectedCharacterState.AWAITING);
         }
     }
 
@@ -549,9 +569,10 @@ export class GameManager implements GameModeManager {
      */
     private onCharacterTurnOver(): void {
         const squad = this.gameState.getActiveSquad();
-        const activeSquadMember = squad.find((character: Character) => {
-            return !character.isTurnOver() && character.isAlive();
-        });
+        const activeSquadMember = squad.find(
+            (character: Character) => {
+                return !character.isTurnOver() && character.isAlive();
+            });
         if (activeSquadMember) {
             this.setSelectedCharacter(activeSquadMember.index);
         } else {
@@ -600,14 +621,15 @@ export class GameManager implements GameModeManager {
     }
 
     private advanceToNextCombatTurn(): void {
+        const currentTeamIndex = this.gameState.currentTeamIndex;
         // Spawn at end of turns.
         for (const spawner of this.gameState.spawners) {
-            if (spawner.teamIndex === this.gameState.currentTeamIndex) {
+            if (spawner.teamIndex === currentTeamIndex) {
                 spawner.advanceTurn();
-                const newCharacterIndex =
-                    this.gameState.characters
-                        .filter((character) =>
-                            character.teamIndex === this.gameState.currentTeamIndex).length;
+                const allEnemyCharacters = this.gameState.characters
+                    .filter((character) =>
+                        character.teamIndex === currentTeamIndex);
+                const newCharacterIndex = allEnemyCharacters.length;
                 if (spawner.checkAndHandleRespawn()) {
                     const character = new Character({
                         startCoords: spawner.tileCoords,
@@ -622,7 +644,8 @@ export class GameManager implements GameModeManager {
         }
 
         this.gameState.currentTeamIndex =
-            (this.gameState.currentTeamIndex + 1) % this.gameSettings.numTeams;
+            (this.gameState.currentTeamIndex + 1)
+            % this.gameSettings.numTeams;
         const squad = this.gameState.getActiveSquad();
         if (squad.length === 0) {
             this.advanceToNextCombatTurn();
@@ -656,12 +679,16 @@ export class GameManager implements GameModeManager {
         const manhattandDistanceAway =
             character.tileCoords.manhattanDistanceTo(toTile);
         if (manhattandDistanceAway > character.settings.maxMovesPerTurn) {
-            throw new Error(`Invalid character movement location (too far): ` +
+            throw new Error(
+                `Invalid character movement location (too far): ` +
                 `start: ${character.tileCoords.toString()}, ` +
                 `end: ${toTile.toString()}`);
         }
         const tilePath =
-            this.gameState.getPath({ from: character.tileCoords, to: toTile });
+            this.gameState.getPath({
+                from: character.tileCoords,
+                to: toTile,
+            });
         const targets: Target[] =
             mapTilePathToTargetsPath(character.tileCoords, tilePath);
         const enemyFlag = this.gameState.getEnemyFlag();
@@ -696,7 +723,8 @@ export class GameManager implements GameModeManager {
         }
     }
 
-    private setGameOver(winningTeamIndex: number, subtitle: string): void {
+    private setGameOver(
+        winningTeamIndex: number, subtitle: string): void {
         this.inputManager.initGameOverControls();
         this.togglePause();
         this.isGameOver = true;
@@ -781,13 +809,15 @@ export class GameManager implements GameModeManager {
     };
 
     private getAvailableTilesForCharacterPlacement(): Point[] {
-        const flagCoords = this.gameState.getActiveTeamFlag().tileCoords;
+        const flagCoords =
+            this.gameState.getActiveTeamFlag().tileCoords;
         const maxDistFromFlag = this.gameSettings.maxSpawnDistanceFromFlag;
         const availableTiles = bfs({
             startTile: flagCoords,
             maxDepth: maxDistFromFlag,
             isAvailable: (tile: Point): boolean => {
-                return !this.isTileOccupied(tile) && !tile.equals(flagCoords);
+                return !this.isTileOccupied(tile)
+                    && !tile.equals(flagCoords);
             },
             canGoThrough: (tile: Point): boolean => {
                 // Can go through other players, just not obstacles.
@@ -800,7 +830,8 @@ export class GameManager implements GameModeManager {
     private getAvailableTilesForCharacterMovement(): Point[] {
         if (this.gameState.selectedCharacter == null) {
             throw new Error(
-                `No character selected in getAvailableTilesForCharacterMovement`);
+                `No character selected in `
+                + `getAvailableTilesForCharacterMovement`);
         }
         const ownFlagCoords =
             this.gameState.getActiveTeamFlag().tileCoords;
@@ -832,7 +863,8 @@ export class GameManager implements GameModeManager {
     private getAvailableTilesForThrowingGrenade(): Point[] {
         if (this.gameState.selectedCharacter == null) {
             throw new Error(
-                `No character selected in getAvailableTilesForCharacterMovement`);
+                `No character selected in ` +
+                `getAvailableTilesForThrowingGrenade`);
         }
         const ownFlagCoords = this.gameState.getActiveTeamFlag();
         const currentCoords = this.gameState.selectedCharacter.tileCoords;
@@ -866,7 +898,8 @@ export class GameManager implements GameModeManager {
             return;
         }
         this.gameState.selectedCharacter = character;
-        this.setSelectedCharacterState(SelectedCharacterState.AWAITING);
+        this.setSelectedCharacterState(
+            SelectedCharacterState.AWAITING);
     }
 
     private setSelectedCharacterState(state: SelectedCharacterState) {
@@ -910,7 +943,9 @@ export class GameManager implements GameModeManager {
      */
     private isTileOccupied(tileCoords: Point): boolean {
         const potentialObstacle = this.gameState.obstacles.find(
-            (obstacle: Obstacle) => obstacle.tileCoords.equals(tileCoords));
+            (obstacle: Obstacle) => {
+                return obstacle.tileCoords.equals(tileCoords);
+            });
         const potentialCharacter =
             this.gameState.getAliveCharacters()
                 .find((character) => {
@@ -960,7 +995,9 @@ export class GameManager implements GameModeManager {
             getGameState: () => this.getGameState(),
             onAction: (action: Action) => { this.onAction(action); },
             onRestart: () => { this.resetGame(); },
-            onQuit: () => { this.onExitGameCallback(this.winningTeamIndex); },
+            onQuit: () => {
+                this.onExitGameCallback(this.winningTeamIndex);
+            },
             onTogglePause: () => { this.togglePause(); },
             setToastText: (text: string) => {
                 this.hud.setText(text, TextType.TOAST, Duration.SHORT);
@@ -985,7 +1022,8 @@ export class GameManager implements GameModeManager {
         this.gameState.flags = [blueFlag, redFlag];
         this.gameState.obstacles =
             level.data.obstacles.map((serializedPt) => {
-                return new Obstacle(pointFromSerialized(serializedPt));
+                return new Obstacle(
+                    pointFromSerialized(serializedPt));
             });
         this.gameState.spawners = [];
         if (this.gameState.settings.hasSpawners) {
@@ -1017,27 +1055,4 @@ export class GameManager implements GameModeManager {
             this.hud.clearText(TextType.TOAST);
         }
     }
-}
-
-function mapTilePathToTargetsPath(
-    startTile: Point, tilePath: Point[]): Target[] {
-    const targets: Target[] = [];
-    let curTile = startTile;
-    const tileToCanvas = (tile: Point) =>
-        Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
-    let curCanvas = tileToCanvas(curTile);
-    for (const nextTile of tilePath) {
-        const nextCanvas = tileToCanvas(nextTile);
-        const direction = nextCanvas.subtract(curCanvas).normalize();
-        const target: Target = {
-            ray: new Ray(curCanvas, direction),
-            canvasCoords: nextCanvas,
-            tile: nextTile,
-            maxDistance: curCanvas.distanceTo(nextCanvas),
-        };
-        curTile = nextTile;
-        curCanvas = nextCanvas;
-        targets.push(target);
-    }
-    return targets;
 }

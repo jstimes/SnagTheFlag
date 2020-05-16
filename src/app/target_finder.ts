@@ -171,6 +171,29 @@ function getGridBorderTarget(ray: Ray): Target {
     return target;
 }
 
+export function mapTilePathToTargetsPath(
+    startTile: Point, tilePath: Point[]): Target[] {
+    const targets: Target[] = [];
+    let curTile = startTile;
+    const tileToCanvas = (tile: Point) =>
+        Grid.getCanvasFromTileCoords(tile).add(Grid.HALF_TILE);
+    let curCanvas = tileToCanvas(curTile);
+    for (const nextTile of tilePath) {
+        const nextCanvas = tileToCanvas(nextTile);
+        const direction = nextCanvas.subtract(curCanvas).normalize();
+        const target: Target = {
+            ray: new Ray(curCanvas, direction),
+            canvasCoords: nextCanvas,
+            tile: nextTile,
+            maxDistance: curCanvas.distanceTo(nextCanvas),
+        };
+        curTile = nextTile;
+        curCanvas = nextCanvas;
+        targets.push(target);
+    }
+    return targets;
+}
+
 /** Assumes only alive characters are passed in. */
 function getTileTarget(
     params: {
