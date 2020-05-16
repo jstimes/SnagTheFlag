@@ -3,7 +3,7 @@ import { Grid } from 'src/app/grid';
 import { THEME } from './theme';
 import { Point } from './math/point';
 
-const GOD_MODE = false;
+const GOD_MODE = true;
 
 /** Abilities characters can perform in addition to moving and shooting. */
 export interface BaseCharacterAbility {
@@ -214,7 +214,7 @@ export const SCOUT_CHARACTER_SETTINGS: CharacterSettings = {
 export const ASSAULT_CHARACTER_SETTINGS: CharacterSettings = {
     type: ClassType.ASSAULT,
     maxHealth: 10,
-    maxMovesPerTurn: GOD_MODE ? 20 : 4,
+    maxMovesPerTurn: GOD_MODE ? 16 : 4,
     maxSight: 6,
     gun: ASSAULT_RIFLE,
     extraActions: new Set<CharacterAbility>([

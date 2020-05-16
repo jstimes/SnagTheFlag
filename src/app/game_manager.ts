@@ -708,12 +708,13 @@ export class GameManager implements GameModeManager {
         const targets: Target[] =
             mapTilePathToTargetsPath(character.tileCoords, tilePath);
         const enemyFlag = this.gameState.getEnemyFlag();
-        const characterHasFlag =
+        const activeTeamFlag = this.gameState.getActiveTeamFlag();
+        const characterHasEnemyFlag =
             character.tileCoords.equals(enemyFlag.tileCoords);
         character.moveTo(toTile, targets);
         this.addOnAnimationDoneCallback(() => {
-            if (enemyFlag.tileCoords
-                .equals(this.gameState.getActiveTeamFlag().tileCoords)) {
+            if (activeTeamFlag.isAtStart() && enemyFlag.tileCoords
+                .equals(activeTeamFlag.tileCoords)) {
                 this.setGameOver(
                     this.gameState.currentTeamIndex,
                     `${this.gameState.getActiveTeamName()} ` +
@@ -722,8 +723,7 @@ export class GameManager implements GameModeManager {
             }
             this.checkCharacterTurnOver();
         });
-
-        if (characterHasFlag) {
+        if (characterHasEnemyFlag) {
             enemyFlag.setIsTaken(() => {
                 return character.animationState.currentCenterCanvas
                     .subtract(Grid.HALF_TILE);
@@ -734,6 +734,14 @@ export class GameManager implements GameModeManager {
             this.hud.setText(
                 `${this.gameState.getActiveTeamName()} ` +
                 `team has taken the flag.`,
+                TextType.SUBTITLE,
+                Duration.SHORT);
+        }
+        if (activeTeamFlag.tileCoords.equals(toTile)) {
+            activeTeamFlag.returnToStart();
+            this.hud.setText(
+                `${this.gameState.getActiveTeamName()} ` +
+                `team has returned their flag.`,
                 TextType.SUBTITLE,
                 Duration.SHORT);
         }
@@ -849,6 +857,7 @@ export class GameManager implements GameModeManager {
                 `No character selected in `
                 + `getAvailableTilesForCharacterMovement`);
         }
+        const ownFlag = this.gameState.getActiveTeamFlag();
         const ownFlagCoords =
             this.gameState.getActiveTeamFlag().tileCoords;
         const currentCoords =
@@ -856,10 +865,17 @@ export class GameManager implements GameModeManager {
         const maxMoves =
             this.gameState.selectedCharacter.settings.maxMovesPerTurn;
         const isAvailable = (tile: Point): boolean => {
-            return !this.isTileOccupied(tile)
-                && (!tile.equals(ownFlagCoords)
-                    || this.gameState.selectedCharacter!.tileCoords
-                        .equals(this.gameState.getEnemyFlag().tileCoords));
+            if (!this.isTileOccupied(tile)) {
+                if (this.gameState.selectedCharacter!.tileCoords
+                    .equals(this.gameState.getEnemyFlag().tileCoords)) {
+                    return true;
+                }
+                if (ownFlag.isAtStart() && tile.equals(ownFlagCoords)) {
+                    return false;
+                }
+                return true;
+            }
+            return false;
         };
         const canGoThrough = (tile: Point): boolean => {
             // Characters can go through tiles occupied by squad members.

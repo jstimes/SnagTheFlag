@@ -6,12 +6,14 @@ import { THEME } from 'src/app/theme';
 export class Flag {
     readonly teamIndex: number;
     tileCoords: Point;
+    readonly startTileCoords: Point;
 
     private isTaken: boolean;
     private getTileTopLeft?: () => Point;
 
     constructor({ tileCoords, teamIndex }:
         { tileCoords: Point; teamIndex: number }) {
+        this.startTileCoords = tileCoords;
         this.tileCoords = tileCoords;
         this.teamIndex = teamIndex;
     }
@@ -19,6 +21,15 @@ export class Flag {
     setIsTaken(getTileTopLeft: () => Point): void {
         this.isTaken = true;
         this.getTileTopLeft = getTileTopLeft;
+    }
+
+    isAtStart(): boolean {
+        return this.startTileCoords.equals(this.tileCoords);
+    }
+
+    returnToStart(): void {
+        this.setDropped();
+        this.tileCoords = this.startTileCoords;
     }
 
     setDropped(): void {
