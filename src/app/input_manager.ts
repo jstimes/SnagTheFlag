@@ -124,7 +124,7 @@ export class InputManager {
         this.addDefaultControls();
         this.addSwitchSquadMemberControls();
 
-        const AIM_ANGLE_RADIANS_DELTA = Math.PI / 32;
+        const AIM_ANGLE_RADIANS_DELTA = Math.PI / 64;
         const buttonInfos: ControlParams[] = [];
         let headerTextLines: string[] = [];
         switch (gameState.selectedCharacterState) {

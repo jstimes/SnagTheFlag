@@ -510,14 +510,17 @@ export class GameManager implements GameModeManager {
             fromTeamIndex: number;
             numRicochets: number;
         }) => {
+            const visibleEnemyCharacters = this.gameState.getAliveCharacters();
+            if (this.gameState.settings.hasFogOfWar) {
+                visibleEnemyCharacters.filter((character) => {
+                    return this.gameState.isTileVisibleByTeamIndex(
+                        character.tileCoords,
+                        this.gameState.currentTeamIndex);
+                });
+            }
             return getProjectileTargetsPath({
                 ...params,
-                characters: this.gameState.getAliveCharacters()
-                    .filter((character) => {
-                        return this.gameState.isTileVisibleByTeamIndex(
-                            character.tileCoords,
-                            this.gameState.currentTeamIndex);
-                    }),
+                characters: visibleEnemyCharacters,
                 obstacles: this.gameState.obstacles,
             });
         }
