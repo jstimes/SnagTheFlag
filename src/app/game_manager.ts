@@ -490,6 +490,7 @@ export class GameManager implements GameModeManager {
                     throw new Error(
                         `Selected character is dead or turn is over.`);
                 }
+                this.gameState.selectedCharacter!.cancelAiming();
                 this.setSelectedCharacter(action.characterIndex);
                 break;
             case ActionType.SELECT_CHARACTER_STATE:

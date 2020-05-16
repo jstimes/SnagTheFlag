@@ -99,6 +99,11 @@ class Controls {
     private hasClickInternal: boolean = false;
 
     constructor() {
+        const allKeys = Object.keys(Key)
+            .filter((key) => !isNaN(Number(Key[key])));
+        for (const key of allKeys) {
+            this.keyMap.set(Key[key], false);
+        }
         document.onkeydown = (e: KeyboardEvent) => {
             this.keyMap.set(e.keyCode, true);
         };
@@ -187,6 +192,8 @@ class Controls {
 
     getStringForKey(key: Key): string {
         switch (key) {
+            case Key.SHIFT:
+                return 'Shift';
             case Key.A:
                 return 'A';
             case Key.B:

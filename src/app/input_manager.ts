@@ -20,6 +20,7 @@ const MOVE_KEY = Key.M;
 const TOGGLE_AIM_KEY = Key.A;
 const AIM_COUNTERCLOCKWISE_KEY = Key.S;
 const AIM_CLOCKWISE_KEY = Key.D;
+const SLOWER_AIM = Key.SHIFT;
 const SHOOT_KEY = Key.F;
 const HEAL_KEY = Key.H;
 const TOGGLE_THROW_GRENADE_KEY = Key.T;
@@ -238,9 +239,12 @@ export class InputManager {
                             throw new Error(
                                 `There's no selected character when aiming CCW.`);
                         }
+                        let aimOffset = - AIM_ANGLE_RADIANS_DELTA;
+                        if (CONTROLS.isKeyDown(SLOWER_AIM)) {
+                            aimOffset += AIM_ANGLE_RADIANS_DELTA / 2;
+                        }
                         const newAim =
-                            gameState.selectedCharacter.getAim()
-                            - AIM_ANGLE_RADIANS_DELTA;
+                            gameState.selectedCharacter.getAim() + aimOffset;
                         const aimAction: AimAction = {
                             type: ActionType.AIM,
                             aimAngleClockwiseRadians: newAim,
@@ -257,9 +261,12 @@ export class InputManager {
                             throw new Error(
                                 `There's no selected character when aiming CC.`);
                         }
+                        let aimOffset = AIM_ANGLE_RADIANS_DELTA;
+                        if (CONTROLS.isKeyDown(SLOWER_AIM)) {
+                            aimOffset -= AIM_ANGLE_RADIANS_DELTA / 2;
+                        }
                         const newAim =
-                            gameState.selectedCharacter.getAim()
-                            + AIM_ANGLE_RADIANS_DELTA;
+                            gameState.selectedCharacter.getAim() + aimOffset;
                         const aimAction: AimAction = {
                             type: ActionType.AIM,
                             aimAngleClockwiseRadians: newAim,
