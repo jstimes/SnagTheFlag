@@ -195,10 +195,12 @@ export class GameManager implements GameModeManager {
         // now destroyed character or obstacle.
         for (const projectile of this.projectiles
             .filter((projectile) => !projectile.isDead)) {
-            const canvasCoords = projectile.animationState.currentCenterCanvas;
+            const canvasCoords =
+                projectile.animationState.currentCenterCanvas;
             const newTargets = getProjectileTargetsPath({
                 ray: projectile.getCurrentTarget().ray,
-                startingTileCoords: Grid.getTileFromCanvasCoords(canvasCoords),
+                startingTileCoords:
+                    Grid.getTileFromCanvasCoords(canvasCoords),
                 fromTeamIndex: projectile.fromTeamIndex,
                 numRicochets: projectile.getNumRicochetsLeft(),
                 characters: this.gameState.getAliveCharacters(),
@@ -345,7 +347,8 @@ export class GameManager implements GameModeManager {
             visibleTiles =
                 this.gameState.getTilesVisibleByTeamIndex(
                     this.gameState.currentTeamIndex);
-        } else if (this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
+        } else if (
+            this.gameState.settings.matchType === MatchType.PLAYER_VS_AI) {
             visibleTiles = this.gameState
                 .getTilesVisibleByTeamIndex(DEFAULT_HUMAN_TEAM_INDEX);
         }
@@ -399,7 +402,8 @@ export class GameManager implements GameModeManager {
                     throw new Error(
                         `Selected character is null on HEAL action`);
                 }
-                this.gameState.selectedCharacter.regenHealth(action.healAmount);
+                this.gameState.selectedCharacter
+                    .regenHealth(action.healAmount);
                 this.gameState.selectedCharacter
                     .useAbility(CharacterAbilityType.HEAL);
                 const characterCenter =
@@ -413,7 +417,8 @@ export class GameManager implements GameModeManager {
             case ActionType.END_CHARACTER_TURN:
                 if (this.gameState.selectedCharacter == null) {
                     throw new Error(
-                        `Selected character is null on END_CHARACTER_TURN action`);
+                        `Selected character is null on ` +
+                        `END_CHARACTER_TURN action`);
                 }
                 this.gameState.selectedCharacter.setTurnOver();
                 this.onCharacterTurnOver();
@@ -479,7 +484,9 @@ export class GameManager implements GameModeManager {
                 break;
             case ActionType.SELECT_CHARACTER:
                 const character = activeSquad
-                    .find((character) => character.index === action.characterIndex);
+                    .find((character) => {
+                        return character.index === action.characterIndex;
+                    });
                 if (character == null) {
                     throw new Error(
                         `Can't find character in SELECT_CHARACTER action. ` +
@@ -511,7 +518,8 @@ export class GameManager implements GameModeManager {
             fromTeamIndex: number;
             numRicochets: number;
         }) => {
-            const visibleEnemyCharacters = this.gameState.getAliveCharacters();
+            const visibleEnemyCharacters =
+                this.gameState.getAliveCharacters();
             if (this.gameState.settings.hasFogOfWar) {
                 visibleEnemyCharacters.filter((character) => {
                     return this.gameState.isTileVisibleByTeamIndex(
@@ -586,7 +594,8 @@ export class GameManager implements GameModeManager {
 
     private nextTurn(): void {
         if (this.gameState.gamePhase === GamePhase.CHARACTER_PLACEMENT) {
-            if (this.gameState.currentTeamIndex + 1 < this.gameSettings.numTeams) {
+            const nextTeamIndex = this.gameState.currentTeamIndex + 1;
+            if (nextTeamIndex < this.gameSettings.numTeams) {
                 this.gameState.currentTeamIndex += 1;
                 this.initCharacterPlacementTurn();
             } else {
@@ -659,14 +668,17 @@ export class GameManager implements GameModeManager {
             character.resetTurnState();
         }
         const teamName = this.gameState.getActiveTeamName();
-        this.setSelectedCharacter(this.gameState.getFirstCharacterIndex());
+        this.setSelectedCharacter(
+            this.gameState.getFirstCharacterIndex());
         this.hud.setText(
             `${teamName} team turn`, TextType.TITLE, Duration.LONG);
     }
 
     private getCurrentTurnAi(): Ai {
         return this.ais
-            .find((ai) => ai.teamIndex === this.gameState.currentTeamIndex)!;
+            .find((ai) => {
+                return ai.teamIndex === this.gameState.currentTeamIndex;
+            })!;
     }
 
     private getGameState(): GameState {
@@ -704,8 +716,8 @@ export class GameManager implements GameModeManager {
                 .equals(this.gameState.getActiveTeamFlag().tileCoords)) {
                 this.setGameOver(
                     this.gameState.currentTeamIndex,
-                    `${this.gameState.getActiveTeamName()} team has snagged ` +
-                    `the flag.`);
+                    `${this.gameState.getActiveTeamName()} ` +
+                    `team has snagged the flag.`);
                 return;
             }
             this.checkCharacterTurnOver();
@@ -720,8 +732,8 @@ export class GameManager implements GameModeManager {
 
         } else if (enemyFlag.tileCoords.equals(toTile)) {
             this.hud.setText(
-                `${this.gameState.getActiveTeamName()} team has taken ` +
-                `the flag.`,
+                `${this.gameState.getActiveTeamName()} ` +
+                `team has taken the flag.`,
                 TextType.SUBTITLE,
                 Duration.SHORT);
         }
