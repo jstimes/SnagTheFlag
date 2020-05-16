@@ -30,7 +30,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 3
     {
-        levelIndex: 2,
+        levelIndex: 7,
         levelName: 'Protect it',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -46,7 +46,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 5
     {
-        levelIndex: 4,
+        levelIndex: 8,
         levelName: 'Familiar',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -55,7 +55,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
 
     // Level 6
     {
-        levelIndex: 5,
+        levelIndex: 9,
         levelName: 'Snarls',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -71,7 +71,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 8
     {
-        levelIndex: 7,
+        levelIndex: 2,
         levelName: 'Or be snagged...',
         teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
         isUnlocked: UNLOCK_ALL,
@@ -79,17 +79,17 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     },
     // Level 9
     {
-        levelIndex: 8,
+        levelIndex: 4,
         levelName: 'Snag and tag',
-        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        teamIndexToSquadSize: new Map([[0, 4], [1, 16]]),
         isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.STRONG,
     },
     // Level 10
     {
-        levelIndex: 9,
+        levelIndex: 5,
         levelName: 'Flag of snag',
-        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        teamIndexToSquadSize: new Map([[0, 8], [1, 24]]),
         isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.STRONG,
     },
@@ -97,7 +97,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     {
         levelIndex: 10,
         levelName: 'Frag and flag',
-        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        teamIndexToSquadSize: new Map([[0, 8], [1, 24]]),
         isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.STRONG,
     },
@@ -105,8 +105,41 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     {
         levelIndex: 11,
         levelName: 'Final snag',
-        teamIndexToSquadSize: new Map([[0, 4], [1, 8]]),
+        teamIndexToSquadSize: new Map([[0, 6], [1, 16]]),
         isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.STRONG,
     },
-]
+];
+
+const lastUnlockedCampaignLevelIndexStorageKey =
+    'SnagTheFlag_Campgain_LastUnlockedCampaignLevelIndex' as const;
+
+const checkUnlocked = () => {
+    const storedValue = window.localStorage.getItem(
+        lastUnlockedCampaignLevelIndexStorageKey);
+    const lastUnlockedCampaignLevelIndex = storedValue != null
+        ? Number.parseInt(storedValue)
+        : -1;
+
+    for (let levelIndex = 0; levelIndex < CAMPAIGN_LEVELS.length; levelIndex++) {
+        const level = CAMPAIGN_LEVELS[levelIndex];
+        if (lastUnlockedCampaignLevelIndex > levelIndex) {
+            level.isUnlocked = true;
+        }
+    }
+};
+checkUnlocked();
+
+export function tryUnlockingAndSavingProgress(nextCampaignLevelIndex: number):
+    void {
+    const lastUnlockedCampaignLevelIndex =
+        window.localStorage.getItem(lastUnlockedCampaignLevelIndexStorageKey)
+        || -1;
+    if (nextCampaignLevelIndex < CAMPAIGN_LEVELS.length
+        && nextCampaignLevelIndex > lastUnlockedCampaignLevelIndex) {
+        CAMPAIGN_LEVELS[nextCampaignLevelIndex].isUnlocked = true;
+        window.localStorage.setItem(
+            lastUnlockedCampaignLevelIndexStorageKey,
+            `${nextCampaignLevelIndex}`);
+    }
+}

@@ -997,6 +997,7 @@ export class GameManager implements GameModeManager {
         this.loadLevel();
         this.isGameOver = false;
         this.isPaused = false;
+        this.onAnimationDone = null;
         this.winningTeamIndex = -1;
         this.gameState.gamePhase = GamePhase.CHARACTER_PLACEMENT;
         this.selectedCharacterSettings = CHARACTER_CLASSES[0];

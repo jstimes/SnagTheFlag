@@ -110,11 +110,14 @@ export class FreePlayMenu implements GameModeManager {
                 textColor: THEME.buttonTextColor,
             },
             onClick: () => {
+                const maxSpawnDistanceFromFlag =
+                    this.selectedTeamSizeMap.get(1)! > 16
+                        ? 16
+                        : DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag;
                 const settings: GameSettings = {
                     matchType: this.selectedMatchType,
                     teamIndexToSquadSize: this.selectedTeamSizeMap,
-                    maxSpawnDistanceFromFlag:
-                        DEFAULT_GAME_SETTINGS.maxSpawnDistanceFromFlag,
+                    maxSpawnDistanceFromFlag,
                     numTeams: DEFAULT_GAME_SETTINGS.numTeams,
                     hasFogOfWar: this.isFogOfWarOn,
                     aiDifficulty: this.selectedAiDifficulty,
@@ -215,7 +218,7 @@ export class FreePlayMenu implements GameModeManager {
             new Map([[0, 4], [1, 4]]),
             new Map([[0, 8], [1, 8]]),
             new Map([[0, 12], [1, 12]]),
-            new Map([[0, 16], [1, 16]]),
+            new Map([[0, 8], [1, 24]]),
         ];
         const teamSizeIndexToString: string[] = teamSizeIndexToTeamSizeMap
             .map((map) => {

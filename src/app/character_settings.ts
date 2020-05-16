@@ -3,7 +3,7 @@ import { Grid } from 'src/app/grid';
 import { THEME } from './theme';
 import { Point } from './math/point';
 
-const GOD_MODE = true;
+const GOD_MODE = false;
 
 /** Abilities characters can perform in addition to moving and shooting. */
 export interface BaseCharacterAbility {

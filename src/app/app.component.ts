@@ -5,7 +5,7 @@ import { GameModeManager } from 'src/app/game_mode_manager';
 import { GameManager } from 'src/app/game_manager';
 import { LevelCreator } from 'src/app/level_creator';
 import { GameSettings } from 'src/app/game_settings';
-import { CAMPAIGN_LEVELS } from 'src/app/campaign_level';
+import { CAMPAIGN_LEVELS, tryUnlockingAndSavingProgress } from 'src/app/campaign_level';
 import { FreePlayMenu } from 'src/app/menus/free_play_menu';
 import { CampaignMenu } from 'src/app/menus/campaign_menu';
 import { StartMenu } from 'src/app/menus/start_menu';
@@ -144,9 +144,7 @@ export class AppComponent {
       gameSettings: GameSettings) => {
       this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
         if (winningTeamIndex === 0) {
-          if (campaignLevelIndex < CAMPAIGN_LEVELS.length - 1) {
-            CAMPAIGN_LEVELS[campaignLevelIndex + 1].isUnlocked = true;
-          }
+          tryUnlockingAndSavingProgress(campaignLevelIndex + 1)
         }
         this.tearDownCurrentGameState();
         this.initCampaignMenu();
