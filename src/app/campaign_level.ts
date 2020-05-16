@@ -9,7 +9,7 @@ interface CampaignLevel {
     readonly aiDifficulty: AiDifficulty;
 }
 
-const UNLOCK_ALL = true;
+const UNLOCK_ALL = false;
 
 export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     // Level 1
@@ -115,15 +115,10 @@ const lastUnlockedCampaignLevelIndexStorageKey =
     'SnagTheFlag_Campgain_LastUnlockedCampaignLevelIndex' as const;
 
 const checkUnlocked = () => {
-    const storedValue = window.localStorage.getItem(
-        lastUnlockedCampaignLevelIndexStorageKey);
-    const lastUnlockedCampaignLevelIndex = storedValue != null
-        ? Number.parseInt(storedValue)
-        : -1;
-
+    const lastUnlockedCampaignLevelIndex = getLastUnlocked();
     for (let levelIndex = 0; levelIndex < CAMPAIGN_LEVELS.length; levelIndex++) {
         const level = CAMPAIGN_LEVELS[levelIndex];
-        if (lastUnlockedCampaignLevelIndex > levelIndex) {
+        if (lastUnlockedCampaignLevelIndex >= levelIndex) {
             level.isUnlocked = true;
         }
     }
@@ -132,9 +127,7 @@ checkUnlocked();
 
 export function tryUnlockingAndSavingProgress(nextCampaignLevelIndex: number):
     void {
-    const lastUnlockedCampaignLevelIndex =
-        window.localStorage.getItem(lastUnlockedCampaignLevelIndexStorageKey)
-        || -1;
+    const lastUnlockedCampaignLevelIndex = getLastUnlocked();
     if (nextCampaignLevelIndex < CAMPAIGN_LEVELS.length
         && nextCampaignLevelIndex > lastUnlockedCampaignLevelIndex) {
         CAMPAIGN_LEVELS[nextCampaignLevelIndex].isUnlocked = true;
@@ -142,4 +135,12 @@ export function tryUnlockingAndSavingProgress(nextCampaignLevelIndex: number):
             lastUnlockedCampaignLevelIndexStorageKey,
             `${nextCampaignLevelIndex}`);
     }
+}
+
+function getLastUnlocked(): number {
+    const storedValue = window.localStorage.getItem(
+        lastUnlockedCampaignLevelIndexStorageKey);
+    return storedValue != null
+        ? Number.parseInt(storedValue)
+        : -1;
 }
