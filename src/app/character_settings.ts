@@ -138,7 +138,7 @@ const SHOTGUN: Gun = {
     projectileDetails: {
         type: ProjectileDetailsType.BULLET,
         numRicochets: 1,
-        damage: 4,
+        damage: 3,
         projectileSpeed: Grid.TILE_SIZE / 80,
         color: DEFAULT_BULLET_COLOR,
         shape: {
