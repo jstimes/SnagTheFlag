@@ -737,7 +737,8 @@ export class GameManager implements GameModeManager {
                 TextType.SUBTITLE,
                 Duration.SHORT);
         }
-        if (activeTeamFlag.tileCoords.equals(toTile)) {
+        if (!activeTeamFlag.isAtStart()
+            && activeTeamFlag.tileCoords.equals(toTile)) {
             activeTeamFlag.returnToStart();
             this.hud.setText(
                 `${this.gameState.getActiveTeamName()} ` +

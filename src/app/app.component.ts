@@ -143,7 +143,6 @@ export class AppComponent {
       levelIndex: number,
       gameSettings: GameSettings) => {
       this.initGame(levelIndex, gameSettings, (winningTeamIndex: number) => {
-        debugger;
         if (winningTeamIndex === 0) {
           tryUnlockingAndSavingProgress(campaignLevelIndex + 1)
         }
