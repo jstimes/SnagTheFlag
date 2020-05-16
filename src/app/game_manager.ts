@@ -193,20 +193,21 @@ export class GameManager implements GameModeManager {
         // Recalculate other projectile targets 
         // as they may have been going towards a
         // now destroyed character or obstacle.
-        for (const projectile of this.projectiles
-            .filter((projectile) => !projectile.isDead)) {
-            const canvasCoords =
-                projectile.animationState.currentCenterCanvas;
+        for (const otherProjectile of this.projectiles
+            .filter((otherOtherProjectile) => !otherOtherProjectile.isDead)) {
+            // const canvasCoords =
+            //     otherProjectile.animationState.currentCenterCanvas;
+            const currentRay = otherProjectile.getCurrentTarget().ray;
             const newTargets = getProjectileTargetsPath({
-                ray: projectile.getCurrentTarget().ray,
+                ray: currentRay,
                 startingTileCoords:
-                    Grid.getTileFromCanvasCoords(canvasCoords),
-                fromTeamIndex: projectile.fromTeamIndex,
-                numRicochets: projectile.getNumRicochetsLeft(),
+                    Grid.getTileFromCanvasCoords(currentRay.startPt),
+                fromTeamIndex: otherProjectile.fromTeamIndex,
+                numRicochets: otherProjectile.getNumRicochetsLeft(),
                 characters: this.gameState.getAliveCharacters(),
                 obstacles: this.gameState.obstacles,
             });
-            projectile.setNewTargets(newTargets);
+            otherProjectile.setNewTargets(newTargets);
         }
     }
 
