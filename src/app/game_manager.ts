@@ -499,8 +499,11 @@ export class GameManager implements GameModeManager {
         }) => {
             return getProjectileTargetsPath({
                 ...params,
-                characters: this.gameState.getAliveCharacters(),
-                obstacles: this.gameState.obstacles
+                characters: this.gameState.getAliveCharacters()
+                    .filter((character) => {
+                        return this.gameState.isTileVisibleByTeamIndex(character.tileCoords, this.gameState.currentTeamIndex);
+                    }),
+                obstacles: this.gameState.obstacles,
             });
         }
     };
