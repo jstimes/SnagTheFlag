@@ -98,18 +98,20 @@ export class LevelCreator {
 
     render(): void {
         const context = this.context;
+        const width = Grid.GAME_WIDTH;
+        const height = Grid.GAME_HEIGHT;
         context.fillStyle = THEME.gridBackgroundColor;
         context.clearRect(0, 0,
-            RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+            width, height);
         context.fillRect(0, 0,
-            RENDER_SETTINGS.canvasWidth, RENDER_SETTINGS.canvasHeight);
+            width, height);
 
         // Draw grid lines.
         for (let i = 0; i < Grid.TILES_WIDE; i++) {
             const startX = i * Grid.TILE_SIZE;
             const endX = startX;
             const startY = 0;
-            const endY = RENDER_SETTINGS.canvasHeight;
+            const endY = height;
 
             context.beginPath();
             context.strokeStyle = THEME.gridLineColor;
@@ -119,7 +121,7 @@ export class LevelCreator {
         }
         for (let i = 0; i < Grid.TILES_TALL; i++) {
             const startX = 0;
-            const endX = RENDER_SETTINGS.canvasWidth;
+            const endX = width;
             const startY = i * Grid.TILE_SIZE;
             const endY = startY;
 
@@ -134,7 +136,8 @@ export class LevelCreator {
             Grid.getTileFromCanvasCoords(CONTROLS.getMouseCanvasCoords());
         const tileCanvasTopLeft =
             Grid.getCanvasFromTileCoords(mouseTileCoords);
-        if (this.placementMode !== PlacementMode.ERASE
+        if (Grid.inbounds(mouseTileCoords)
+            && this.placementMode !== PlacementMode.ERASE
             && !this.isTileOccupied(mouseTileCoords)) {
             // Indicate hovered tile.
             const tileCanvasTopLeft =
