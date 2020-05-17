@@ -31,10 +31,10 @@ const WEAK_AI_SETTINGS: AiSettings = {
 
 const MEDIUM_AI_SETTINGS: AiSettings = {
     randomizeMovement: true,
-    maxAngleRandomization: Math.PI / 36,
+    maxAngleRandomization: Math.PI / 24,
     ignoresFogOfWar: false,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
-    heals: true,
+    heals: false,
 };
 
 const STRONG_AI_SETTINGS: AiSettings = {
@@ -145,15 +145,20 @@ export class Ai {
         const canHeal =
             this.settings.heals
             && selectedCharacter.health < selectedCharacter.settings.maxHealth
-            && [...selectedCharacter.characterAbilityTypeToAbilityState.keys()]
-                .find((abilityType) => abilityType === CharacterAbilityType.HEAL)
+            && selectedCharacter.extraAbilities
+                .find((ability) => {
+                    return ability.abilityType === CharacterAbilityType.HEAL;
+                })
             != null;
         if (canHeal) {
             const heal = (gameState) => {
                 const healAction: HealAction = {
                     type: ActionType.HEAL,
-                    healAmount: (selectedCharacter.extraAbilities
-                        .find((ability) => ability.abilityType === CharacterAbilityType.HEAL) as HealAbility).healAmount,
+                    healAmount: (
+                        selectedCharacter.extraAbilities
+                            .find((ability) => {
+                                return ability.abilityType === CharacterAbilityType.HEAL;
+                            }) as HealAbility).healAmount,
                 }
                 return healAction;
             };
@@ -162,7 +167,7 @@ export class Ai {
         const endTurn = (gameState) => {
             const endTurnAction: EndCharacterTurnAction = {
                 type: ActionType.END_CHARACTER_TURN,
-            }
+            };
             return endTurnAction;
         };
         return [endTurn];
@@ -417,6 +422,12 @@ export class Ai {
                 if (this.settings.randomizeMovement) {
                     selection = randomElement(optimalTiles);
                 }
+                if (selection == null) {
+                    const endTurnAction: EndCharacterTurnAction = {
+                        type: ActionType.END_CHARACTER_TURN,
+                    };
+                    return endTurnAction;
+                }
                 const selectTileAction: SelectTileAction = {
                     type: ActionType.SELECT_TILE,
                     tile: selection,
@@ -450,6 +461,12 @@ export class Ai {
             let selection = bestTiles[0];
             if (this.settings.randomizeMovement) {
                 selection = randomElement(bestTiles);
+            }
+            if (selection == null) {
+                const endTurnAction: EndCharacterTurnAction = {
+                    type: ActionType.END_CHARACTER_TURN,
+                };
+                return endTurnAction;
             }
             const selectTileAction: SelectTileAction = {
                 type: ActionType.SELECT_TILE,
