@@ -151,7 +151,7 @@ export class Ai {
                 })
             != null;
         if (canHeal) {
-            const heal = (gameState) => {
+            const heal = (gameState: GameState) => {
                 const healAction: HealAction = {
                     type: ActionType.HEAL,
                     healAmount: (
@@ -164,7 +164,7 @@ export class Ai {
             };
             return [heal];
         }
-        const endTurn = (gameState) => {
+        const endTurn = (gameState: GameState) => {
             const endTurnAction: EndCharacterTurnAction = {
                 type: ActionType.END_CHARACTER_TURN,
             };
@@ -278,7 +278,7 @@ export class Ai {
                     character, characterMoveTargetTile);
             return shoot.concat(safeMove);
         } else {
-            const startMoving = (gameState) => {
+            const startMoving = (gameState: GameState) => {
                 const startMovingAction: SelectCharacterStateAction = {
                     type: ActionType.SELECT_CHARACTER_STATE,
                     state: SelectedCharacterState.MOVING,
@@ -447,14 +447,14 @@ export class Ai {
 
     private getSafeMoveTowardsLocation(
         character: Character, tileLocation: Point): OnGetNextAction[] {
-        const startMoving = (gameState) => {
+        const startMoving = (gameState: GameState) => {
             const startMovingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
                 state: SelectedCharacterState.MOVING,
             };
             return startMovingAction;
         };
-        const thenMove = (gameState) => {
+        const thenMove = (gameState: GameState) => {
             const bestTiles =
                 this.getClosestSelectableTileToLocationWithFewestDirectHits(
                     tileLocation, gameState);
@@ -543,14 +543,14 @@ export class Ai {
     }
 
     private getShootSequence(shotDetails: ShotDetails): OnGetNextAction[] {
-        const startAiming = (gameState) => {
+        const startAiming = (gameState: GameState) => {
             const startAimingAction: SelectCharacterStateAction = {
                 type: ActionType.SELECT_CHARACTER_STATE,
                 state: SelectedCharacterState.AIMING,
             };
             return startAimingAction;
         };
-        const thenAim = (gameState) => {
+        const thenAim = (gameState: GameState) => {
             const randomAimAdjustment =
                 Math.random()
                 * this.settings.maxAngleRandomization
@@ -563,7 +563,7 @@ export class Ai {
             };
             return takeAimAction;
         };
-        const thenShoot = (gameState) => {
+        const thenShoot = (gameState: GameState) => {
             const shootAction: ShootAction = {
                 type: ActionType.SHOOT,
             };

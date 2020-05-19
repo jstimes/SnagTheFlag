@@ -30,9 +30,9 @@ export interface Theme {
     readonly lostHealthBarColor: string;
 
     /* UI colors. */
-    readonly uiBackgroundColor;
-    readonly buttonTextColor;
-    readonly buttonBackgroundColor;
+    readonly uiBackgroundColor: string;
+    readonly buttonTextColor: string;
+    readonly buttonBackgroundColor: string;
 }
 
 export const THEME: Theme = {

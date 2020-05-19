@@ -46,7 +46,6 @@ function old_detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment):
         return { isCollision: false };
     }
 
-    debugger;
     // Plug k into startPt + k * (endPt - startPt) to get intersection.
     const collisionPt = p1.add(p2.subtract(p1).multiplyScaler(k));
 
@@ -58,8 +57,8 @@ function old_detectRayLineSegmentCollision(ray: Ray, lineSegment: LineSegment):
 
 class Line {
 
-    readonly m;
-    readonly b;
+    readonly m: number;
+    readonly b: number;
 
     constructor(m: number, b: number) {
         this.m = m;
