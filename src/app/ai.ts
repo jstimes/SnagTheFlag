@@ -42,7 +42,7 @@ const STRONG_AI_SETTINGS: AiSettings = {
     maxAngleRandomization: 0,
     ignoresFogOfWar: false,
     characterClass: ASSAULT_CHARACTER_SETTINGS,
-    heals: true,
+    heals: false,
 };
 
 const difficultyToSettings: Map<AiDifficulty, AiSettings> = new Map([

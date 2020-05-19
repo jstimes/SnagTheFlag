@@ -81,7 +81,7 @@ export const CAMPAIGN_LEVELS: CampaignLevel[] = [
     {
         levelIndex: 4,
         levelName: 'Snag and tag',
-        teamIndexToSquadSize: new Map([[0, 4], [1, 16]]),
+        teamIndexToSquadSize: new Map([[0, 6], [1, 16]]),
         isUnlocked: UNLOCK_ALL,
         aiDifficulty: AiDifficulty.STRONG,
     },
