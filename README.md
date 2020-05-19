@@ -1,6 +1,7 @@
 # SnagTheFlag
 
-A game by jstimes@.
+A game by jstimes@. 
+Play now at https://jstimes.github.io/SnagTheFlag/dist/index.html
 
 ## Setup
 
