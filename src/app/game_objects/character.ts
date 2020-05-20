@@ -260,7 +260,7 @@ export class Character {
             return;
         }
 
-        context.strokeStyle = '#80585fbb';
+        context.strokeStyle = THEME.aimIndicatorColor;
         const aimLength = this.settings.gun.aimIndicatorLength;
         let startPt = tileCenterCanvas;
         let distance = 0;

@@ -26,6 +26,9 @@ import { Spawner } from './game_objects/spawner';
 import { InputManager } from './input_manager';
 import { LOGGER, LogType } from './logger';
 
+import BlackWoodTexture from 'src/assets/black_wood_texture.jpg';
+import { Texture } from './texture';
+
 const ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS = false;
 const DEFAULT_HUMAN_TEAM_INDEX = 0;
 
@@ -35,6 +38,7 @@ export class GameManager implements GameModeManager {
     private readonly context: CanvasRenderingContext2D;
     private readonly levelIndex: number;
     private readonly gameSettings: GameSettings;
+    private readonly blackWoodTexture = new Texture(BlackWoodTexture);
     private readonly onExitGameCallback:
         (winningTeamIndex: number) => void;
 
@@ -233,6 +237,17 @@ export class GameManager implements GameModeManager {
             0, 0,
             RENDER_SETTINGS.canvasWidth,
             RENDER_SETTINGS.canvasHeight);
+
+        if (THEME.isUsingTextures) {
+            this.blackWoodTexture.tryDrawing({
+                context,
+                sourceX: 0, sourceY: 0,
+                sourceWidth: Grid.GAME_WIDTH, sourceHeight: Grid.GAME_HEIGHT,
+                canvasX: 0, canvasY: 0,
+                canvasWidth: Grid.GAME_WIDTH,
+                canvasHeight: Grid.GAME_HEIGHT,
+            });
+        }
 
         if (this.gameState.selectableTiles != null
             && this.gameState.selectableTiles.length) {

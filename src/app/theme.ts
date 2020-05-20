@@ -7,6 +7,7 @@ export interface Theme {
     readonly characterTextColor: string;
     readonly fogColor: string;
 
+    readonly isUsingTextures: boolean;
     readonly obstacleColor: string;
     readonly flagPoleColor: string;
     readonly redFlagColor: string;
@@ -25,6 +26,7 @@ export interface Theme {
     readonly availableForMovementColor: string;
     readonly emptyCellHoverColor: string;
 
+    readonly aimIndicatorColor: string;
     readonly projectileTrailColor: string;
     readonly remainingHealthBarColor: string;
     readonly lostHealthBarColor: string;
@@ -51,6 +53,7 @@ export const THEME: Theme = {
     hudTextColor: '#edb951',
     fogColor: '#0a0a0a88',
 
+    isUsingTextures: false,
     obstacleColor: '#4c6e47',
     flagPoleColor: '#7a5f3e',
     redFlagColor: '#e34055',
@@ -62,9 +65,10 @@ export const THEME: Theme = {
     blueCharacterDoneColor: '#547199',
 
     selectedCharacterOutlineColor: '#000000',
-    availableForMovementColor: '#b8b6a5',
-    emptyCellHoverColor: '#d9d7bf',
+    availableForMovementColor: '#b8b6a589',
+    emptyCellHoverColor: '#d9d7bfa9',
 
+    aimIndicatorColor: '#d90228bb',
     projectileTrailColor: '#e8e1d8',
     remainingHealthBarColor: '#00FF00',
     lostHealthBarColor: '#FF0000',

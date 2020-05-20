@@ -3,8 +3,12 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
 
+import WhiteDrywallTexture from 'src/assets/white_drywall_texture.jpg';
+import { Texture } from '../texture';
+
 export class Obstacle {
     tileCoords: Point;
+    texture: Texture = new Texture(WhiteDrywallTexture);
 
     constructor(tileCoords: Point) {
         this.tileCoords = tileCoords;
@@ -20,6 +24,16 @@ export class Obstacle {
         context.fillRect(
             tileCanvasTopLeft.x, tileCanvasTopLeft.y,
             Grid.TILE_SIZE, Grid.TILE_SIZE);
+        if (THEME.isUsingTextures) {
+            this.texture.tryDrawing({
+                context,
+                sourceX: tileCanvasTopLeft.x, sourceY: tileCanvasTopLeft.y,
+                sourceWidth: Grid.TILE_SIZE, sourceHeight: Grid.TILE_SIZE,
+                canvasX: tileCanvasTopLeft.x, canvasY: tileCanvasTopLeft.y,
+                canvasWidth: Grid.TILE_SIZE,
+                canvasHeight: Grid.TILE_SIZE,
+            });
+        }
     }
 
     // TODO - cache after first construction.
