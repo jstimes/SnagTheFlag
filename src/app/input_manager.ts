@@ -551,7 +551,7 @@ function getDescriptionForCharacter(character: Character): string[] {
 function getDescriptionForClass(characterClassType: ClassType): string[] {
     const characterClass = getCharacterClassForType(characterClassType);
     return [
-        `<b>${characterClassType}</b>`,
+        `${characterClassType}`,
         ``,
         `HP: ${characterClass.maxHealth}`,
         `Moves: ${characterClass.maxMovesPerTurn}`,
