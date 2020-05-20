@@ -31,12 +31,16 @@ module.exports = {
                     'file-loader',
                 ],
             },
-            // Css loader.
+            // CSS loader.
             {
                 test: /\.css$/,
                 use: [
-                    'style-loader',
-                    'css-loader',
+                    "style-loader",
+                    "@teamsupercell/typings-for-css-modules-loader",
+                    {
+                        loader: "css-loader",
+                        options: { modules: true }
+                    }
                 ],
             },
         ],

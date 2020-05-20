@@ -8,7 +8,7 @@ import { CAMPAIGN_LEVELS, tryUnlockingAndSavingProgress } from 'src/app/campaign
 import { FreePlayMenu } from 'src/app/menus/free_play_menu';
 import { CampaignMenu } from 'src/app/menus/campaign_menu';
 import { StartMenu } from 'src/app/menus/start_menu';
-import 'src/assets/css/styles.css';
+import * as styles from 'src/assets/css/styles.css';
 
 enum GameState {
   START_MENU,
@@ -30,7 +30,7 @@ export class Main {
   constructor() {
     this.canvas = document.createElement('canvas');
     document.body.appendChild(this.canvas);
-    document.body.classList.add('body');
+    document.body.classList.add(styles.body);
     this.canvas.setAttribute('height', `${RENDER_SETTINGS.canvasHeight}px`);
     this.canvas.setAttribute('width', `${RENDER_SETTINGS.canvasWidth}px`);
     this.context = this.canvas.getContext('2d')!;
