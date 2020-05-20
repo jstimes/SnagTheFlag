@@ -9,8 +9,8 @@ Run `npm install`.
 
 ## Development
 
-Run `npm run start` to start a local server serve the project and auto-reload 
-for new changes.
+Run `npm run start` to start a local server which serves the project and 
+auto-reloads for new changes.
 
 ## Deployment
 

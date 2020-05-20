@@ -99,7 +99,7 @@ export class Ai {
         }
         const nextAction = nextActionProducer(gameState);
         if (gameState.selectedCharacter != null) {
-            this.log(`selected character index - ` +
+            this.log(`AI: selected character index - ` +
                 `${gameState.selectedCharacter!.index}`);
         }
         this.log(`AI: Taking action: ${JSON.stringify(nextAction)}`);

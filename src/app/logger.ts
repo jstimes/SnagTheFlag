@@ -8,7 +8,7 @@ export enum LogType {
 class Logger {
     logTypeToIsLogging: Map<LogType, boolean> = new Map([
         [LogType.TARGET_FINDING, false],
-        [LogType.AI, true],
+        [LogType.AI, false],
         [LogType.ACTIONS, false],
     ]);
     logTypeToLogs: Map<LogType, string[]>;
