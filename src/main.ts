@@ -8,11 +8,7 @@ import { CAMPAIGN_LEVELS, tryUnlockingAndSavingProgress } from 'src/app/campaign
 import { FreePlayMenu } from 'src/app/menus/free_play_menu';
 import { CampaignMenu } from 'src/app/menus/campaign_menu';
 import { StartMenu } from 'src/app/menus/start_menu';
-
-
-const BACKGROUND_COLOR = '#959aa3';
-const GRID_COLOR = '#1560e8';
-const HOVERED_TILE_COLOR = '#f7c25e';
+import 'src/assets/css/styles.css';
 
 enum GameState {
   START_MENU,
@@ -34,7 +30,7 @@ export class Main {
   constructor() {
     this.canvas = document.createElement('canvas');
     document.body.appendChild(this.canvas);
-    document.body.style.backgroundColor = '#000000';
+    document.body.classList.add('body');
     this.canvas.setAttribute('height', `${RENDER_SETTINGS.canvasHeight}px`);
     this.canvas.setAttribute('width', `${RENDER_SETTINGS.canvasWidth}px`);
     this.context = this.canvas.getContext('2d')!;

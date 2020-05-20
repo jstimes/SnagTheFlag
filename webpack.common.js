@@ -18,15 +18,25 @@ module.exports = {
     },
     module: {
         rules: [
+            // TypeScript loader.
             {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/,
             },
+            // Image loader.
             {
                 test: /\.(png|svg|jpg|gif)$/,
                 use: [
                     'file-loader',
+                ],
+            },
+            // Css loader.
+            {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader',
                 ],
             },
         ],

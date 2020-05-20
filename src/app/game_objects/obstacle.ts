@@ -3,7 +3,7 @@ import { Grid } from 'src/app/grid';
 import { THEME } from 'src/app/theme';
 import { LineSegment } from 'src/app/math/collision_detection';
 
-import WhiteDrywallTexture from 'src/assets/white_drywall_texture.jpg';
+import WhiteDrywallTexture from 'src/assets/img/white_drywall_texture.jpg';
 import { Texture } from '../texture';
 
 export class Obstacle {

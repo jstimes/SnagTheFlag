@@ -26,7 +26,7 @@ import { Spawner } from './game_objects/spawner';
 import { InputManager } from './input_manager';
 import { LOGGER, LogType } from './logger';
 
-import BlackWoodTexture from 'src/assets/black_wood_texture.jpg';
+import BlackWoodTexture from 'src/assets/img/black_wood_texture.jpg';
 import { Texture } from './texture';
 
 const ALLOW_ELIMINATION_VICTORY_WITH_SPAWNERS = false;
