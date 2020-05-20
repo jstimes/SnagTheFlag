@@ -29,6 +29,15 @@ export interface Theme {
     readonly remainingHealthBarColor: string;
     readonly lostHealthBarColor: string;
 
+    /** Button panel colors (in-game sidebar) */
+    readonly buttonPanelBgColor: string;
+    readonly buttonPanelButtonColor: string;
+    readonly buttonPanelButtonHoverColor: string;
+    readonly buttonPanelButtonSelectedColor: string;
+    readonly buttonPanelButtonSelectedBorderColor: string;
+    readonly buttonPanelButtonTextColor: string;
+    readonly buttonPanelTextBoxTextColor: string;
+
     /* UI colors. */
     readonly uiBackgroundColor: string;
     readonly buttonTextColor: string;
@@ -59,6 +68,14 @@ export const THEME: Theme = {
     projectileTrailColor: '#e8e1d8',
     remainingHealthBarColor: '#00FF00',
     lostHealthBarColor: '#FF0000',
+
+    buttonPanelBgColor: '#474747',
+    buttonPanelButtonColor: '#427cad',
+    buttonPanelButtonHoverColor: '#6392ba',
+    buttonPanelButtonSelectedColor: '#1068b0',
+    buttonPanelButtonSelectedBorderColor: '#000000',
+    buttonPanelButtonTextColor: '#cfcfcf',
+    buttonPanelTextBoxTextColor: '#c2c2c2',
 
     uiBackgroundColor: '#959aa3',
     buttonTextColor: '#1560e8',

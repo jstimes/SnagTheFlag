@@ -8,8 +8,6 @@ import { Grid } from './grid';
 import { ButtonGroup } from './ui/button_group';
 import { RENDER_SETTINGS } from './render_settings';
 
-const BG_COLOR = '#a68b8b';
-
 export class ButtonPanel {
 
     private readonly uiManager: UiManager;
@@ -35,17 +33,17 @@ export class ButtonPanel {
     private buttonGroupBottomMargin: number;
 
     private readonly headerStyle: TextBoxStyle = {
-        color: BG_COLOR,
+        color: THEME.buttonPanelBgColor,
         fontSize: this.fontSize,
-        textColor: '#000000',
+        textColor: THEME.buttonPanelTextBoxTextColor,
     };
     private readonly buttonStyle: ButtonStyle = {
         fontSize: this.fontSize,
-        color: '#f7c25e',
-        hoverColor: '#deaf57',
-        selectedColor: '#db9d2a',
-        selectedBorderColor: '#000000',
-        textColor: THEME.buttonTextColor,
+        color: THEME.buttonPanelButtonColor,
+        hoverColor: THEME.buttonPanelButtonHoverColor,
+        selectedColor: THEME.buttonPanelButtonSelectedColor,
+        selectedBorderColor: THEME.buttonPanelButtonSelectedBorderColor,
+        textColor: THEME.buttonPanelButtonTextColor,
     };
 
     constructor(readonly context: CanvasRenderingContext2D) {
@@ -66,7 +64,7 @@ export class ButtonPanel {
 
     render(context: CanvasRenderingContext2D): void {
         // Background.
-        context.fillStyle = BG_COLOR;
+        context.fillStyle = THEME.buttonPanelBgColor;
         context.fillRect(
             this.leftEdgeCanvas, 0,
             Grid.BUTTON_PANE_WIDTH, Grid.BUTTON_PANE_HEIGHT);
