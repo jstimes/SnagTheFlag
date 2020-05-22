@@ -1,6 +1,6 @@
 # SnagTheFlag
 
-A game by jstimes@. 
+A 2D turn-based combat game by jstimes@. 
 Play now at https://jstimes.github.io/SnagTheFlag/dist/index.html
 
 ## Setup
